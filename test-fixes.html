@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>修正確認テスト - VanillaJS ExceLike Table</title>
+  <link rel="stylesheet" href="src/ExceLikeTable.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      margin: 20px;
+      background: #f5f5f5;
+    }
+    .test-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 24px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .test-section {
+      margin-bottom: 32px;
+      padding: 16px;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+    }
+    .test-title {
+      color: #1890ff;
+      margin-bottom: 16px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .test-description {
+      margin-bottom: 16px;
+      color: #666;
+    }
+    .table-container {
+      height: 500px;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
+    }
+    .test-feature {
+      margin: 8px 0;
+      padding: 8px;
+      background: #f0f8ff;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1>🔧 修正確認テスト - VanillaJS ExceLike Table</h1>
+    
+    <div class="test-section">
+      <div class="test-title">修正内容の確認項目</div>
+      <div class="test-description">
+        <ol>
+          <li><strong>ツールチップ機能:</strong> セルの内容が長い場合、マウスオーバーで全文表示される</li>
+          <li><strong>OKボタンのグレーアウト:</strong> フィルターでチェックボックスが1つも選択されていない場合、OKボタンが無効化される</li>
+          <li><strong>日付チェックリストの昇順ソート:</strong> 日付フィルターで年・月・日が昇順に並んでいる</li>
+          <li><strong>フィルタポップアップの位置:</strong> フィルターボタンの右端に合わせてポップアップが表示される</li>
+          <li><strong>リアルタイムフィルタリング:</strong> チェックボックスを変更すると即座にテーブルの内容が更新される</li>
+          <li><strong>キャンセル/復元機能:</strong> キャンセルボタンで元の状態に戻る</li>
+          <li><strong>数値フィルタの相互作用:</strong> スライダーとチェックボックスが正しく連動し、チェックが外せる</li>
+          <li><strong>階層選択の中間状態:</strong> 日付フィルターで一部選択時に親要素が中間状態（-）になる</li>
+          <li><strong>列幅の自動調整:</strong> 列幅調整ハンドルをダブルクリックで内容に合わせて自動調整</li>
+          <li><strong>列幅調整ツールチップ:</strong> 列幅をドラッグ中にpx数とcm数をリアルタイム表示</li>
+          <li><strong>スティッキーヘッダー:</strong> 固定高さテーブルでスクロール時にヘッダーが固定表示</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="table-container" id="table-container"></div>
+  </div>
+
+  <script src="src/ExceLikeTable.js"></script>
+  <script>
+    // 長いテキストを含むテストデータを生成
+    function generateTestData(count = 50) {
+      const names = [
+        'これは非常に長い名前のテストデータです田中太郎', 
+        'とても長い部署名を持つ従業員データサンプル山田花子',
+        'ユーザーインターフェース設計開発部門佐藤次郎',
+        'システム開発統合テスト部署鈴木三郎'
+      ];
+      const departments = [
+        'システム開発部門ユーザーインターフェース設計チーム', 
+        'プロダクト企画マーケティング戦略部',
+        'テクノロジーソリューション開発部門',
+        'カスタマーサクセス＆サポート部門'
+      ];
+      const locations = ['東京本社オフィス', '大阪支社', '名古屋営業所', 'リモートワーク'];
+      
+      const data = [];
+      for (let i = 1; i <= count; i++) {
+        const randomDate = new Date(2020 + Math.floor(Math.random() * 5), 
+                                   Math.floor(Math.random() * 12), 
+                                   Math.floor(Math.random() * 28) + 1);
+        
+        data.push({
+          id: i,
+          name: names[Math.floor(Math.random() * names.length)],
+          department: departments[Math.floor(Math.random() * departments.length)],
+          location: locations[Math.floor(Math.random() * locations.length)],
+          salary: Math.floor(Math.random() * 150000) + 50000,
+          experience: Math.floor(Math.random() * 20) + 1,
+          joinDate: randomDate.toISOString().split('T')[0],
+          performance: Math.floor(Math.random() * 100) + 1
+        });
+      }
+      return data;
+    }
+    
+    const columns = [
+      {
+        key: 'id',
+        title: 'ID',
+        dataIndex: 'id',
+        width: 80,
+        sortable: true,
+        filterable: true
+      },
+      {
+        key: 'name',
+        title: 'とても長いヘッダータイトル名前フィールド',
+        dataIndex: 'name',
+        width: 200,
+        sortable: true,
+        filterable: true
+      },
+      {
+        key: 'department',
+        title: '部署名称',
+        dataIndex: 'department',
+        width: 180,
+        sortable: true,
+        filterable: true
+      },
+      {
+        key: 'salary',
+        title: '給与',
+        dataIndex: 'salary',
+        width: 120,
+        sortable: true,
+        filterable: true,
+        render: (value) => `¥${value.toLocaleString()}`
+      },
+      {
+        key: 'experience',
+        title: '経験年数',
+        dataIndex: 'experience',
+        width: 100,
+        sortable: true,
+        filterable: true
+      },
+      {
+        key: 'joinDate',
+        title: '入社日',
+        dataIndex: 'joinDate',
+        width: 130,
+        sortable: true,
+        filterable: true,
+        filterType: 'date-hierarchy'
+      },
+      {
+        key: 'performance',
+        title: 'パフォーマンス',
+        dataIndex: 'performance',
+        width: 120,
+        sortable: true,
+        filterable: true
+      }
+    ];
+    
+    // テーブル初期化
+    const testData = generateTestData(50);
+    const table = new ExceLikeTable('#table-container', {
+      data: testData,
+      columns: columns,
+      rowKey: 'id',
+      pagination: {
+        pageSize: 10,
+        showSizeChanger: true
+      },
+      bordered: true,
+      size: 'middle',
+      tableId: 'test-table',
+      persistSettings: true
+    });
+
+    console.log('✅ テーブルが正常に初期化されました');
+    console.log('🔧 設定永続化機能付きテーブルの動作確認:');
+    console.log('💾 LocalStorageに設定が自動保存されます');
+    console.log('🔄 ページ再読み込みで設定が復元されます');
+    console.log('');
+    console.log('【設定永続化対象】');
+    console.log('- 列幅、表示列・固定列設定');
+    console.log('- フィルタ・ソート状態');
+    console.log('- 文字サイズ・パディング設定');
+    console.log('- 1ページ表示件数');
+    console.log('');
+    console.log('【動作確認手順】');
+    console.log('1. 長いテキストのセルにマウスオーバーしてツールチップを確認');
+    console.log('2. フィルターを開いてチェックボックスをすべて外してOKボタンの無効化を確認');
+    console.log('3. 日付フィルターで昇順ソートを確認');
+    console.log('4. フィルターポップアップの位置を確認');
+    console.log('5. チェックボックス変更時のリアルタイムフィルタリングを確認');
+    console.log('6. キャンセルボタンで元状態復元を確認');
+    console.log('7. 数値フィルターでスライダーとチェックボックスの連動を確認');
+    console.log('8. 日付フィルターで一部選択時の中間状態を確認');
+    console.log('9. 列幅調整ハンドル（右端の境界線）をダブルクリックして自動調整を確認');
+    console.log('10. 列幅をドラッグしてツールチップでpx数とcm数の表示を確認');
+    console.log('11. テーブルをスクロールしてスティッキーヘッダーの動作を確認');
+    console.log('12. 🆕 各種設定を変更してページを再読み込みし、設定が復元されることを確認');
+  </script>
+</body>
+</html>

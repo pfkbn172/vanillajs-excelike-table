@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Date Filter Test</title>
+  <link rel="stylesheet" href="src/ExceLikeTable.css">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .test-container { max-width: 800px; margin: 0 auto; }
+    .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; }
+    #table-container { height: 400px; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1>Date Filter Test</h1>
+    
+    <div class="test-section">
+      <h2>Instructions</h2>
+      <p>1. Load the table</p>
+      <p>2. Click on the filter button for the "Join Date" column</p>
+      <p>3. Check browser console for debug logs</p>
+      <p>4. Verify that the date hierarchy controls appear</p>
+    </div>
+    
+    <div class="test-section">
+      <button onclick="loadTestData()">Load Test Data</button>
+      <div id="table-container"></div>
+    </div>
+  </div>
+
+  <script src="src/ExceLikeTable.js"></script>
+  <script>
+    let table;
+    
+    function loadTestData() {
+      console.log('🚀 Loading test data...');
+      
+      // Generate test data with dates
+      const testData = [];
+      for (let i = 1; i <= 20; i++) {
+        const startDate = new Date(2020, 0, 1);
+        const endDate = new Date(2024, 11, 31);
+        const randomDate = new Date(startDate.getTime() + Math.random() * (endDate.getTime() - startDate.getTime()));
+        
+        testData.push({
+          id: i,
+          name: `Person ${i}`,
+          joinDate: randomDate.toISOString().split('T')[0]
+        });
+      }
+      
+      console.log('📊 Test data generated:', testData.slice(0, 3));
+      
+      // Column definitions
+      const columns = [
+        {
+          key: 'id',
+          title: 'ID',
+          dataIndex: 'id',
+          width: 80,
+          filterable: true,
+          sortable: true
+        },
+        {
+          key: 'name',
+          title: 'Name',
+          dataIndex: 'name',
+          width: 150,
+          filterable: true,
+          sortable: true
+        },
+        {
+          key: 'joinDate',
+          title: 'Join Date',
+          dataIndex: 'joinDate',
+          width: 130,
+          sortable: true,
+          filterable: true,
+          filterType: 'date-hierarchy'
+        }
+      ];
+      
+      console.log('📋 Column definitions:', columns);
+      
+      // Initialize table
+      table = new ExceLikeTable('#table-container', {
+        data: testData,
+        columns: columns,
+        rowKey: 'id',
+        pagination: {
+          pageSize: 10
+        },
+        bordered: true
+      });
+      
+      console.log('✅ Table initialized');
+    }
+  </script>
+</body>
+</html>
