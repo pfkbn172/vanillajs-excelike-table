@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ExceLikeTable - CDN Demo</title>
+  <!-- Load from CDN (update URL when published) -->
+  <link rel="stylesheet" href="../dist/excelike-table.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      margin: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 24px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .demo-info {
+      background: #e6f7ff;
+      padding: 16px;
+      border-radius: 4px;
+      margin-bottom: 24px;
+      border-left: 4px solid #1890ff;
+    }
+    .table-container {
+      height: 500px;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
+      margin-top: 16px;
+    }
+    .code-snippet {
+      background: #f8f9fa;
+      padding: 16px;
+      border-radius: 4px;
+      margin: 16px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📦 ExceLikeTable - CDN Demo</h1>
+    
+    <div class="demo-info">
+      <h3>🚀 Ready-to-use CDN Example</h3>
+      <p>This demonstrates how to use ExceLikeTable directly from a CDN without any build process.</p>
+      <p><strong>Perfect for:</strong> Quick prototypes, simple websites, and getting started quickly!</p>
+    </div>
+
+    <h3>📋 CDN Usage</h3>
+    <div class="code-snippet">
+&lt;!-- Include CSS --&gt;
+&lt;link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vanillajs-excelike-table/dist/excelike-table.min.css"&gt;
+
+&lt;!-- Include JavaScript --&gt;
+&lt;script src="https://cdn.jsdelivr.net/npm/vanillajs-excelike-table/dist/excelike-table.min.js"&gt;&lt;/script&gt;
+
+&lt;!-- Or use the combined bundle (CSS + JS in one file) --&gt;
+&lt;script src="https://cdn.jsdelivr.net/npm/vanillajs-excelike-table/dist/excelike-table.bundle.js"&gt;&lt;/script&gt;
+    </div>
+
+    <h3>💡 Simple Implementation</h3>
+    <div class="code-snippet">
+// 1. Prepare your data
+const data = [
+  { id: 1, name: 'Alice Johnson', role: 'Developer', salary: 75000, status: 'Active' },
+  { id: 2, name: 'Bob Smith', role: 'Designer', salary: 65000, status: 'Active' },
+  { id: 3, name: 'Carol Williams', role: 'Manager', salary: 85000, status: 'Pending' }
+];
+
+// 2. Define columns with ColumnHelpers
+const columns = [
+  ColumnHelpers.text('name', 'Name'),
+  ColumnHelpers.text('role', 'Role'),
+  ColumnHelpers.number('salary', 'Salary', { currency: '$' }),
+  ColumnHelpers.status('status', 'Status', {
+    'Active': '#52c41a',
+    'Pending': '#faad14',
+    'Inactive': '#ff4d4f'
+  })
+];
+
+// 3. Create table with preset
+const table = new ExceLikeTable('#my-table', {
+  preset: 'standard',  // Quick setup!
+  data: data,
+  columns: columns
+});
+    </div>
+
+    <h3>🎯 Live Demo</h3>
+    <div class="table-container" id="demo-table"></div>
+
+    <div style="margin-top: 24px; padding: 16px; background: #f0f8ff; border-radius: 4px;">
+      <h4>🎮 Try these features:</h4>
+      <ul>
+        <li><strong>Sorting:</strong> Click column headers to sort</li>
+        <li><strong>Filtering:</strong> Click filter icons to search/filter data</li>
+        <li><strong>Settings:</strong> Click ⚙️ to customize appearance and columns</li>
+        <li><strong>Pagination:</strong> Navigate through pages and change page size</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Load from local dist (for demo purposes) -->
+  <script src="../dist/excelike-table.js"></script>
+  <script>
+    // Sample data for demo
+    const demoData = [
+      { id: 1, name: 'Alice Johnson', role: 'Senior Developer', salary: 95000, joinDate: '2020-03-15', status: 'Active', department: 'Engineering' },
+      { id: 2, name: 'Bob Smith', role: 'UI/UX Designer', salary: 70000, joinDate: '2021-06-22', status: 'Active', department: 'Design' },
+      { id: 3, name: 'Carol Williams', role: 'Product Manager', salary: 88000, joinDate: '2019-11-08', status: 'Active', department: 'Product' },
+      { id: 4, name: 'David Brown', role: 'DevOps Engineer', salary: 82000, joinDate: '2022-01-10', status: 'Pending', department: 'Engineering' },
+      { id: 5, name: 'Eva Davis', role: 'Data Scientist', salary: 92000, joinDate: '2020-09-03', status: 'Active', department: 'Analytics' },
+      { id: 6, name: 'Frank Wilson', role: 'Frontend Developer', salary: 75000, joinDate: '2021-12-01', status: 'Inactive', department: 'Engineering' },
+      { id: 7, name: 'Grace Chen', role: 'Marketing Manager', salary: 68000, joinDate: '2022-04-18', status: 'Active', department: 'Marketing' },
+      { id: 8, name: 'Henry Lee', role: 'Backend Developer', salary: 80000, joinDate: '2020-07-25', status: 'Active', department: 'Engineering' },
+      { id: 9, name: 'Iris Martinez', role: 'QA Engineer', salary: 65000, joinDate: '2021-10-14', status: 'Active', department: 'Engineering' },
+      { id: 10, name: 'Jack Taylor', role: 'Sales Director', salary: 110000, joinDate: '2019-05-30', status: 'Active', department: 'Sales' }
+    ];
+
+    // Column definition using ColumnHelpers
+    const demoColumns = [
+      ColumnHelpers.text('name', 'Employee Name', { width: 180 }),
+      ColumnHelpers.text('role', 'Job Role', { width: 150 }),
+      ColumnHelpers.text('department', 'Department', { width: 120 }),
+      ColumnHelpers.number('salary', 'Annual Salary', { 
+        currency: '$', 
+        width: 130 
+      }),
+      ColumnHelpers.date('joinDate', 'Join Date', { width: 120 }),
+      ColumnHelpers.status('status', 'Status', {
+        'Active': '#52c41a',
+        'Pending': '#faad14', 
+        'Inactive': '#ff4d4f'
+      }, { width: 100 }),
+      ColumnHelpers.actions('Actions', [
+        { key: 'edit', label: '✏️ Edit' },
+        { key: 'view', label: '👁️ View' }
+      ], { width: 120 })
+    ];
+
+    // Create the demo table
+    const demoTable = new ExceLikeTable('#demo-table', {
+      preset: 'excel',  // Full feature set
+      data: demoData,
+      columns: demoColumns,
+      tableId: 'cdn-demo-table',
+      persistSettings: true
+    });
+
+    console.log('🎉 CDN Demo loaded successfully!');
+    console.log('📊 Features demonstrated:');
+    console.log('✅ Preset configuration (excel)');
+    console.log('✅ ColumnHelpers for easy setup');
+    console.log('✅ All major features enabled');
+    console.log('✅ Settings persistence');
+    console.log('');
+    console.log('🎯 Next steps:');
+    console.log('1. Try sorting, filtering, and customizing');
+    console.log('2. Refresh the page to see settings persistence');
+    console.log('3. Copy the code snippets to use in your project!');
+  </script>
+</body>
+</html>

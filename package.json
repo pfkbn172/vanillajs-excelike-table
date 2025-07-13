@@ -1,0 +1,74 @@
+{
+  "name": "vanillajs-excelike-table",
+  "version": "1.1.0",
+  "description": "A user-friendly pure JavaScript table library with Excel-like features, preset configurations, and intuitive column helpers. Vanilla JS implementation - no frameworks required!",
+  "main": "dist/excelike-table.js",
+  "module": "dist/excelike-table.esm.js",
+  "types": "dist/excelike-table.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "examples",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/excelike-table.esm.js",
+      "require": "./dist/excelike-table.js",
+      "types": "./dist/excelike-table.d.ts"
+    },
+    "./dist/excelike-table.css": "./dist/excelike-table.css"
+  },
+  "keywords": [
+    "javascript",
+    "vanillajs",
+    "table",
+    "excel",
+    "filter",
+    "sort",
+    "pagination",
+    "column-helpers",
+    "preset",
+    "ui",
+    "vanilla",
+    "no-framework",
+    "user-friendly",
+    "settings-persistence",
+    "column-pinning",
+    "responsive",
+    "pure-javascript"
+  ],
+  "author": "ExceLikeTable Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/vanillajs-excelike-table.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/vanillajs-excelike-table/issues"
+  },
+  "homepage": "https://github.com/your-username/vanillajs-excelike-table#readme",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "build:dev": "node scripts/build.js --dev",
+    "dev": "node scripts/dev-server.js",
+    "test": "node scripts/test.js",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "terser": "^5.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "vanillajs-excelike-table": "^1.0.1"
+  }
+}

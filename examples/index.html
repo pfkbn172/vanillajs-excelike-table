@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VanillaJS ExceLike Table - Full Featured Demo</title>
+  <link rel="stylesheet" href="../src/ExceLikeTable.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 24px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    h1 {
+      color: #1890ff;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    
+    .demo-section {
+      margin-bottom: 24px;
+    }
+    
+    .demo-controls {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    
+    .demo-btn {
+      padding: 8px 16px;
+      border: 1px solid #d9d9d9;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 14px;
+    }
+    
+    .demo-btn:hover {
+      border-color: #1890ff;
+      color: #1890ff;
+    }
+    
+    .demo-btn.primary {
+      background: #1890ff;
+      color: white;
+      border-color: #1890ff;
+    }
+    
+    .demo-btn.primary:hover {
+      background: #40a9ff;
+    }
+    
+    .table-container {
+      height: 600px;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
+    }
+    
+    .info-panel {
+      background: #f9f9f9;
+      padding: 16px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+    
+    .info-panel h3 {
+      margin: 0 0 8px 0;
+      color: #1890ff;
+    }
+    
+    .info-panel ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    
+    .info-panel li {
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 VanillaJS ExceLike Table - Full Featured Demo with Settings Persistence</h1>
+    
+    <div class="info-panel">
+      <h3>Features Demonstrated:</h3>
+      <ul>
+        <li><strong>Filtering:</strong> Text search, numeric range sliders, date hierarchy</li>
+        <li><strong>Sorting:</strong> Click column headers to sort ascending/descending</li>
+        <li><strong>Column Pinning:</strong> Pin columns to left side with sticky positioning</li>
+        <li><strong>Column Visibility:</strong> Show/hide columns via settings menu</li>
+        <li><strong>Pagination:</strong> Navigate through large datasets with configurable page sizes</li>
+        <li><strong>Responsive Design:</strong> Works on desktop and mobile devices</li>
+        <li><strong>Column Resizing:</strong> Drag column borders to resize widths</li>
+        <li><strong>🆕 Settings Persistence:</strong> All settings automatically saved to LocalStorage and restored on page reload</li>
+      </ul>
+    </div>
+    
+    <div class="info-panel" style="background: #e6f7ff; border-left: 4px solid #1890ff;">
+      <h3>💾 Settings Persistence Feature:</h3>
+      <ul>
+        <li><strong>Auto-Save:</strong> All changes (filters, sorting, column widths, etc.) are automatically saved to LocalStorage</li>
+        <li><strong>Auto-Restore:</strong> Settings are automatically restored when you reload the page</li>
+        <li><strong>Persisted Settings:</strong> Column widths, visibility, pinning, filters, sort state, font size, cell padding, page size</li>
+        <li><strong>Manual Controls:</strong> Use "Save Settings Now" to force save, or "Clear Saved Settings" to reset to defaults</li>
+        <li><strong>Test It:</strong> Make changes, refresh the page, and see your configuration restored!</li>
+      </ul>
+    </div>
+    
+    <div class="demo-section">
+      <h3>Demo Controls</h3>
+      <div class="demo-controls">
+        <button class="demo-btn primary" onclick="loadSampleData()">Load Sample Data</button>
+        <button class="demo-btn" onclick="clearFilters()">Clear All Filters</button>
+        <button class="demo-btn" onclick="addRandomData()">Add Random Data</button>
+        <button class="demo-btn" onclick="toggleLoading()">Toggle Loading</button>
+        <button class="demo-btn" onclick="changeTableSize()">Change Table Size</button>
+        <button class="demo-btn" onclick="clearSettings()" style="background: #ff7875; color: white; border-color: #ff7875;">Clear Saved Settings</button>
+        <button class="demo-btn" onclick="saveSettings()" style="background: #52c41a; color: white; border-color: #52c41a;">Save Settings Now</button>
+      </div>
+    </div>
+    
+    <div class="table-container" id="table-container"></div>
+  </div>
+
+  <script src="../src/ExceLikeTable.js"></script>
+  <script>
+    let table;
+    let sampleData = [];
+    let currentSize = 'middle';
+    
+    // Generate sample data
+    function generateSampleData(count = 100) {
+      const names = ['John Smith', 'Jane Doe', 'Bob Johnson', 'Alice Brown', 'Charlie Davis', 'Diana Wilson', 'Eve Miller', 'Frank Garcia', 'Grace Martinez', 'Henry Anderson'];
+      const departments = ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance', 'Operations', 'Design', 'Product'];
+      const locations = ['New York', 'San Francisco', 'London', 'Tokyo', 'Sydney', 'Toronto', 'Berlin', 'Singapore'];
+      const statuses = ['Active', 'Inactive', 'Pending', 'Suspended'];
+      
+      const data = [];
+      for (let i = 1; i <= count; i++) {
+        const startDate = new Date(2020, 0, 1);
+        const endDate = new Date(2024, 11, 31);
+        const randomDate = new Date(startDate.getTime() + Math.random() * (endDate.getTime() - startDate.getTime()));
+        
+        data.push({
+          id: i,
+          name: names[Math.floor(Math.random() * names.length)],
+          department: departments[Math.floor(Math.random() * departments.length)],
+          location: locations[Math.floor(Math.random() * locations.length)],
+          salary: Math.floor(Math.random() * 150000) + 50000,
+          experience: Math.floor(Math.random() * 20) + 1,
+          joinDate: randomDate.toISOString().split('T')[0],
+          status: statuses[Math.floor(Math.random() * statuses.length)],
+          performance: Math.floor(Math.random() * 100) + 1
+        });
+      }
+      return data;
+    }
+    
+    // Column definitions
+    const columns = [
+      {
+        key: 'id',
+        title: 'ID',
+        dataIndex: 'id',
+        width: 80,
+        sortable: true,
+        filterable: true
+      },
+      {
+        key: 'name',
+        title: 'Name',
+        dataIndex: 'name',
+        width: 150,
+        sortable: true,
+        filterable: true
+      },
+      {
+        key: 'department',
+        title: 'Department',
+        dataIndex: 'department',
+        width: 120,
+        sortable: true,
+        filterable: true
+      },
+      {
+        key: 'location',
+        title: 'Location',
+        dataIndex: 'location',
+        width: 120,
+        sortable: true,
+        filterable: true
+      },
+      {
+        key: 'salary',
+        title: 'Salary',
+        dataIndex: 'salary',
+        width: 120,
+        sortable: true,
+        filterable: true,
+        render: (value) => `$${value.toLocaleString()}`
+      },
+      {
+        key: 'experience',
+        title: 'Experience (Years)',
+        dataIndex: 'experience',
+        width: 140,
+        sortable: true,
+        filterable: true,
+        render: (value) => `${value} years`
+      },
+      {
+        key: 'joinDate',
+        title: 'Join Date',
+        dataIndex: 'joinDate',
+        width: 130,
+        sortable: true,
+        filterable: true,
+        filterType: 'date-hierarchy'
+      },
+      {
+        key: 'status',
+        title: 'Status',
+        dataIndex: 'status',
+        width: 100,
+        sortable: true,
+        filterable: true,
+        render: (value) => {
+          const colors = {
+            'Active': '#52c41a',
+            'Inactive': '#d9d9d9',
+            'Pending': '#faad14',
+            'Suspended': '#ff4d4f'
+          };
+          return `<span style="color: ${colors[value] || '#000'}; font-weight: 500;">${value}</span>`;
+        }
+      },
+      {
+        key: 'performance',
+        title: 'Performance',
+        dataIndex: 'performance',
+        width: 120,
+        sortable: true,
+        filterable: true,
+        render: (value) => {
+          const color = value >= 80 ? '#52c41a' : value >= 60 ? '#faad14' : '#ff4d4f';
+          return `<span style="color: ${color}; font-weight: 500;">${value}%</span>`;
+        }
+      }
+    ];
+    
+    // Initialize table
+    function initializeTable() {
+      sampleData = generateSampleData(100);
+      
+      table = new ExceLikeTable('#table-container', {
+        data: sampleData,
+        columns: columns,
+        rowKey: 'id',
+        pagination: {
+          pageSize: 10,
+          showSizeChanger: true,
+          showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`
+        },
+        bordered: true,
+        size: currentSize,
+        loading: false,
+        tableId: 'main-demo-table',
+        persistSettings: true
+      });
+    }
+    
+    // Demo control functions
+    function loadSampleData() {
+      sampleData = generateSampleData(150);
+      table.setData(sampleData);
+    }
+    
+    function clearFilters() {
+      table.clearFilters();
+    }
+    
+    function addRandomData() {
+      const newData = generateSampleData(50);
+      const allData = [...sampleData, ...newData];
+      sampleData = allData;
+      table.setData(allData);
+    }
+    
+    function toggleLoading() {
+      const container = document.getElementById('table-container');
+      const loadingOverlay = container.querySelector('.table-loading');
+      if (loadingOverlay) {
+        loadingOverlay.style.display = loadingOverlay.style.display === 'none' ? 'flex' : 'none';
+      }
+    }
+    
+    function changeTableSize() {
+      const sizes = ['small', 'middle', 'large'];
+      const currentIndex = sizes.indexOf(currentSize);
+      currentSize = sizes[(currentIndex + 1) % sizes.length];
+      
+      // Recreate table with new size
+      table.destroy();
+      initializeTable();
+    }
+    
+    // Settings persistence functions
+    async function clearSettings() {
+      if (table && table.clearSettings) {
+        const success = await table.clearSettings();
+        if (success) {
+          alert('✅ Saved settings have been cleared! Refresh the page to see the default state.');
+        } else {
+          alert('❌ Failed to clear settings.');
+        }
+      }
+    }
+    
+    async function saveSettings() {
+      if (table && table.saveSettings) {
+        const success = await table.saveSettings();
+        if (success) {
+          alert('✅ Settings saved successfully! Your current table configuration is now persisted.');
+        } else {
+          alert('❌ Failed to save settings.');
+        }
+      }
+    }
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', initializeTable);
+  </script>
+</body>
+</html>

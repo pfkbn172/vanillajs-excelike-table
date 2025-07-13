@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ExceLikeTable - シンプルな使用例</title>
+  <link rel="stylesheet" href="../src/ExceLikeTable.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      margin: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: white;
+      padding: 24px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .example {
+      margin-bottom: 40px;
+      padding: 20px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+    }
+    .example h3 {
+      margin: 0 0 16px 0;
+      color: #1890ff;
+    }
+    .table-container {
+      height: 400px;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
+      margin-top: 16px;
+    }
+    .code-example {
+      background: #f8f9fa;
+      padding: 16px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      border-left: 4px solid #1890ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 ExceLikeTable - 使いやすい使用例</h1>
+    
+    <div class="example">
+      <h3>1. 最もシンプルな例（プリセット使用）</h3>
+      <p>プリセットを使用することで、最小限のコードでテーブルを作成できます。</p>
+      
+      <div class="code-example">
+// データの準備
+const data = [
+  { id: 1, name: '田中太郎', age: 30, city: '東京' },
+  { id: 2, name: '山田花子', age: 25, city: '大阪' },
+  { id: 3, name: '佐藤次郎', age: 35, city: '名古屋' }
+];
+
+// 列定義（ColumnHelpersを使用）
+const columns = [
+  ColumnHelpers.text('name', '名前'),
+  ColumnHelpers.number('age', '年齢'),
+  ColumnHelpers.text('city', '都市')
+];
+
+// テーブル作成（standardプリセット使用）
+const table = new ExceLikeTable('#table1', {
+  preset: 'standard',  // ソート、フィルタ、ページネーション有効
+  data: data,
+  columns: columns
+});
+      </div>
+      
+      <div class="table-container" id="table1"></div>
+    </div>
+
+    <div class="example">
+      <h3>2. 機能を選択する例</h3>
+      <p>必要な機能だけを選択してテーブルを作成できます。</p>
+      
+      <div class="code-example">
+// ソートのみの軽量テーブル
+const table = new ExceLikeTable('#table2', {
+  features: ['sorting'],  // ソート機能のみ有効
+  data: data,
+  columns: columns,
+  pagination: false  // ページネーション無効
+});
+      </div>
+      
+      <div class="table-container" id="table2"></div>
+    </div>
+
+    <div class="example">
+      <h3>3. 高度な例（カスタマイズされた列）</h3>
+      <p>ColumnHelpersを使用して、より高度な列定義を簡単に作成できます。</p>
+      
+      <div class="code-example">
+const advancedColumns = [
+  ColumnHelpers.text('name', '名前', { width: 150 }),
+  ColumnHelpers.number('salary', '給与', { currency: '¥', width: 120 }),
+  ColumnHelpers.date('joinDate', '入社日', { width: 130 }),
+  ColumnHelpers.status('status', 'ステータス', {
+    'Active': '#52c41a',
+    'Inactive': '#d9d9d9',
+    'Pending': '#faad14'
+  }),
+  ColumnHelpers.actions('操作', [
+    { key: 'edit', label: '編集' },
+    { key: 'delete', label: '削除' }
+  ])
+];
+
+const table = new ExceLikeTable('#table3', {
+  preset: 'excel',  // 全機能有効
+  data: advancedData,
+  columns: advancedColumns,
+  tableId: 'advanced-table',  // 設定永続化用ID
+  persistSettings: true
+});
+      </div>
+      
+      <div class="table-container" id="table3"></div>
+    </div>
+  </div>
+
+  <script src="../src/ExceLikeTable.js"></script>
+  <script>
+    // シンプルなテストデータ
+    const data = [
+      { id: 1, name: '田中太郎', age: 30, city: '東京' },
+      { id: 2, name: '山田花子', age: 25, city: '大阪' },
+      { id: 3, name: '佐藤次郎', age: 35, city: '名古屋' },
+      { id: 4, name: '鈴木一郎', age: 28, city: '福岡' },
+      { id: 5, name: '高橋美咲', age: 32, city: '札幌' }
+    ];
+
+    // 高度な例用のデータ
+    const advancedData = [
+      { id: 1, name: '田中太郎', salary: 500000, joinDate: '2020-04-01', status: 'Active' },
+      { id: 2, name: '山田花子', salary: 450000, joinDate: '2021-07-15', status: 'Active' },
+      { id: 3, name: '佐藤次郎', salary: 600000, joinDate: '2019-12-01', status: 'Inactive' },
+      { id: 4, name: '鈴木一郎', salary: 520000, joinDate: '2022-01-10', status: 'Pending' },
+      { id: 5, name: '高橋美咲', salary: 480000, joinDate: '2020-09-20', status: 'Active' }
+    ];
+
+    // 例1: 標準プリセット
+    const columns1 = [
+      ColumnHelpers.text('name', '名前'),
+      ColumnHelpers.number('age', '年齢'),
+      ColumnHelpers.text('city', '都市')
+    ];
+
+    const table1 = new ExceLikeTable('#table1', {
+      preset: 'standard',
+      data: data,
+      columns: columns1
+    });
+
+    // 例2: ソートのみ
+    const table2 = new ExceLikeTable('#table2', {
+      features: ['sorting'],
+      data: data,
+      columns: columns1,
+      pagination: false
+    });
+
+    // 例3: 高度な例
+    const advancedColumns = [
+      ColumnHelpers.text('name', '名前', { width: 150 }),
+      ColumnHelpers.number('salary', '給与', { currency: '¥', width: 120 }),
+      ColumnHelpers.date('joinDate', '入社日', { width: 130 }),
+      ColumnHelpers.status('status', 'ステータス', {
+        'Active': '#52c41a',
+        'Inactive': '#d9d9d9',
+        'Pending': '#faad14'
+      }),
+      ColumnHelpers.actions('操作', [
+        { key: 'edit', label: '編集' },
+        { key: 'delete', label: '削除' }
+      ])
+    ];
+
+    const table3 = new ExceLikeTable('#table3', {
+      preset: 'excel',
+      data: advancedData,
+      columns: advancedColumns,
+      tableId: 'advanced-table'
+    });
+
+    console.log('✅ 利用者ファーストなテーブルライブラリの例が正常に表示されました！');
+    console.log('🎯 プリセット機能により簡単にテーブルを作成できます');
+    console.log('🔧 ColumnHelpersを使用して直感的な列定義が可能です');
+    console.log('⚙️ features配列で必要な機能のみを選択できます');
+  </script>
+</body>
+</html>
