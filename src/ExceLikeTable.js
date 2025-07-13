@@ -1017,9 +1017,15 @@ class ExceLikeTable {
   }
 
   updateFilterButtonState(columnKey) {
-    const filterBtn = this.tableContainer.querySelector(`[data-column="${columnKey}"]`);
+    const filterBtn = this.tableContainer.querySelector(`.filter-btn[data-column="${columnKey}"]`);
+    
     if (filterBtn) {
-      if (this.hasActiveFilter(columnKey)) {
+      // Check if ANY data is being filtered (not showing all data)
+      const totalDataCount = this.options.data.length;
+      const filteredDataCount = this.state.filteredData.length;
+      const hasAnyFilter = filteredDataCount < totalDataCount;
+      
+      if (hasAnyFilter) {
         filterBtn.classList.add('active');
       } else {
         filterBtn.classList.remove('active');
@@ -1533,7 +1539,6 @@ class ExceLikeTable {
   }
 
   showFilterDropdown(column, button) {
-    console.log('🎯 showFilterDropdown called for column:', column.key, 'filterType:', column.filterType);
     
     // Store original state for cancel functionality
     const originalFilters = JSON.parse(JSON.stringify(this.state.filters));
@@ -1557,7 +1562,6 @@ class ExceLikeTable {
 
     // Different filter types
     if (column.filterType === 'date-hierarchy') {
-      console.log('🗓️ Creating date hierarchy filter');
       dropdownContent = this.createDateHierarchyFilter(uniqueValues, currentFilters, column);
     } else if (this.isNumericColumn(column)) {
       dropdownContent = this.createRangeFilter(column, uniqueValues);
@@ -1588,7 +1592,6 @@ class ExceLikeTable {
 
     // Position dropdown
     document.body.appendChild(dropdown);
-    console.log('🎯 Dropdown appended to document body');
     
     // Get column header element to position next to the entire column
     const columnHeader = button.closest('.table-header');
@@ -1649,7 +1652,6 @@ class ExceLikeTable {
     // Add event listeners
     this.attachFilterEvents(dropdown, column, originalFilters, originalRangeFilters, originalDateRangeFilters, originalFilteredData);
     
-    console.log('✅ Filter dropdown setup complete for column:', column.key);
   }
 
   createTextFilter(uniqueValues, currentFilters, column) {
@@ -1845,13 +1847,11 @@ class ExceLikeTable {
   }
 
   createDateHierarchyFilter(values, currentFilters, column) {
-    console.log('🗓️ createDateHierarchyFilter called with', values.length, 'values');
     
     // Group dates by year/month/day
     const dateGroups = this.groupDatesByHierarchy(values);
     const isAllSelected = currentFilters.length === 0;
     
-    console.log('📅 Date groups created:', Object.keys(dateGroups));
     
     // Calculate date range for slider
     const dateValues = values.filter(v => v && !isNaN(new Date(v).getTime()));
@@ -2008,18 +2008,31 @@ class ExceLikeTable {
 
     // Cancel button - restore original state
     dropdown.querySelector('.filter-btn-cancel').addEventListener('click', () => {
+      console.log('🔍 Cancel - Before restore:', {
+        filteredDataCount: this.state.filteredData.length,
+        totalDataCount: this.options.data.length,
+        hasAnyFilter: this.state.filteredData.length < this.options.data.length
+      });
+      
       this.state.filters = originalFilters;
       this.state.rangeFilters = originalRangeFilters;
       this.state.dateRangeFilters = originalDateRangeFilters;
       this.state.filteredData = originalFilteredData;
       this.state.currentPage = 1;
+      
+      console.log('🔍 Cancel - After restore:', {
+        filteredDataCount: this.state.filteredData.length,
+        totalDataCount: this.options.data.length,
+        hasAnyFilter: this.state.filteredData.length < this.options.data.length
+      });
+      
       this.renderBody();
       this.renderPagination();
       
-      // Update filter button state after restoring original state
-      this.updateFilterButtonState(column.key);
-      
       this.closeFilter();
+      
+      // Update filter button state after state restoration is complete
+      this.updateFilterButtonState(column.key);
     });
 
     // Clear column filter button
@@ -2092,6 +2105,10 @@ class ExceLikeTable {
           this.handleFilter(column.key, selectedValues);
         }
       }
+      
+      // Update filter button state after final filter application
+      this.updateFilterButtonState(column.key);
+      
       this.closeFilter();
     });
 
@@ -2174,22 +2191,15 @@ class ExceLikeTable {
     }
 
     // Range slider functionality
-    this.attachRangeSliderEvents(dropdown, column);
+    this.attachRangeSliderEvents(dropdown, column, applyRealtimeFilter);
 
     // Date range slider functionality
-    this.attachDateRangeSliderEvents(dropdown, column);
+    this.attachDateRangeSliderEvents(dropdown, column, applyRealtimeFilter);
 
     // Date hierarchy expand/collapse (only for date columns)
-    console.log('🔍 Checking date hierarchy condition:', {
-      columnKey: column.key,
-      filterType: column.filterType,
-      isDateHierarchy: column.filterType === 'date-hierarchy'
-    });
     if (column.filterType === 'date-hierarchy') {
-      console.log('✅ Date hierarchy condition met, attaching events for column:', column.key);
       this.attachDateHierarchyEvents(dropdown, column, applyRealtimeFilter);
     } else {
-      console.log('❌ Date hierarchy condition NOT met for column:', column.key);
     }
     
     // Set initial "Select All" checkbox state after dropdown is created
@@ -2398,23 +2408,15 @@ class ExceLikeTable {
     const checkbox = event.target;
     const level = this.getDateHierarchyLevel(checkbox);
     
-    console.log('🎯 Date hierarchy change detected:', {
-      level: level,
-      value: checkbox.dataset.value,
-      checked: checkbox.checked
-    });
     
     switch (level) {
       case 'year':
-        console.log('📅 Handling year checkbox change');
         this.handleYearCheckboxChange(checkbox, dropdown);
         break;
       case 'month':
-        console.log('📅 Handling month checkbox change');
         this.handleMonthCheckboxChange(checkbox, dropdown);
         break;
       case 'day':
-        console.log('📅 Handling day checkbox change');
         this.handleDayCheckboxChange(checkbox, dropdown);
         break;
       default:
@@ -2597,7 +2599,7 @@ class ExceLikeTable {
     });
   }
 
-  attachRangeSliderEvents(dropdown, column) {
+  attachRangeSliderEvents(dropdown, column, applyRealtimeFilter) {
     const slider = dropdown.querySelector('.range-slider');
     const track = dropdown.querySelector('.range-track');
     const minThumb = dropdown.querySelector('.range-thumb-min');
@@ -2639,19 +2641,15 @@ class ExceLikeTable {
       if (slider._isUpdatingFromSlider) return;
       updateSlider();
       this.updateCheckboxFromRange(dropdown, column);
-      // Apply real-time filtering if the function exists
-      if (typeof applyRealtimeFilter === 'function') {
-        applyRealtimeFilter();
-      }
+      // Apply real-time filtering (no icon state update during real-time)
+      applyRealtimeFilter();
     });
     maxInput.addEventListener('input', () => {
       if (slider._isUpdatingFromSlider) return;
       updateSlider();
       this.updateCheckboxFromRange(dropdown, column);
-      // Apply real-time filtering if the function exists
-      if (typeof applyRealtimeFilter === 'function') {
-        applyRealtimeFilter();
-      }
+      // Apply real-time filtering (no icon state update during real-time)
+      applyRealtimeFilter();
     });
 
     // Thumb drag events
@@ -2686,10 +2684,8 @@ class ExceLikeTable {
       
       updateSlider();
       this.updateCheckboxFromRange(dropdown, column);
-      // Apply real-time filtering if the function exists
-      if (typeof applyRealtimeFilter === 'function') {
-        applyRealtimeFilter();
-      }
+      // Apply real-time filtering (no icon state update during real-time)
+      applyRealtimeFilter();
     };
 
     const stopDrag = () => {
@@ -2828,7 +2824,7 @@ class ExceLikeTable {
     }
   }
 
-  attachDateRangeSliderEvents(dropdown, column) {
+  attachDateRangeSliderEvents(dropdown, column, applyRealtimeFilter) {
     const slider = dropdown.querySelector('.date-range-slider');
     const track = dropdown.querySelector('.date-range-track');
     const minThumb = dropdown.querySelector('.date-range-thumb-min');
@@ -2866,18 +2862,14 @@ class ExceLikeTable {
     minInput.addEventListener('input', () => {
       updateSlider();
       this.updateDateCheckboxFromRange(dropdown, column);
-      // Apply real-time filtering if the function exists
-      if (typeof applyRealtimeFilter === 'function') {
-        applyRealtimeFilter();
-      }
+      // Apply real-time filtering (no icon state update during real-time)
+      applyRealtimeFilter();
     });
     maxInput.addEventListener('input', () => {
       updateSlider();
       this.updateDateCheckboxFromRange(dropdown, column);
-      // Apply real-time filtering if the function exists
-      if (typeof applyRealtimeFilter === 'function') {
-        applyRealtimeFilter();
-      }
+      // Apply real-time filtering (no icon state update during real-time)
+      applyRealtimeFilter();
     });
 
     // Thumb drag events
@@ -2911,10 +2903,8 @@ class ExceLikeTable {
       
       updateSlider();
       this.updateDateCheckboxFromRange(dropdown, column);
-      // Apply real-time filtering if the function exists
-      if (typeof applyRealtimeFilter === 'function') {
-        applyRealtimeFilter();
-      }
+      // Apply real-time filtering (no icon state update during real-time)
+      applyRealtimeFilter();
     };
 
     const stopDrag = () => {
@@ -2932,14 +2922,11 @@ class ExceLikeTable {
 
 
   attachDateHierarchyEvents(dropdown, column, applyRealtimeFilter) {
-    console.log('🎛️ attachDateHierarchyEvents called for column:', column.key);
     
     // Expand level control buttons
     const expandControlButtons = dropdown.querySelectorAll('.expand-control-btn');
     const dateFilterContent = dropdown.querySelector('.date-filter-content');
     
-    console.log('🔍 Found expand control buttons:', expandControlButtons.length);
-    console.log('🔍 Found date filter content:', !!dateFilterContent);
     
     const setExpandLevel = (level) => {
       const yearGroups = dropdown.querySelectorAll('.date-filter-group');
@@ -3063,11 +3050,8 @@ class ExceLikeTable {
     }
     
     const hierarchyCheckboxes = dropdown.querySelectorAll('.date-filter-checkbox');
-    console.log('🔍 Date hierarchy checkboxes found:', hierarchyCheckboxes.length);
     hierarchyCheckboxes.forEach(checkbox => {
-      console.log('📎 Attaching hierarchy event to:', checkbox.dataset.value);
       checkbox.addEventListener('change', (e) => {
-        console.log('🔄 Date hierarchy checkbox changed:', e.target.dataset.value, 'checked:', e.target.checked);
         
         // リアルタイムフィルタリングを一時的に無効化
         const originalApplyRealtime = this._applyRealtimeOnDateChange;
