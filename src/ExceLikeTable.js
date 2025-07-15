@@ -367,12 +367,6 @@ class TableSettingsManager {
       visibleColumns: { ...table.state.visibleColumns },
       pinnedColumns: { ...table.state.pinnedColumns },
       
-      // Filter and sort settings
-      filters: { ...table.state.filters },
-      sortState: { ...table.state.sortState },
-      rangeFilters: { ...table.state.rangeFilters },
-      dateRangeFilters: { ...table.state.dateRangeFilters },
-      
       // Display settings
       fontSize: table.state.fontSize,
       cellPadding: table.state.cellPadding,
@@ -406,19 +400,7 @@ class TableSettingsManager {
         Object.assign(table.state.pinnedColumns, settings.pinnedColumns);
       }
 
-      // Apply filter and sort settings
-      if (settings.filters) {
-        Object.assign(table.state.filters, settings.filters);
-      }
-      if (settings.sortState) {
-        Object.assign(table.state.sortState, settings.sortState);
-      }
-      if (settings.rangeFilters) {
-        Object.assign(table.state.rangeFilters, settings.rangeFilters);
-      }
-      if (settings.dateRangeFilters) {
-        Object.assign(table.state.dateRangeFilters, settings.dateRangeFilters);
-      }
+      // Filters and sort settings are not persisted - they reset on reload
 
       // Apply display settings
       if (settings.fontSize) {
@@ -1090,6 +1072,7 @@ class ExceLikeTable {
       if (filters && filters.length > 0) {
         const column = this.options.columns.find(col => col.key === columnKey);
         if (column) {
+          
           if (column.filterType === 'date-hierarchy') {
             // Date hierarchy filter logic
             filtered = filtered.filter(record => {
@@ -1493,8 +1476,8 @@ class ExceLikeTable {
     }
     const success = await this.settingsManager.loadSettings(this);
     if (success) {
-      // Reapply data filtering and sorting after loading settings
-      this.applyFiltersAndSort();
+      // No need to reapply filters/sorting since they're not persisted
+      this.render();
     }
     return success;
   }
@@ -2666,7 +2649,9 @@ class ExceLikeTable {
       if (!isDragging || !currentThumb) return;
       
       const rect = slider.getBoundingClientRect();
-      const x = e.clientX - rect.left;
+      // Handle both mouse and touch events
+      const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+      const x = clientX - rect.left;
       const percent = Math.max(0, Math.min(100, (x / rect.width) * 100));
       const value = min + (percent / 100) * range;
       
@@ -2693,10 +2678,17 @@ class ExceLikeTable {
       currentThumb = null;
     };
 
+    // Mouse events
     minThumb.addEventListener('mousedown', (e) => startDrag(e, minThumb));
     maxThumb.addEventListener('mousedown', (e) => startDrag(e, maxThumb));
     document.addEventListener('mousemove', drag);
     document.addEventListener('mouseup', stopDrag);
+    
+    // Touch events for mobile support
+    minThumb.addEventListener('touchstart', (e) => startDrag(e, minThumb), { passive: false });
+    maxThumb.addEventListener('touchstart', (e) => startDrag(e, maxThumb), { passive: false });
+    document.addEventListener('touchmove', drag, { passive: false });
+    document.addEventListener('touchend', stopDrag);
   }
 
   updateRangeFromCheckbox(dropdown, column) {
@@ -2886,7 +2878,9 @@ class ExceLikeTable {
       if (!isDragging || !currentThumb) return;
       
       const rect = slider.getBoundingClientRect();
-      const x = e.clientX - rect.left;
+      // Handle both mouse and touch events
+      const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+      const x = clientX - rect.left;
       const percent = Math.max(0, Math.min(100, (x / rect.width) * 100));
       const timestamp = minDate + (percent / 100) * range;
       const dateValue = new Date(timestamp).toISOString().split('T')[0];
@@ -2912,10 +2906,17 @@ class ExceLikeTable {
       currentThumb = null;
     };
 
+    // Mouse events
     minThumb.addEventListener('mousedown', (e) => startDrag(e, minThumb));
     maxThumb.addEventListener('mousedown', (e) => startDrag(e, maxThumb));
     document.addEventListener('mousemove', drag);
     document.addEventListener('mouseup', stopDrag);
+    
+    // Touch events for mobile support
+    minThumb.addEventListener('touchstart', (e) => startDrag(e, minThumb), { passive: false });
+    maxThumb.addEventListener('touchstart', (e) => startDrag(e, maxThumb), { passive: false });
+    document.addEventListener('touchmove', drag, { passive: false });
+    document.addEventListener('touchend', stopDrag);
   }
 
   // Duplicate method removed - keeping the first implementation with parent checkbox updates

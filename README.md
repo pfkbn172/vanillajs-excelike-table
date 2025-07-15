@@ -293,9 +293,12 @@ When `persistSettings: true` is enabled, the following user preferences are auto
 - **列幅** (Column Widths): User-adjusted column widths
 - **表示列設定** (Column Visibility): Hidden/visible column states  
 - **固定列設定** (Column Pinning): Left-pinned column configurations
-- **ソート・フィルタの設定状況** (Sort & Filter State): Active sorting and filtering settings
 - **文字サイズ** (Font Size): User-selected text size preferences
 - **パディング** (Cell Padding): Cell spacing configurations
+- **ページサイズ** (Page Size): Items per page setting
+
+#### 🔄 **Non-Persisted Settings**
+- **ソート・フィルタの設定状況** (Sort & Filter State): Reset on page reload (standard behavior)
 
 #### 🔧 **Configuration**
 ```javascript

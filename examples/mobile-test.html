@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📱 モバイルタッチ操作テスト - ExceLikeTable</title>
+  <link rel="stylesheet" href="../dist/excelike-table.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .test-header {
+      text-align: center;
+      margin-bottom: 20px;
+      padding: 16px;
+      background: linear-gradient(135deg, #1890ff, #40a9ff);
+      color: white;
+      border-radius: 8px;
+    }
+    .test-instructions {
+      background: #e6f7ff;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border-left: 4px solid #1890ff;
+    }
+    .test-steps {
+      background: #fff2e8;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border-left: 4px solid #fa8c16;
+    }
+    .table-container {
+      height: 500px;
+      border: 1px solid #d9d9d9;
+      border-radius: 8px;
+      margin-top: 16px;
+      overflow: hidden;
+    }
+    .debug-panel {
+      background: #f6f6f6;
+      padding: 16px;
+      border-radius: 8px;
+      margin-top: 20px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .status-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    .status-success { background-color: #52c41a; }
+    .status-warning { background-color: #faad14; }
+    .status-error { background-color: #ff4d4f; }
+    
+    /* モバイル対応 */
+    @media (max-width: 768px) {
+      body { padding: 10px; }
+      .container { padding: 15px; }
+      .table-container { height: 400px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="test-header">
+      <h1>📱 モバイルタッチ操作テスト</h1>
+      <p>スライダーのタッチ操作を検証します</p>
+    </div>
+
+    <div class="test-instructions">
+      <h3>📋 テスト手順</h3>
+      <ol>
+        <li>デベロッパーツール（コンソール）を開く</li>
+        <li>下のテーブルで「給与」列のフィルターボタン（🔽）をタップ</li>
+        <li>スライダーのつまみを指でドラッグしてテスト</li>
+        <li>リアルタイムでテーブルが更新されることを確認</li>
+        <li>「入社日」列でも同様にテスト</li>
+      </ol>
+    </div>
+
+    <div class="test-steps">
+      <h3>🔍 確認ポイント</h3>
+      <ul>
+        <li><span class="status-indicator status-success"></span><strong>タッチ開始:</strong> コンソールに "👆 Touch start detected!" が表示</li>
+        <li><span class="status-indicator status-success"></span><strong>タッチ移動:</strong> コンソールに "👉 Touch move:" が連続表示</li>
+        <li><span class="status-indicator status-success"></span><strong>リアルタイム更新:</strong> テーブルの行数がリアルタイムで変化</li>
+        <li><span class="status-indicator status-success"></span><strong>スムーズな操作:</strong> つまみが指に追従して移動</li>
+      </ul>
+    </div>
+
+    <div class="table-container" id="table-container"></div>
+
+    <div class="debug-panel" id="debug-panel">
+      <strong>🔧 デバッグ情報:</strong><br>
+      コンソールを開いて詳細ログを確認してください。
+    </div>
+  </div>
+
+  <script src="../dist/excelike-table.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // テストデータ
+      const testData = [
+        { id: 1, name: '田中 太郎', department: '開発部', salary: 850000, joinDate: '2020-04-01', status: 'Active' },
+        { id: 2, name: '佐藤 花子', department: 'デザイン部', salary: 720000, joinDate: '2021-07-15', status: 'Active' },
+        { id: 3, name: '鈴木 次郎', department: '営業部', salary: 680000, joinDate: '2022-01-20', status: 'Pending' },
+        { id: 4, name: '高橋 美咲', department: '開発部', salary: 780000, joinDate: '2020-11-10', status: 'Active' },
+        { id: 5, name: '山田 一郎', department: 'マーケティング部', salary: 750000, joinDate: '2023-03-05', status: 'Active' },
+        { id: 6, name: '渡辺 京子', department: 'デザイン部', salary: 690000, joinDate: '2021-12-01', status: 'Inactive' },
+        { id: 7, name: '伊藤 健太', department: '開発部', salary: 920000, joinDate: '2019-08-22', status: 'Active' },
+        { id: 8, name: '小林 愛美', department: '人事部', salary: 710000, joinDate: '2022-05-18', status: 'Active' },
+        { id: 9, name: '加藤 雄二', department: '営業部', salary: 880000, joinDate: '2020-02-14', status: 'Active' },
+        { id: 10, name: '松本 さくら', department: 'マーケティング部', salary: 760000, joinDate: '2024-01-15', status: 'Pending' },
+        { id: 11, name: '林 大輔', department: '開発部', salary: 830000, joinDate: '2021-09-30', status: 'Active' },
+        { id: 12, name: '木村 理恵', department: '人事部', salary: 740000, joinDate: '2020-06-12', status: 'Active' },
+        { id: 13, name: '斎藤 雅之', department: '営業部', salary: 720000, joinDate: '2023-08-07', status: 'Active' },
+        { id: 14, name: '中村 奈美', department: 'デザイン部', salary: 700000, joinDate: '2022-11-25', status: 'Active' },
+        { id: 15, name: '原田 博文', department: 'マーケティング部', salary: 810000, joinDate: '2019-12-03', status: 'Active' }
+      ];
+
+      // 列定義
+      const columns = [
+        ColumnHelpers.text('name', '氏名', { width: 120 }),
+        ColumnHelpers.text('department', '部署', { width: 120 }),
+        ColumnHelpers.number('salary', '給与', { 
+          width: 120, 
+          currency: '¥',
+          filterable: true,
+          filterType: 'numeric'
+        }),
+        ColumnHelpers.date('joinDate', '入社日', { 
+          width: 120,
+          filterable: true,
+          filterType: 'date-hierarchy'
+        }),
+        ColumnHelpers.status('status', 'ステータス', {
+          'Active': '#52c41a',
+          'Pending': '#faad14',
+          'Inactive': '#ff4d4f'
+        }, { width: 100 })
+      ];
+
+      // テーブル初期化
+      try {
+        const table = new ExceLikeTable('#table-container', {
+          preset: 'excel',
+          data: testData,
+          columns: columns,
+          rowKey: 'id',
+          tableId: 'mobile-test-table',
+          pagination: { pageSize: 10 },
+          persistSettings: false // テスト用に設定保存を無効
+        });
+
+        console.log('✅ モバイルテスト用テーブルが初期化されました');
+        console.log('📱 デバイス情報:');
+        console.log('  User Agent:', navigator.userAgent);
+        console.log('  Touch Support:', 'ontouchstart' in window);
+        console.log('  Screen Size:', screen.width + 'x' + screen.height);
+        console.log('  Viewport:', window.innerWidth + 'x' + window.innerHeight);
+
+        // デバッグパネル更新
+        const debugPanel = document.getElementById('debug-panel');
+        debugPanel.innerHTML = `
+          <strong>🔧 デバッグ情報:</strong><br>
+          📱 タッチサポート: ${'ontouchstart' in window ? '✅ 対応' : '❌ 非対応'}<br>
+          📺 画面サイズ: ${screen.width}x${screen.height}<br>
+          🖼️ ビューポート: ${window.innerWidth}x${window.innerHeight}<br>
+          🌐 ブラウザ: ${navigator.userAgent.includes('Mobile') ? 'モバイル' : 'デスクトップ'}<br>
+          <small>詳細ログはコンソールを確認してください</small>
+        `;
+
+      } catch (error) {
+        console.error('❌ テーブル初期化エラー:', error);
+        document.getElementById('table-container').innerHTML = 
+          '<p style="text-align: center; color: red; padding: 20px;">テーブルの初期化に失敗しました</p>';
+      }
+    });
+  </script>
+</body>
+</html>

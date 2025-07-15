@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Filter Restoration Issue</title>
+    <link rel="stylesheet" href="src/ExceLikeTable.css">
+</head>
+<body>
+    <h1>Debug Filter Restoration Issue</h1>
+    <div id="debug-info"></div>
+    <button onclick="clearDebugStorage()">Clear Debug Storage</button>
+    <button onclick="analyzeFilters()">Analyze Current Filters</button>
+    <div id="table-container" style="height: 400px; border: 1px solid #ddd; margin: 20px 0;"></div>
+    
+    <script src="src/ExceLikeTable.js"></script>
+    <script>
+        // Generate minimal test data for debugging
+        const testData = [
+            { id: 1, salary: 50000, experience: 1 },
+            { id: 2, salary: 60000, experience: 2 },
+            { id: 3, salary: 70000, experience: 3 },
+            { id: 4, salary: 80000, experience: 4 },
+            { id: 5, salary: 90000, experience: 5 }
+        ];
+
+        const columns = [
+            {
+                key: 'id',
+                title: 'ID',
+                dataIndex: 'id',
+                width: 80,
+                sortable: true,
+                filterable: true
+            },
+            {
+                key: 'salary',
+                title: 'Salary',
+                dataIndex: 'salary',
+                width: 120,
+                sortable: true,
+                filterable: true,
+                render: (value) => `$${value.toLocaleString()}`
+            },
+            {
+                key: 'experience',
+                title: 'Experience (Years)',
+                dataIndex: 'experience',
+                width: 140,
+                sortable: true,
+                filterable: true,
+                render: (value) => `${value} years`
+            }
+        ];
+
+        console.log('=== INITIALIZING DEBUG TABLE ===');
+        console.log('Test data:', testData);
+
+        let table;
+
+        function initTable() {
+            // Clear previous instance
+            if (table) {
+                table.destroy();
+            }
+
+            table = new ExceLikeTable('#table-container', {
+                data: testData,
+                columns: columns,
+                rowKey: 'id',
+                pagination: {
+                    pageSize: 10
+                },
+                bordered: true,
+                tableId: 'debug-filter-test',
+                persistSettings: true
+            });
+
+            // Add debug hooks
+            addDebugHooks();
+        }
+
+        function addDebugHooks() {
+            // Hook into filter handling
+            const originalHandleFilter = table.handleFilter.bind(table);
+            table.handleFilter = function(columnKey, filters) {
+                console.log(`\n=== FILTER UPDATE: ${columnKey} ===`);
+                console.log('Raw filters:', filters);
+                console.log('Filter types:', filters.map(f => `${f} (${typeof f})`));
+                
+                const result = originalHandleFilter(columnKey, filters);
+                
+                console.log('State after filter update:');
+                console.log('  state.filters:', this.state.filters);
+                console.log('  state.rangeFilters:', this.state.rangeFilters);
+                
+                return result;
+            };
+
+            // Hook into showFilterDropdown to see restoration
+            const originalShowFilterDropdown = table.showFilterDropdown.bind(table);
+            table.showFilterDropdown = function(column, button) {
+                console.log(`\n=== OPENING FILTER DROPDOWN: ${column.key} ===`);
+                console.log('Column:', column);
+                console.log('Current filters for column:', this.state.filters[column.key]);
+                console.log('Current range filters for column:', this.state.rangeFilters[column.key]);
+                console.log('isNumericColumn result:', this.isNumericColumn(column));
+                
+                // Get unique values
+                const uniqueValues = [...new Set(this.state.data.map(item => item[column.dataIndex]))];
+                console.log('Unique values:', uniqueValues);
+                console.log('Unique value types:', uniqueValues.map(v => `${v} (${typeof v})`));
+                
+                return originalShowFilterDropdown(column, button);
+            };
+
+            // Hook into createRangeFilter to see checkbox creation
+            const originalCreateRangeFilter = table.createRangeFilter.bind(table);
+            table.createRangeFilter = function(column, uniqueValues) {
+                console.log(`\n=== CREATING RANGE FILTER: ${column.key} ===`);
+                console.log('Unique values passed to createRangeFilter:', uniqueValues);
+                console.log('Current filters:', this.state.filters[column.key] || []);
+                
+                const result = originalCreateRangeFilter(column, uniqueValues);
+                
+                // After HTML creation, let's check what checkboxes were created
+                setTimeout(() => {
+                    const dropdown = document.querySelector('.filter-dropdown-wrapper');
+                    if (dropdown) {
+                        const checkboxes = dropdown.querySelectorAll('.filter-checkbox:not([data-value="__all__"])');
+                        console.log('Checkboxes created:');
+                        checkboxes.forEach(cb => {
+                            console.log(`  data-value="${cb.dataset.value}" checked=${cb.checked} (value type: ${typeof cb.dataset.value})`);
+                        });
+                    }
+                }, 100);
+                
+                return result;
+            };
+        }
+
+        function clearDebugStorage() {
+            localStorage.removeItem('excelike_debug-filter-test');
+            console.log('Debug storage cleared');
+            location.reload();
+        }
+
+        function analyzeFilters() {
+            console.log('\n=== CURRENT TABLE STATE ===');
+            console.log('Filters:', table.state.filters);
+            console.log('Range filters:', table.state.rangeFilters);
+            console.log('Date range filters:', table.state.dateRangeFilters);
+            
+            // Check localStorage
+            const stored = localStorage.getItem('excelike_debug-filter-test');
+            if (stored) {
+                console.log('\n=== STORED SETTINGS ===');
+                try {
+                    const parsed = JSON.parse(stored);
+                    console.log('Stored filters:', parsed.filters);
+                    console.log('Stored range filters:', parsed.rangeFilters);
+                } catch (e) {
+                    console.error('Failed to parse stored settings:', e);
+                }
+            } else {
+                console.log('No stored settings found');
+            }
+
+            // Update debug info
+            document.getElementById('debug-info').innerHTML = `
+                <h3>Current State</h3>
+                <pre>${JSON.stringify({
+                    filters: table.state.filters,
+                    rangeFilters: table.state.rangeFilters,
+                    stored: stored ? JSON.parse(stored) : null
+                }, null, 2)}</pre>
+            `;
+        }
+
+        // Initialize table on load
+        initTable();
+
+        // Analyze on page load
+        setTimeout(analyzeFilters, 500);
+
+        console.log(`
+=== DEBUGGING INSTRUCTIONS ===
+1. Apply filters to both Salary and Experience columns
+2. Refresh the page to test restoration
+3. Check console logs for detailed analysis
+4. Use "Analyze Current Filters" button to inspect state
+5. Use "Clear Debug Storage" to reset
+        `);
+    </script>
+</body>
+</html>
