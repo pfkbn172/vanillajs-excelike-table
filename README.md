@@ -229,6 +229,17 @@ The library uses CSS classes that can be customized:
 .column-settings-modal { }
 ```
 
+## 🧪 Live Demo
+
+**Comprehensive Demo**: Open `test-all-features.html` in your browser to see all features in action:
+- Plugin Architecture & Management
+- WebWorker Background Processing  
+- Virtual Scrolling for Large Datasets
+- Theme System & Internationalization
+- Security Features & Accessibility
+- Export Functionality
+- Performance Testing & Benchmarks
+
 ## 📱 Examples
 
 ### Basic Table
@@ -320,6 +331,25 @@ const table = new ExceLikeTable('#my-table', {
 
 ## 🔧 Development
 
+### 🚨 **Important: Development Workflow**
+
+**ALWAYS follow this workflow when making changes:**
+
+1. **Edit source files**: Modify `src/ExceLikeTable.js` (never edit `dist/` files directly!)
+2. **Build the library**: Run `npm run build` to generate `dist/` files
+3. **Test changes**: The HTML files load from `dist/`, so changes appear only after building
+
+```bash
+# Example workflow:
+vim src/ExceLikeTable.js     # 1. Edit source
+npm run build                # 2. Build dist files
+# 3. Your changes are now live!
+```
+
+⚠️ **Common Mistake:**
+- ❌ Wrong: Editing dist/excelike-table.js directly
+- ✅ Correct: Edit src/ExceLikeTable.js → run npm run build
+
 ### Build from Source
 ```bash
 # Install dependencies
@@ -336,13 +366,30 @@ npm run dev
 ```
 vanilla-excelike-table/
 ├── src/
-│   ├── ExceLikeTable.js    # Main library file
-│   └── ExceLikeTable.css   # Styles
-├── dist/                   # Built files
-├── examples/               # Example HTML files
-├── scripts/                # Build scripts
+│   ├── ExceLikeTable.js          # Main table class
+│   ├── ExceLikeTable.css         # Core styles
+│   ├── plugin-system.js          # Plugin architecture
+│   ├── webworker-support.js      # Background processing
+│   ├── virtual-scroll.js         # Large dataset handling
+│   ├── accessibility.js          # WCAG compliance
+│   ├── i18n.js                   # Internationalization
+│   ├── theme-system.js           # Dynamic theming
+│   ├── export-module.js          # Data export
+│   ├── types.ts                  # TypeScript definitions
+│   └── plugins/                  # Sample plugins
+├── dist/                         # Generated build files
+├── tests/                        # Jest test suite
+├── examples/                     # Example HTML files
+├── scripts/                      # Build and dev scripts
+├── test-all-features.html        # 🚀 Comprehensive demo
 └── README.md
 ```
+
+### For AI/Human Developers
+- **Source of Truth**: `src/` directory contains the editable source code
+- **Production Files**: `dist/` directory contains built files (auto-generated)
+- **HTML imports**: Always reference `dist/` files in HTML
+- **Development rule**: src → build → dist (one-way flow)
 
 ## 📄 License
 

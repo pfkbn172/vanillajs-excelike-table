@@ -21,7 +21,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .table-loading {
@@ -42,8 +42,11 @@
 .table-container {
   position: relative;
   overflow: auto;
+  overflow-x: auto;
+  overflow-y: auto;
   flex: 1;
   min-height: 0;
+  width: 100%;
 }
 
 /* Sticky header for fixed height tables */
@@ -59,11 +62,12 @@
 }
 
 .table {
-  width: 100%;
+  width: auto;
+  min-width: 100%;
   border-collapse: collapse;
   background-color: #fff;
   font-size: 14px;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 .table.bordered {
@@ -107,7 +111,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  min-height: 20px;
+  min-height: 32px;
   position: relative;
 }
 
@@ -122,9 +126,9 @@
 
 .header-controls {
   display: flex;
-  align-items: center;
-  gap: 4px;
+  align-items: stretch;
   flex-shrink: 0;
+  height: 100%;
 }
 
 .sort-controls {
@@ -133,12 +137,14 @@
   align-items: center;
   gap: 1px;
   width: 14px;
-  height: 18px;
+  height: 100%;
+  min-height: 28px;
 }
 
 .sort-indicator {
   width: 14px;
-  height: 18px;
+  height: 100%;
+  min-height: 28px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -193,8 +199,9 @@
   cursor: pointer;
   color: rgba(0, 0, 0, 0.45);
   padding: 2px;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 100%;
+  min-height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -212,32 +219,35 @@
   background: rgba(24, 144, 255, 0.15);
 }
 
-.filter-funnel {
+.filter-btn .filter-funnel {
   width: 12px;
-  height: 14px;
+  height: 12px;
   position: relative;
-  display: block;
+  display: inline-block;
 }
 
-.filter-funnel::before {
+/* Funnel-shaped filter icon: downward triangle + thin rectangle */
+.filter-btn .filter-funnel::before {
   content: '';
   position: absolute;
-  top: 1px;
-  left: 0;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
   width: 0;
   height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 5px solid currentColor;
+  border-style: solid;
+  border-width: 6px 6px 0 6px;
+  border-color: currentColor transparent transparent transparent;
 }
 
-.filter-funnel::after {
+.filter-btn .filter-funnel::after {
   content: '';
   position: absolute;
-  bottom: 1px;
-  left: 4px;
-  width: 4px;
-  height: 7px;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 8px;
   background: currentColor;
 }
 

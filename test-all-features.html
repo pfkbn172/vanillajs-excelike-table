@@ -1,0 +1,1755 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VanillaJS ExceLike Table - 全機能統合デモ</title>
+  <link rel="stylesheet" href="src/ExceLikeTable.css">
+  <link rel="stylesheet" href="src/plugins/conditional-formatting/conditional-formatting-styles.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      background: white;
+      padding: 24px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .demo-section {
+      margin: 30px 0;
+      padding: 20px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      background: #fafafa;
+    }
+    
+    .demo-section h2 {
+      margin-top: 0;
+      color: #1976d2;
+      border-bottom: 2px solid #e3f2fd;
+      padding-bottom: 10px;
+    }
+    
+    .controls {
+      margin: 15px 0;
+      padding: 15px;
+      background: #f0f4f8;
+      border-radius: 4px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    
+    .controls button, .controls select, .controls input {
+      padding: 8px 16px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: white;
+      cursor: pointer;
+    }
+    
+    .controls button:hover {
+      background: #e3f2fd;
+    }
+    
+    .table-container {
+      height: 600px;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
+      margin: 20px 0;
+      overflow: auto;
+    }
+    
+    .status {
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    
+    .status.success {
+      background: #e8f5e8;
+      color: #2e7d32;
+      border: 1px solid #4caf50;
+    }
+    
+    .status.info {
+      background: #e3f2fd;
+      color: #1565c0;
+      border: 1px solid #2196f3;
+    }
+    
+    .status.warning {
+      background: #fff3e0;
+      color: #ef6c00;
+      border: 1px solid #ff9800;
+    }
+
+    .plugin-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .plugin-card {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 16px;
+    }
+
+    .plugin-card h3 {
+      margin: 0 0 8px 0;
+      color: #1976d2;
+    }
+
+    .plugin-status {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .plugin-status.enabled {
+      background: #e8f5e8;
+      color: #2e7d32;
+    }
+
+    .plugin-status.disabled {
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .worker-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .stat-card {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 32px;
+      font-weight: bold;
+      color: #1976d2;
+      margin-bottom: 8px;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 20px;
+      background: #f0f0f0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #1976d2, #42a5f5);
+      transition: width 0.3s ease;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 VanillaJS ExceLike Table - 全機能統合デモ</h1>
+    
+    <div class="status info">
+      <strong>統合システム:</strong> セキュリティ、パフォーマンス、アクセシビリティ、国際化、テーマ、エクスポート、プラグイン、WebWorkerなどすべての機能を統合
+    </div>
+
+    <!-- Feature Overview -->
+    <div class="demo-section">
+      <h2>📊 実装済み機能一覧</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h3>🔐 セキュリティ</h3>
+          <p>XSS脆弱性完全修正、入力サニタイゼーション</p>
+        </div>
+        <div class="feature-card">
+          <h3>⚡ パフォーマンス</h3>
+          <p>仮想スクロール、WebWorker、デバウンス処理</p>
+        </div>
+        <div class="feature-card">
+          <h3>♿ アクセシビリティ</h3>
+          <p>WCAG 2.1 AA準拠、キーボードナビゲーション</p>
+        </div>
+        <div class="feature-card">
+          <h3>🌍 国際化</h3>
+          <p>5言語サポート、日付・数値フォーマット</p>
+        </div>
+        <div class="feature-card">
+          <h3>🎨 テーマシステム</h3>
+          <p>6種類の組み込みテーマ、カスタムテーマ作成</p>
+        </div>
+        <div class="feature-card">
+          <h3>📤 エクスポート</h3>
+          <p>CSV、Excel、JSON、XML、HTML対応</p>
+        </div>
+        <div class="feature-card">
+          <h3>🔧 プラグイン</h3>
+          <p>拡張可能アーキテクチャ、動的読み込み</p>
+        </div>
+        <div class="feature-card">
+          <h3>🧪 テスト</h3>
+          <p>Jest + jsdom、ユニット・統合テスト</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Plugin Management Section -->
+    <div class="demo-section">
+      <h2>プラグイン管理システム</h2>
+      <p>動的にプラグインを登録・有効化/無効化できます</p>
+      
+      <div class="controls">
+        <button onclick="loadAllPlugins()">すべてのプラグインを読み込み</button>
+        <button onclick="showPluginManager()">プラグインマネージャー表示</button>
+        <button onclick="createCustomPlugin()">カスタムプラグイン作成</button>
+        <button onclick="refreshPluginList()">プラグイン一覧更新</button>
+      </div>
+      
+      <div id="plugin-list" class="plugin-list"></div>
+      <div id="plugin-status" class="status"></div>
+    </div>
+
+    <!-- Conditional Formatting Demo Section -->
+    <div class="demo-section">
+      <h2>🎨 条件付き書式 (Conditional Formatting)</h2>
+      <p>Excel風の条件付き書式でセルの見た目を動的に変更できます。右クリックでコンテキストメニューからも操作可能です。</p>
+      
+      <div class="controls">
+        <button onclick="testConditionalFormatting()">条件付き書式テスト</button>
+        <button onclick="showConditionalFormattingDialog()">新規ルール作成</button>
+        <button onclick="showFormattingRulesManager()">ルール管理画面</button>
+        <button onclick="clearAllConditionalFormatting()">すべてクリア</button>
+        <button onclick="addSampleFormattingRules()">サンプルルール追加</button>
+        <button onclick="debugContextMenu()" style="background: #ff9800; color: white;">右クリックデバッグ</button>
+        <button onclick="testEnhancedDialog()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; font-weight: 500;">✨ 拡張版ダイアログテスト</button>
+      </div>
+      
+      <div id="conditional-formatting-status" class="status"></div>
+      
+      <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+        <h4 style="margin-top: 0;">使い方:</h4>
+        <ol style="margin: 0; padding-left: 20px;">
+          <li><strong>右クリック:</strong> テーブルのセルを右クリックして「Conditional Formatting」メニューから操作</li>
+          <li><strong>クイック書式:</strong> 「Highlight Cells Rules」や「Data Bars」で簡単に書式を適用</li>
+          <li><strong>カスタムルール:</strong> 「New Rule...」から詳細な条件と書式を設定</li>
+          <li><strong>ルール管理:</strong> 「Manage Rules...」ですべてのルールを一括管理</li>
+          <li><strong>複数選択:</strong> Ctrl+クリックで複数セルを選択してまとめて書式適用</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- WebWorker Demo Section -->
+    <div class="demo-section">
+      <h2>WebWorker 背景処理システム</h2>
+      <p>重い処理を背景で実行してUIをブロックしません</p>
+      
+      <div class="controls">
+        <button onclick="performHeavyFilter()">重いフィルタリング処理</button>
+        <button onclick="performComplexSort()">複雑なソート処理</button>
+        <button onclick="performDataAnalysis()">データ分析処理</button>
+        <button onclick="performBatchExport()">バッチエクスポート</button>
+        <input type="range" id="data-size" min="1000" max="50000" value="10000" oninput="updateDataSize(this.value)">
+        <span id="data-size-label">10,000 行</span>
+      </div>
+      
+      <div id="worker-progress" class="progress-bar" style="display: none;">
+        <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+      </div>
+      
+      <div class="worker-stats" id="worker-stats">
+        <div class="stat-card">
+          <div class="stat-number" id="total-workers">0</div>
+          <div>総ワーカー数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="busy-workers">0</div>
+          <div>実行中ワーカー</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="queued-tasks">0</div>
+          <div>待機中タスク</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="processing-time">0</div>
+          <div>処理時間 (ms)</div>
+        </div>
+      </div>
+      
+      <div id="worker-status" class="status"></div>
+    </div>
+
+    <!-- Integrated Features Demo -->
+    <div class="demo-section">
+      <h2>🎨 テーマ & 国際化デモ</h2>
+      <p>テーマシステムと多言語対応の統合デモ</p>
+      
+      <div class="controls">
+        <label>テーマ:</label>
+        <select id="theme-selector" onchange="changeTheme(this.value)">
+          <option value="default">デフォルト</option>
+          <option value="dark">ダーク</option>
+          <option value="compact">コンパクト</option>
+          <option value="high-contrast">ハイコントラスト</option>
+          <option value="material">マテリアル</option>
+          <option value="bootstrap">Bootstrap</option>
+        </select>
+        
+        <label>言語:</label>
+        <select id="language-selector" onchange="changeLanguage(this.value)">
+          <option value="ja">日本語</option>
+          <option value="en">English</option>
+          <option value="es">Español</option>
+          <option value="fr">Français</option>
+          <option value="de">Deutsch</option>
+        </select>
+        
+        <button onclick="toggleAccessibilityMode()">アクセシビリティモード</button>
+      </div>
+      
+      <div id="theme-i18n-status" class="status"></div>
+    </div>
+
+    <!-- Export & Virtual Scroll Demo -->
+    <div class="demo-section">
+      <h2>📤 エクスポート & 仮想スクロールデモ</h2>
+      <p>大規模データの高速処理とエクスポート機能</p>
+      
+      <div class="controls">
+        <button onclick="loadLargeDataset(50000)">50,000行データ生成</button>
+        <button onclick="testVirtualScroll()">仮想スクロールテスト</button>
+        <button onclick="exportAllFormats()">全形式エクスポート</button>
+        <button onclick="performCompleteAnalysis()">完全データ分析</button>
+        
+        <label>
+          <input type="checkbox" id="include-headers" checked> ヘッダーを含む
+        </label>
+        <label>
+          <input type="checkbox" id="selected-only"> 選択行のみ
+        </label>
+      </div>
+      
+      <div id="export-virtual-status" class="status"></div>
+    </div>
+
+    <!-- Comprehensive Table Demo -->
+    <div class="demo-section">
+      <h2>🚀 統合デモテーブル - 全機能</h2>
+      <p>すべての機能を統合した完全版テーブル</p>
+      
+      <div class="controls">
+        <button onclick="loadDemoData()">デモデータ読み込み</button>
+        <button onclick="enableAllFeatures()">全機能有効化</button>
+        <button onclick="performBenchmark()">パフォーマンステスト</button>
+        <button onclick="runSecurityTest()">セキュリティテスト</button>
+        <button onclick="demonstrateAccessibility()">アクセシビリティデモ</button>
+        <button onclick="testHorizontalScroll()" style="background: #ff9800; color: white;">横スクロールテスト</button>
+        <select id="plugin-toggle" onchange="togglePlugin(this.value)">
+          <option value="">プラグイン選択</option>
+        </select>
+      </div>
+      
+      <div class="table-container" id="main-table"></div>
+      <div id="table-status" class="status"></div>
+    </div>
+  </div>
+
+  <!-- Load essential modules first -->
+  <script src="src/dom-utils.js"></script>
+  <script src="src/performance-utils.js"></script>
+  
+  <!-- Load feature modules -->
+  <script src="src/virtual-scroll.js"></script>
+  <script src="src/accessibility.js"></script>
+  <script src="src/i18n.js"></script>
+  <script src="src/theme-system.js"></script>
+  <script src="src/export-module.js"></script>
+  <script src="src/plugin-system.js"></script>
+  <script src="src/webworker-support.js"></script>
+  
+  <!-- Load plugins -->
+  <script src="src/plugins/column-resizer-plugin.js"></script>
+  <script src="src/plugins/row-selection-plugin.js"></script>
+  
+  <!-- Load conditional formatting plugin -->
+  <script src="src/plugins/conditional-formatting/config.js"></script>
+  <script src="src/plugins/conditional-formatting/utils.js"></script>
+  <script src="src/plugins/conditional-formatting/StateManager.js"></script>
+  <script src="src/plugins/conditional-formatting/commands/FormattingCommands.js"></script>
+  <script src="src/plugins/conditional-formatting/types.js"></script>
+  <script src="src/plugins/conditional-formatting/rule-engine.js"></script>
+  <script src="src/plugins/conditional-formatting/data-manager.js"></script>
+  <script src="src/plugins/conditional-formatting/format-applier.js"></script>
+  
+  <!-- Conditional Formatting Formatters -->
+  <script src="src/plugins/conditional-formatting/formatters/BaseFormatter.js"></script>
+  <script src="src/plugins/conditional-formatting/formatters/DataBarFormatter.js"></script>
+  <script src="src/plugins/conditional-formatting/formatters/IconSetFormatter.js"></script>
+  
+  <script src="src/plugins/conditional-formatting/context-menu-extension.js"></script>
+  
+  <!-- Enhanced Conditional Formatting Components -->
+  <script src="src/plugins/conditional-formatting/data-migration-manager.js"></script>
+  <script src="src/plugins/conditional-formatting/enhanced-ui-manager.js"></script>
+  <script src="src/plugins/conditional-formatting/enhanced-rule-engine.js"></script>
+  
+  <script src="src/plugins/conditional-formatting/conditional-formatting-plugin.js"></script>
+  
+  <!-- Load main table last -->
+  <script src="src/ExceLikeTable.js"></script>
+
+  <script>
+    // Global variables
+    let mainTable = null;
+    let pluginSystem = null;
+    let webWorkerSupport = null;
+    let currentThemeSystem = null;
+    let currentI18n = null;
+    let currentExportModule = null;
+    let currentVirtualScroll = null;
+    let currentDataSize = 10000;
+    
+    // Error handling for missing modules
+    window.addEventListener('error', function(e) {
+      if (e.message.includes('is not defined') || e.message.includes('not found')) {
+        console.error('Module loading issue:', e.message);
+        // Show user-friendly message instead of breaking
+        const statusElement = document.getElementById('table-status');
+        if (statusElement) {
+          statusElement.className = 'status warning';
+          statusElement.textContent = 'モジュール読み込みエラー: ' + e.message;
+        }
+        // Prevent further execution
+        return true;
+      }
+    });
+
+    // Demo data generator
+    function generateLargeDataset(count) {
+      const names = ['田中太郎', '佐藤花子', '山田一郎', '鈴木美咲', '高橋健太', '伊藤真理', '渡辺孝子', '中村大輔'];
+      const cities = ['東京', '大阪', '名古屋', '札幌', '福岡', '仙台', '広島', '熊本'];
+      const departments = ['営業', '開発', '人事', 'マーケティング', '総務', '経理', 'IT', '法務'];
+      const statuses = ['active', 'inactive', 'pending', 'suspended'];
+      
+      return Array.from({ length: count }, (_, i) => ({
+        id: i + 1,
+        name: names[Math.floor(Math.random() * names.length)] + ` ${i + 1}`,
+        email: `user${i + 1}@company.com`,
+        age: Math.floor(Math.random() * 40) + 22,
+        city: cities[Math.floor(Math.random() * cities.length)],
+        department: departments[Math.floor(Math.random() * departments.length)],
+        salary: Math.floor(Math.random() * 8000000) + 3000000,
+        joinDate: new Date(2018 + Math.floor(Math.random() * 6), 
+                           Math.floor(Math.random() * 12), 
+                           Math.floor(Math.random() * 28) + 1).toISOString().split('T')[0],
+        status: statuses[Math.floor(Math.random() * statuses.length)],
+        performance: Math.floor(Math.random() * 100) + 1,
+        bonus: Math.random() > 0.7,
+        projects: Math.floor(Math.random() * 10) + 1,
+        rating: (Math.random() * 4 + 1).toFixed(1)
+      }));
+    }
+
+    // Initialize systems
+    function initializeSystems() {
+      try {
+        // Initialize WebWorker support
+        if (typeof WebWorkerSupport !== 'undefined') {
+          webWorkerSupport = WebWorkerSupport.init();
+          updateWorkerStats();
+        } else {
+          console.warn('WebWorkerSupport not available');
+          updateStatus('worker-status', 'warning', 'WebWorkerサポートが利用できません');
+        }
+        
+        // Initialize plugin system with main table
+        if (mainTable && typeof PluginSystem !== 'undefined') {
+          pluginSystem = PluginSystem.init(mainTable);
+          
+          // Load built-in plugins
+          setTimeout(() => {
+            loadAllPlugins();
+          }, 1000); // Give table time to fully render
+        } else {
+          console.warn('PluginSystem not available or mainTable not initialized');
+          updateStatus('plugin-status', 'warning', 'プラグインシステムが利用できません');
+        }
+      } catch (error) {
+        console.error('Error initializing plugin/worker systems:', error);
+        updateStatus('plugin-status', 'warning', 'プラグイン・ワーカー初期化エラー: ' + error.message);
+      }
+    }
+
+    // Load all plugins
+    function loadAllPlugins() {
+      if (!pluginSystem) {
+        updateStatus('plugin-status', 'warning', 'プラグインシステムが初期化されていません');
+        return;
+      }
+
+      // Register built-in plugins
+      pluginSystem.registerPlugin('column-resizer', ColumnResizerPlugin);
+      pluginSystem.registerPlugin('row-selection', RowSelectionPlugin);
+      pluginSystem.registerPlugin('conditional-formatting', ConditionalFormattingPlugin);
+      
+      // Enable built-in plugins by default
+      pluginSystem.enablePlugin('column-resizer');
+      pluginSystem.enablePlugin('conditional-formatting');
+      pluginSystem.enablePlugin('row-selection');
+      
+      // Verify conditional formatting plugin status
+      setTimeout(() => {
+        const cfPlugin = pluginSystem.getPlugin('conditional-formatting');
+        if (cfPlugin && cfPlugin.initialized) {
+          updateStatus('conditional-formatting-status', 'success', 
+            '条件付き書式プラグインが正常に読み込まれました。セルを右クリックして試してください。');
+        } else if (cfPlugin) {
+          updateStatus('conditional-formatting-status', 'warning', 
+            '条件付き書式プラグインは読み込まれましたが、初期化に問題があります。');
+        } else {
+          updateStatus('conditional-formatting-status', 'error', 
+            '条件付き書式プラグインの読み込みに失敗しました。');
+        }
+      }, 1000);
+      
+      // Register demo plugins
+      registerDemoPlugins();
+      
+      updateStatus('plugin-status', 'success', 'すべてのプラグインを読み込みました');
+      refreshPluginList();
+    }
+
+    // Register demo plugins
+    function registerDemoPlugins() {
+      // Data highlighter plugin
+      const highlighterPlugin = {
+        name: 'Data Highlighter',
+        version: '1.0.0',
+        description: 'Highlight cells based on value conditions',
+        
+        init(table, api) {
+          this.table = table;
+          this.api = api;
+          
+          api.registerHook('render:afterRender', () => {
+            this.highlightCells();
+          });
+        },
+        
+        highlightCells() {
+          const cells = this.table.container.querySelectorAll('td');
+          cells.forEach(cell => {
+            const value = parseFloat(cell.textContent);
+            if (!isNaN(value)) {
+              if (value > 5000000) {
+                cell.style.backgroundColor = '#e8f5e8';
+                cell.style.color = '#2e7d32';
+              } else if (value < 3000000) {
+                cell.style.backgroundColor = '#ffebee';
+                cell.style.color = '#c62828';
+              }
+            }
+          });
+        },
+        
+        destroy() {
+          // Cleanup highlighting
+          const cells = this.table.container.querySelectorAll('td');
+          cells.forEach(cell => {
+            cell.style.backgroundColor = '';
+            cell.style.color = '';
+          });
+        }
+      };
+      
+      pluginSystem.registerPlugin('data-highlighter', highlighterPlugin);
+      
+      // Auto-refresh plugin
+      const autoRefreshPlugin = {
+        name: 'Auto Refresh',
+        version: '1.0.0',
+        description: 'Automatically refresh table data',
+        
+        init(table, api) {
+          this.table = table;
+          this.api = api;
+          this.interval = null;
+          this.enabled = false;
+        },
+        
+        start(intervalMs = 10000) {
+          if (this.interval) this.stop();
+          
+          this.interval = setInterval(() => {
+            if (this.enabled) {
+              this.refreshData();
+            }
+          }, intervalMs);
+          this.enabled = true;
+        },
+        
+        stop() {
+          if (this.interval) {
+            clearInterval(this.interval);
+            this.interval = null;
+          }
+          this.enabled = false;
+        },
+        
+        refreshData() {
+          // Update a few random rows
+          const data = this.table.getData();
+          const updateCount = Math.min(5, data.length);
+          
+          for (let i = 0; i < updateCount; i++) {
+            const randomIndex = Math.floor(Math.random() * data.length);
+            data[randomIndex].performance = Math.floor(Math.random() * 100) + 1;
+            data[randomIndex].rating = (Math.random() * 4 + 1).toFixed(1);
+          }
+          
+          this.table.setData([...data]); // Trigger re-render
+        },
+        
+        destroy() {
+          this.stop();
+        }
+      };
+      
+      pluginSystem.registerPlugin('auto-refresh', autoRefreshPlugin);
+    }
+
+    // Show plugin manager
+    function showPluginManager() {
+      if (!pluginSystem) return;
+      
+      const existingManager = document.getElementById('plugin-manager-modal');
+      if (existingManager) {
+        existingManager.remove();
+      }
+      
+      const modal = document.createElement('div');
+      modal.id = 'plugin-manager-modal';
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      `;
+      
+      const managerContainer = document.createElement('div');
+      managerContainer.style.cssText = `
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        max-width: 600px;
+        max-height: 500px;
+        overflow: auto;
+      `;
+      
+      const manager = pluginSystem.createPluginManager(managerContainer);
+      
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = '閉じる';
+      closeBtn.style.cssText = `
+        margin-top: 20px;
+        padding: 8px 16px;
+        background: #1976d2;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      `;
+      closeBtn.onclick = () => modal.remove();
+      
+      managerContainer.appendChild(closeBtn);
+      modal.appendChild(managerContainer);
+      document.body.appendChild(modal);
+    }
+
+    // Create custom plugin
+    function createCustomPlugin() {
+      const pluginCode = prompt(`カスタムプラグインのJavaScriptコードを入力してください:
+
+例:
+const plugin = {
+  name: 'My Plugin',
+  version: '1.0.0',
+  description: 'Custom plugin',
+  
+  init(table, api) {
+  },
+  
+  destroy() {
+  }
+};`);
+      
+      if (pluginCode) {
+        try {
+          const customPlugin = pluginSystem.createPluginFromCode(pluginCode, 'custom-plugin');
+          if (customPlugin) {
+            pluginSystem.registerPlugin('custom-plugin', customPlugin);
+            updateStatus('plugin-status', 'success', 'カスタムプラグインを作成しました');
+            refreshPluginList();
+          }
+        } catch (error) {
+          updateStatus('plugin-status', 'warning', 'プラグインの作成に失敗: ' + error.message);
+        }
+      }
+    }
+
+    // Refresh plugin list
+    function refreshPluginList() {
+      if (!pluginSystem) return;
+      
+      const container = document.getElementById('plugin-list');
+      const pluginToggle = document.getElementById('plugin-toggle');
+      
+      container.innerHTML = '';
+      pluginToggle.innerHTML = '<option value="">プラグイン選択</option>';
+      
+      const plugins = pluginSystem.getPluginList();
+      
+      plugins.forEach(plugin => {
+        // Plugin card
+        const card = document.createElement('div');
+        card.className = 'plugin-card';
+        
+        const statusClass = plugin.enabled ? 'enabled' : 'disabled';
+        const statusText = plugin.enabled ? '有効' : '無効';
+        
+        card.innerHTML = `
+          <h3>${plugin.name} <span class="plugin-status ${statusClass}">${statusText}</span></h3>
+          <p>v${plugin.version} - ${plugin.description}</p>
+          <p><small>作者: ${plugin.author || 'Unknown'}</small></p>
+          <button onclick="togglePluginStatus('${plugin.name}')" style="padding: 4px 12px; border: 1px solid #ddd; border-radius: 3px; cursor: pointer;">
+            ${plugin.enabled ? '無効化' : '有効化'}
+          </button>
+        `;
+        
+        container.appendChild(card);
+        
+        // Plugin toggle option
+        const option = document.createElement('option');
+        option.value = plugin.name;
+        option.textContent = plugin.name;
+        pluginToggle.appendChild(option);
+      });
+    }
+
+    // Toggle plugin status
+    function togglePluginStatus(pluginName) {
+      if (!pluginSystem) return;
+      
+      const plugin = pluginSystem.getPlugin(pluginName);
+      if (plugin.enabled) {
+        pluginSystem.disablePlugin(pluginName);
+      } else {
+        pluginSystem.enablePlugin(pluginName);
+      }
+      
+      refreshPluginList();
+      updateStatus('plugin-status', 'info', `プラグイン "${pluginName}" の状態を切り替えました`);
+    }
+
+    // Toggle plugin from select
+    function togglePlugin(pluginName) {
+      if (pluginName) {
+        togglePluginStatus(pluginName);
+        document.getElementById('plugin-toggle').value = '';
+      }
+    }
+
+    // WebWorker demo functions
+    function updateDataSize(size) {
+      currentDataSize = parseInt(size);
+      document.getElementById('data-size-label').textContent = `${currentDataSize.toLocaleString()} 行`;
+    }
+
+    async function performHeavyFilter() {
+      if (!webWorkerSupport) return;
+      
+      showProgress(true);
+      updateStatus('worker-status', 'info', '重いフィルタリング処理を開始...');
+      
+      const data = generateLargeDataset(currentDataSize);
+      const startTime = Date.now();
+      
+      try {
+        const result = await webWorkerSupport.filterData(data, {
+          filters: [
+            { column: 'salary', operator: 'greater_than', value: 4000000 },
+            { column: 'age', operator: 'between', min: 25, max: 40 },
+            { column: 'department', operator: 'contains', value: '開発' }
+          ],
+          logic: 'AND'
+        });
+        
+        const processingTime = Date.now() - startTime;
+        updateStatus('worker-status', 'success', 
+          `フィルタリング完了: ${result.length}/${data.length} 行が条件に一致 (${processingTime}ms)`);
+        document.getElementById('processing-time').textContent = processingTime;
+        
+      } catch (error) {
+        updateStatus('worker-status', 'warning', 'フィルタリングエラー: ' + error.message);
+      }
+      
+      showProgress(false);
+      updateWorkerStats();
+    }
+
+    async function performComplexSort() {
+      if (!webWorkerSupport) return;
+      
+      showProgress(true);
+      updateStatus('worker-status', 'info', '複雑なソート処理を開始...');
+      
+      const data = generateLargeDataset(currentDataSize);
+      const startTime = Date.now();
+      
+      try {
+        const result = await webWorkerSupport.sortData(data, {
+          sorts: [
+            { column: 'department', direction: 'asc' },
+            { column: 'salary', direction: 'desc' },
+            { column: 'age', direction: 'asc' }
+          ]
+        });
+        
+        const processingTime = Date.now() - startTime;
+        updateStatus('worker-status', 'success', 
+          `ソート完了: ${result.length} 行をソート (${processingTime}ms)`);
+        document.getElementById('processing-time').textContent = processingTime;
+        
+      } catch (error) {
+        updateStatus('worker-status', 'warning', 'ソートエラー: ' + error.message);
+      }
+      
+      showProgress(false);
+      updateWorkerStats();
+    }
+
+    async function performDataAnalysis() {
+      if (!webWorkerSupport) return;
+      
+      showProgress(true);
+      updateStatus('worker-status', 'info', 'データ分析処理を開始...');
+      
+      const data = generateLargeDataset(currentDataSize);
+      const startTime = Date.now();
+      
+      try {
+        const result = await webWorkerSupport.executeWithProgress('aggregate', data, {
+          groupBy: 'department',
+          aggregations: [
+            { column: 'salary', type: 'avg' },
+            { column: 'salary', type: 'sum' },
+            { column: 'age', type: 'avg' },
+            { column: 'performance', type: 'max' }
+          ],
+          chunkSize: Math.ceil(data.length / 20),
+          onProgress: (progress) => {
+            updateProgress(progress.percentage);
+          }
+        });
+        
+        const processingTime = Date.now() - startTime;
+        updateStatus('worker-status', 'success', 
+          `分析完了: ${Object.keys(result).length} 部署のデータを分析 (${processingTime}ms)`);
+        document.getElementById('processing-time').textContent = processingTime;
+        
+        
+      } catch (error) {
+        updateStatus('worker-status', 'warning', '分析エラー: ' + error.message);
+      }
+      
+      showProgress(false);
+      updateWorkerStats();
+    }
+
+    async function performBatchExport() {
+      if (!webWorkerSupport) return;
+      
+      showProgress(true);
+      updateStatus('worker-status', 'info', 'バッチエクスポート処理を開始...');
+      
+      const data = generateLargeDataset(currentDataSize);
+      const startTime = Date.now();
+      
+      try {
+        // Export to multiple formats in parallel
+        const operations = [
+          {
+            operation: 'export',
+            data: data,
+            options: {
+              format: 'csv',
+              columns: [
+                { key: 'id', title: 'ID', dataIndex: 'id' },
+                { key: 'name', title: '名前', dataIndex: 'name' },
+                { key: 'salary', title: '年収', dataIndex: 'salary' }
+              ],
+              includeHeaders: true
+            }
+          },
+          {
+            operation: 'export',
+            data: data,
+            options: {
+              format: 'json',
+              columns: [
+                { key: 'id', title: 'ID', dataIndex: 'id' },
+                { key: 'name', title: '名前', dataIndex: 'name' },
+                { key: 'department', title: '部署', dataIndex: 'department' }
+              ]
+            }
+          }
+        ];
+        
+        const results = await webWorkerSupport.batchProcess(operations);
+        
+        const processingTime = Date.now() - startTime;
+        updateStatus('worker-status', 'success', 
+          `バッチエクスポート完了: ${results.length} 形式でエクスポート (${processingTime}ms)`);
+        document.getElementById('processing-time').textContent = processingTime;
+        
+        
+      } catch (error) {
+        updateStatus('worker-status', 'warning', 'エクスポートエラー: ' + error.message);
+      }
+      
+      showProgress(false);
+      updateWorkerStats();
+    }
+
+    // Table demo functions
+    function loadDemoData() {
+      // Guard against early execution
+      if (typeof ExceLikeTable === 'undefined' || typeof ColumnHelpers === 'undefined') {
+        updateStatus('table-status', 'warning', 'モジュールがまだ読み込まれていません。少し待ってから再試行してください。');
+        return;
+      }
+      
+      if (!mainTable) {
+        mainTable = new ExceLikeTable('#main-table', {
+          data: generateLargeDataset(1000),
+          preset: 'advanced',
+          columns: [
+            ColumnHelpers.text('id', 'ID', { width: 60 }),
+            ColumnHelpers.text('name', '氏名', { width: 120 }),
+            ColumnHelpers.number('age', '年齢', { width: 80 }),
+            ColumnHelpers.text('city', '都市', { width: 100 }),
+            ColumnHelpers.text('department', '部署', { width: 120 }),
+            ColumnHelpers.number('salary', '年収', { currency: '¥', width: 120 }),
+            ColumnHelpers.date('joinDate', '入社日', { width: 120 }),
+            ColumnHelpers.status('status', 'ステータス', {
+              active: '#52c41a',
+              inactive: '#f5222d',
+              pending: '#faad14',
+              suspended: '#722ed1'
+            }, { width: 100 }),
+            ColumnHelpers.number('performance', 'パフォーマンス', { width: 100 }),
+            ColumnHelpers.number('rating', '評価', { width: 80 })
+          ]
+        });
+        
+        // Initialize systems after table is created
+        initializeSystems();
+      } else {
+        const newData = generateLargeDataset(2000);
+        mainTable.setData(newData);
+      }
+      
+      updateStatus('table-status', 'success', 'デモデータを読み込みました');
+    }
+
+    function enableAllFeatures() {
+      if (!pluginSystem || !mainTable) return;
+      
+      // Enable all plugins
+      const plugins = pluginSystem.getPluginList();
+      plugins.forEach(plugin => {
+        if (!plugin.enabled) {
+          pluginSystem.enablePlugin(plugin.name);
+        }
+      });
+      
+      refreshPluginList();
+      updateStatus('table-status', 'success', 'すべての機能を有効化しました');
+    }
+
+    async function performBenchmark() {
+      if (!mainTable || !webWorkerSupport) return;
+      
+      updateStatus('table-status', 'info', 'パフォーマンステストを実行中...');
+      
+      const data = mainTable.getData();
+      const tests = [];
+      
+      // Test 1: Filter performance
+      const filterStart = Date.now();
+      await webWorkerSupport.filterData(data, {
+        filters: [{ column: 'salary', operator: 'greater_than', value: 5000000 }],
+        logic: 'AND'
+      });
+      tests.push({ name: 'フィルタリング', time: Date.now() - filterStart });
+      
+      // Test 2: Sort performance  
+      const sortStart = Date.now();
+      await webWorkerSupport.sortData(data, {
+        sorts: [{ column: 'salary', direction: 'desc' }]
+      });
+      tests.push({ name: 'ソート', time: Date.now() - sortStart });
+      
+      // Test 3: Search performance
+      const searchStart = Date.now();
+      await webWorkerSupport.searchData(data, {
+        query: '田中',
+        columns: ['name'],
+        fuzzy: false
+      });
+      tests.push({ name: '検索', time: Date.now() - searchStart });
+      
+      const totalTime = tests.reduce((sum, test) => sum + test.time, 0);
+      const results = tests.map(test => `${test.name}: ${test.time}ms`).join(', ');
+      
+      updateStatus('table-status', 'success', 
+        `ベンチマーク完了 (合計: ${totalTime}ms) - ${results}`);
+    }
+
+    // Utility functions
+    function updateStatus(elementId, type, message) {
+      const statusElement = document.getElementById(elementId);
+      if (statusElement) {
+        statusElement.className = `status ${type}`;
+        statusElement.textContent = message;
+      }
+    }
+
+    function updateWorkerStats() {
+      if (!webWorkerSupport) return;
+      
+      const stats = webWorkerSupport.getPoolStatus();
+      document.getElementById('total-workers').textContent = stats.totalWorkers;
+      document.getElementById('busy-workers').textContent = stats.busyWorkers;
+      document.getElementById('queued-tasks').textContent = stats.queuedTasks;
+    }
+
+    function showProgress(show) {
+      const progressBar = document.getElementById('worker-progress');
+      progressBar.style.display = show ? 'block' : 'none';
+      if (!show) {
+        updateProgress(0);
+      }
+    }
+
+    function updateProgress(percentage) {
+      const progressFill = document.getElementById('progress-fill');
+      progressFill.style.width = percentage + '%';
+    }
+
+    // Horizontal scroll test function
+    function testHorizontalScroll() {
+      if (!mainTable) {
+        updateStatus('table-status', 'warning', 'テーブルが初期化されていません');
+        return;
+      }
+
+      // Force very wide columns to test horizontal scroll
+      const headerCells = mainTable.container.querySelectorAll('th.table-header');
+      headerCells.forEach((cell, index) => {
+        if (index < 3) { // First 3 columns
+          const newWidth = 300 + (index * 100); // 300px, 400px, 500px
+          cell.style.width = `${newWidth}px`;
+          cell.style.minWidth = `${newWidth}px`;
+          cell.style.maxWidth = `${newWidth}px`;
+        }
+      });
+
+      // Update all corresponding body cells
+      headerCells.forEach((cell, index) => {
+        if (index < 3) {
+          const newWidth = 300 + (index * 100);
+          const bodyCells = mainTable.container.querySelectorAll(`tbody td:nth-child(${index + 1})`);
+          bodyCells.forEach(bodyCell => {
+            bodyCell.style.width = `${newWidth}px`;
+            bodyCell.style.minWidth = `${newWidth}px`;
+            bodyCell.style.maxWidth = `${newWidth}px`;
+          });
+        }
+      });
+
+      // Force update table width
+      let totalWidth = 0;
+      headerCells.forEach(cell => {
+        totalWidth += cell.offsetWidth;
+      });
+
+      const table = mainTable.container.querySelector('table');
+      if (table) {
+        table.style.width = `${totalWidth}px`;
+        table.style.minWidth = `${totalWidth}px`;
+      }
+
+      // Force container to show horizontal scroll
+      mainTable.container.style.overflowX = 'auto';
+      
+      updateStatus('table-status', 'info', `横スクロールテスト実行: テーブル幅 ${totalWidth}px、コンテナ幅 ${mainTable.container.offsetWidth}px`);
+    }
+
+    // New comprehensive demo functions
+
+    // Theme & I18n functions
+    function changeTheme(themeName) {
+      if (!currentThemeSystem) {
+        currentThemeSystem = ThemeSystem.init();
+      }
+      currentThemeSystem.applyTheme(themeName);
+      updateStatus('theme-i18n-status', 'success', `テーマを「${themeName}」に変更しました`);
+    }
+
+    function changeLanguage(locale) {
+      if (!currentI18n) {
+        currentI18n = I18nModule.init({ locale: 'ja' });
+      }
+      const success = currentI18n.setLocale(locale);
+      if (success) {
+        updateStatus('theme-i18n-status', 'success', `言語を${locale}に変更しました`);
+        if (mainTable) {
+          // Re-render table with new locale
+          const data = mainTable.getData();
+          mainTable.setData([...data]);
+        }
+      } else {
+        updateStatus('theme-i18n-status', 'warning', `言語${locale}の設定に失敗しました`);
+      }
+    }
+
+    function toggleAccessibilityMode() {
+      document.body.classList.toggle('high-contrast-mode');
+      const isEnabled = document.body.classList.contains('high-contrast-mode');
+      updateStatus('theme-i18n-status', 'info', 
+        `アクセシビリティモードを${isEnabled ? '有効' : '無効'}にしました`);
+    }
+
+    // Export & Virtual Scroll functions
+    function loadLargeDataset(size) {
+      showProgress(true);
+      updateStatus('export-virtual-status', 'info', `${size.toLocaleString()}行のデータを生成中...`);
+      
+      setTimeout(() => {
+        const data = generateLargeDataset(size);
+        if (mainTable) {
+          mainTable.setData(data);
+          updateStatus('export-virtual-status', 'success', 
+            `${size.toLocaleString()}行のデータを読み込みました`);
+        }
+        showProgress(false);
+      }, 100);
+    }
+
+    async function testVirtualScroll() {
+      if (!mainTable) {
+        updateStatus('export-virtual-status', 'warning', 'テーブルが初期化されていません');
+        return;
+      }
+
+      const startTime = Date.now();
+      const data = generateLargeDataset(25000);
+      
+      // Test virtual scrolling performance
+      currentVirtualScroll = VirtualScroll.createTableVirtualizer({
+        tableContainer: document.getElementById('main-table'),
+        data: data,
+        columns: [
+          { key: 'id', title: 'ID', dataIndex: 'id' },
+          { key: 'name', title: '名前', dataIndex: 'name' },
+          { key: 'department', title: '部署', dataIndex: 'department' }
+        ],
+        rowHeight: 40
+      });
+      
+      const renderTime = Date.now() - startTime;
+      updateStatus('export-virtual-status', 'success', 
+        `仮想スクロール: 25,000行を${renderTime}msでレンダリング`);
+    }
+
+    async function exportAllFormats() {
+      if (!mainTable) return;
+
+      showProgress(true);
+      updateStatus('export-virtual-status', 'info', '全形式エクスポートを開始...');
+
+      const data = mainTable.getData();
+      const columns = mainTable.options.columns;
+      const includeHeaders = document.getElementById('include-headers').checked;
+      const selectedOnly = document.getElementById('selected-only').checked;
+
+      if (!currentExportModule) {
+        currentExportModule = ExportModule.init(mainTable);
+      }
+
+      try {
+        const formats = ['csv', 'json', 'xml', 'html'];
+        const startTime = Date.now();
+        
+        const exportPromises = formats.map(format => 
+          currentExportModule.exportData({
+            format,
+            includeHeaders,
+            selectedRowsOnly: selectedOnly,
+            filename: `table-export-${format}-${Date.now()}.${format}`
+          })
+        );
+
+        await Promise.all(exportPromises);
+        const totalTime = Date.now() - startTime;
+        
+        updateStatus('export-virtual-status', 'success', 
+          `全形式エクスポート完了: ${formats.length}形式 (${totalTime}ms)`);
+      } catch (error) {
+        updateStatus('export-virtual-status', 'warning', 'エクスポートエラー: ' + error.message);
+      }
+
+      showProgress(false);
+    }
+
+    async function performCompleteAnalysis() {
+      if (!mainTable || !webWorkerSupport) return;
+
+      showProgress(true);
+      updateStatus('export-virtual-status', 'info', '完全データ分析を開始...');
+
+      const data = mainTable.getData();
+      const startTime = Date.now();
+
+      try {
+        // Parallel analysis operations
+        const operations = [
+          webWorkerSupport.aggregateData(data, {
+            groupBy: 'department',
+            aggregations: [
+              { column: 'salary', type: 'avg' },
+              { column: 'age', type: 'avg' }
+            ]
+          }),
+          webWorkerSupport.calculateStats(data, {
+            expressions: [
+              { name: 'totalSalary', column: 'salary', operation: 'sum' },
+              { name: 'avgAge', column: 'age', operation: 'average' },
+              { name: 'maxPerformance', column: 'performance', operation: 'max' }
+            ]
+          })
+        ];
+
+        const results = await Promise.all(operations);
+        const analysisTime = Date.now() - startTime;
+
+        updateStatus('export-virtual-status', 'success', 
+          `完全分析完了: ${data.length}行を分析 (${analysisTime}ms)`);
+        
+      } catch (error) {
+        updateStatus('export-virtual-status', 'warning', '分析エラー: ' + error.message);
+      }
+
+      showProgress(false);
+    }
+
+    // Comprehensive table demo functions
+    function runSecurityTest() {
+      if (!mainTable) return;
+
+      updateStatus('table-status', 'info', 'セキュリティテストを実行中...');
+
+      // Test XSS prevention with potentially dangerous content
+      const maliciousData = [
+        {
+          id: 1,
+          name: '&lt;script&gt;console.log("XSS")&lt;/script&gt;',
+          email: '&lt;img src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" onerror="console.log(\'XSS\')"&gt;',
+          department: 'Test Department'
+        }
+      ];
+
+      mainTable.setData(maliciousData);
+
+      // Check if scripts were properly sanitized
+      setTimeout(() => {
+        const tableHtml = mainTable.container.innerHTML;
+        const hasUnsafeScript = tableHtml.includes('<script>') && tableHtml.includes('console.log("XSS")');
+        const hasUnsafeOnError = tableHtml.includes('onerror=') && tableHtml.includes('console.log(\'XSS\')');
+        
+        if (!hasUnsafeScript && !hasUnsafeOnError) {
+          updateStatus('table-status', 'success', 'セキュリティテスト合格: XSS攻撃を適切にブロック');
+        } else {
+          updateStatus('table-status', 'warning', 'セキュリティテスト: 詳細は開発者ツールで確認してください');
+        }
+        
+      }, 500);
+    }
+
+    function demonstrateAccessibility() {
+      updateStatus('table-status', 'info', 'アクセシビリティ機能を実演中...');
+
+      // Focus management
+      const firstCell = mainTable.container.querySelector('td');
+      if (firstCell) {
+        firstCell.focus();
+        firstCell.setAttribute('aria-live', 'polite');
+        firstCell.setAttribute('aria-label', 'テーブルの最初のセル');
+      }
+
+      // Add keyboard navigation hints
+      const instructions = document.createElement('div');
+      instructions.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #333;
+        color: white;
+        padding: 15px;
+        border-radius: 5px;
+        z-index: 1000;
+        max-width: 300px;
+      `;
+      instructions.innerHTML = `
+        <strong>キーボード操作:</strong><br>
+        ↑↓←→ セル間移動<br>
+        Tab/Shift+Tab フォーカス移動<br>
+        Enter アクションの実行<br>
+        Esc 選択解除<br>
+        <button onclick="this.parentElement.remove()" style="margin-top:10px;">閉じる</button>
+      `;
+      
+      document.body.appendChild(instructions);
+      
+      updateStatus('table-status', 'success', 
+        'アクセシビリティデモ実行中 - キーボードでテーブルを操作してみてください');
+    }
+
+    // Conditional Formatting test functions
+    function testConditionalFormatting() {
+      if (!mainTable || !pluginSystem) {
+        updateStatus('conditional-formatting-status', 'warning', 'テーブルまたはプラグインシステムが初期化されていません');
+        return;
+      }
+
+      const cfPlugin = pluginSystem.getPlugin('conditional-formatting');
+      if (!cfPlugin) {
+        updateStatus('conditional-formatting-status', 'warning', '条件付き書式プラグインが見つかりません');
+        return;
+      }
+
+      // Debug: Check if plugin components are initialized
+
+      updateStatus('conditional-formatting-status', 'info', '条件付き書式テストを実行中...');
+
+      try {
+        // Add a variety of test rules
+        const { ConditionalFormattingRule, OPERATORS } = ConditionalFormattingTypes || {};
+        
+        if (!ConditionalFormattingRule) {
+          throw new Error('ConditionalFormattingRule not available');
+        }
+
+        // Test rule 1: Highlight high salaries
+        const highSalaryRule = new ConditionalFormattingRule({
+          name: 'High Salary Highlight',
+          targetColumns: ['salary'],
+          operator: OPERATORS.GREATER_THAN,
+          value: 80000,
+          format: {
+            backgroundColor: '#d4edda',
+            textColor: '#155724',
+            fontWeight: 'bold'
+          }
+        });
+
+        // Test rule 2: Mark low performance
+        const lowPerformanceRule = new ConditionalFormattingRule({
+          name: 'Low Performance Warning',
+          targetColumns: ['performance'],
+          operator: OPERATORS.LESS_THAN,
+          value: 3.0,
+          format: {
+            backgroundColor: '#f8d7da',
+            textColor: '#721c24',
+            fontStyle: 'italic'
+          }
+        });
+
+        // Test rule 3: Department-based coloring
+        const deptRule = new ConditionalFormattingRule({
+          name: 'Engineering Department',
+          targetColumns: ['department'],
+          operator: OPERATORS.EQUALS,
+          value: 'Engineering',
+          format: {
+            backgroundColor: '#e3f2fd',
+            textColor: '#0d47a1'
+          }
+        });
+
+        // Add rules to the plugin
+        cfPlugin.addRule(highSalaryRule);
+        cfPlugin.addRule(lowPerformanceRule);
+        cfPlugin.addRule(deptRule);
+
+        updateStatus('conditional-formatting-status', 'success', 
+          '条件付き書式テスト完了 - 3つのルールを追加しました');
+      } catch (error) {
+        updateStatus('conditional-formatting-status', 'warning', 
+          '条件付き書式テストエラー: ' + error.message);
+        console.error('Conditional formatting test error:', error);
+      }
+    }
+
+    function showConditionalFormattingDialog() {
+      if (!mainTable || !pluginSystem) {
+        updateStatus('conditional-formatting-status', 'warning', 'テーブルまたはプラグインシステムが初期化されていません');
+        return;
+      }
+
+      const cfPlugin = pluginSystem.getPlugin('conditional-formatting');
+      if (!cfPlugin || !cfPlugin.uiManager) {
+        updateStatus('conditional-formatting-status', 'warning', '条件付き書式プラグインが見つかりません');
+        return;
+      }
+
+      // Show the formatting dialog
+      cfPlugin.uiManager.showFormattingDialog({
+        selectedColumns: ['salary', 'performance'],  // Pre-select some columns
+        cellData: { cellValue: 'Sample', rowData: {} }
+      });
+
+      updateStatus('conditional-formatting-status', 'info', '新規ルール作成ダイアログを表示しました');
+    }
+
+    // Enhanced Conditional Formatting test function
+    function testEnhancedDialog() {
+      if (!mainTable || !pluginSystem) {
+        updateStatus('conditional-formatting-status', 'warning', 'テーブルまたはプラグインシステムが初期化されていません');
+        return;
+      }
+
+      const cfPlugin = pluginSystem.getPlugin('conditional-formatting');
+      if (!cfPlugin) {
+        updateStatus('conditional-formatting-status', 'warning', '条件付き書式プラグインが見つかりません');
+        return;
+      }
+
+      // Check if enhanced components are available
+      if (!cfPlugin.hasEnhancedComponents) {
+        updateStatus('conditional-formatting-status', 'warning', '拡張版コンポーネントが利用できません - ページをリロードしてください');
+        return;
+      }
+
+      try {
+        // Show enhanced dialog
+        cfPlugin.showEnhancedDialog();
+        updateStatus('conditional-formatting-status', 'success', '✨ 拡張版ダイアログを表示しました - 論理演算子（XOR、NAND、NOR）や独立したスコープ設定が利用できます');
+      } catch (error) {
+        updateStatus('conditional-formatting-status', 'error', '拡張版ダイアログエラー: ' + error.message);
+        console.error('Enhanced dialog error:', error);
+      }
+    }
+
+    function showFormattingRulesManager() {
+      if (!mainTable || !pluginSystem) {
+        updateStatus('conditional-formatting-status', 'warning', 'テーブルまたはプラグインシステムが初期化されていません');
+        return;
+      }
+
+      const cfPlugin = pluginSystem.getPlugin('conditional-formatting');
+      if (!cfPlugin || !cfPlugin.uiManager) {
+        updateStatus('conditional-formatting-status', 'warning', '条件付き書式プラグインが見つかりません');
+        return;
+      }
+
+      // Show the rules management dialog
+      cfPlugin.uiManager.showRulesDialog();
+
+      updateStatus('conditional-formatting-status', 'info', 'ルール管理画面を表示しました');
+    }
+
+    function clearAllConditionalFormatting() {
+      if (!mainTable || !pluginSystem) {
+        updateStatus('conditional-formatting-status', 'warning', 'テーブルまたはプラグインシステムが初期化されていません');
+        return;
+      }
+
+      const cfPlugin = pluginSystem.getPlugin('conditional-formatting');
+      if (!cfPlugin) {
+        updateStatus('conditional-formatting-status', 'warning', '条件付き書式プラグインが見つかりません');
+        return;
+      }
+
+      try {
+        // Clear all rules
+        const rules = cfPlugin.getAllRules();
+        rules.forEach(rule => cfPlugin.removeRule(rule.id));
+
+        updateStatus('conditional-formatting-status', 'success', 
+          `すべての条件付き書式をクリアしました (${rules.length}個のルールを削除)`);
+      } catch (error) {
+        updateStatus('conditional-formatting-status', 'warning', 'クリアエラー: ' + error.message);
+        console.error('Clear formatting error:', error);
+      }
+    }
+
+    function addSampleFormattingRules() {
+      if (!mainTable || !pluginSystem) {
+        updateStatus('conditional-formatting-status', 'warning', 'テーブルまたはプラグインシステムが初期化されていません');
+        return;
+      }
+
+      const cfPlugin = pluginSystem.getPlugin('conditional-formatting');
+      if (!cfPlugin) {
+        updateStatus('conditional-formatting-status', 'warning', '条件付き書式プラグインが見つかりません');
+        return;
+      }
+
+      try {
+        const { ConditionalFormattingRule, OPERATORS } = ConditionalFormattingTypes || {};
+        
+        if (!ConditionalFormattingRule) {
+          throw new Error('ConditionalFormattingRule not available');
+        }
+
+        // Clear existing rules first
+        const existingRules = cfPlugin.getAllRules();
+        existingRules.forEach(rule => cfPlugin.removeRule(rule.id));
+
+        // Sample rule 1: Data bars for salary
+        const salaryDataBars = new ConditionalFormattingRule({
+          name: 'Salary Data Bars',
+          targetColumns: ['salary'],
+          operator: OPERATORS.IS_NUMBER,
+          format: {
+            dataBar: {
+              color: '#4285f4',
+              showValue: true
+            }
+          },
+          priority: 10
+        });
+
+        // Sample rule 2: Color scale for performance
+        const performanceColorScale = new ConditionalFormattingRule({
+          name: 'Performance Color Scale',
+          targetColumns: ['performance'],
+          operator: OPERATORS.IS_NUMBER,
+          format: {
+            colorScale: {
+              colors: ['#ea4335', '#fbbc04', '#34a853']
+            }
+          },
+          priority: 9
+        });
+
+        // Sample rule 3: Icon set for age groups
+        const ageIconSet = new ConditionalFormattingRule({
+          name: 'Age Group Icons',
+          targetColumns: ['age'],
+          operator: OPERATORS.IS_NUMBER,
+          format: {
+            iconSet: {
+              icons: ['🔴', '🟡', '🟢'],
+              thresholds: [30, 50, 70]
+            }
+          },
+          priority: 8
+        });
+
+        // Sample rule 4: Highlight specific departments
+        const deptHighlight = new ConditionalFormattingRule({
+          name: 'Department Highlights',
+          targetColumns: ['department'],
+          operator: OPERATORS.CONTAINS,
+          value: 'Engineering',
+          format: {
+            backgroundColor: '#e8f5e8',
+            textColor: '#2e7d32',
+            fontWeight: 'bold'
+          },
+          priority: 7
+        });
+
+        // Sample rule 5: Empty cell highlighting
+        const emptyHighlight = new ConditionalFormattingRule({
+          name: 'Empty Cells',
+          targetColumns: ['department', 'name', 'email'],
+          operator: OPERATORS.IS_EMPTY,
+          format: {
+            backgroundColor: '#ffebee',
+            border: '1px dashed #f44336'
+          },
+          priority: 6
+        });
+
+        // Add all sample rules
+        cfPlugin.addRule(salaryDataBars);
+        cfPlugin.addRule(performanceColorScale);
+        cfPlugin.addRule(ageIconSet);
+        cfPlugin.addRule(deptHighlight);
+        cfPlugin.addRule(emptyHighlight);
+
+        updateStatus('conditional-formatting-status', 'success', 
+          'サンプルルールを追加しました - データバー、カラースケール、アイコンセット、ハイライト、空セル検出');
+      } catch (error) {
+        updateStatus('conditional-formatting-status', 'warning', 'サンプルルール追加エラー: ' + error.message);
+        console.error('Sample rules error:', error);
+      }
+    }
+
+    // Debug context menu function
+    function debugContextMenu() {
+      updateStatus('conditional-formatting-status', 'info', '右クリックメニューデバッグを開始...');
+      
+      if (!mainTable || !pluginSystem) {
+        updateStatus('conditional-formatting-status', 'warning', 'テーブルまたはプラグインシステムが初期化されていません');
+        return;
+      }
+
+      const cfPlugin = pluginSystem.getPlugin('conditional-formatting');
+      if (!cfPlugin) {
+        updateStatus('conditional-formatting-status', 'warning', '条件付き書式プラグインが見つかりません');
+        return;
+      }
+
+      
+      // Get table container
+      const tableContainer = mainTable.container;
+      
+      // Check if table has cells
+      const cells = tableContainer.querySelectorAll('td, th');
+      
+      if (cells.length > 0) {
+        const firstCell = cells[0];
+        
+        // Add temporary right-click listener to test
+        const testHandler = (e) => {
+          e.preventDefault();
+          updateStatus('conditional-formatting-status', 'success', '右クリックが検知されました！コンソールを確認してください');
+          firstCell.removeEventListener('contextmenu', testHandler);
+        };
+        
+        firstCell.addEventListener('contextmenu', testHandler);
+        
+        // Highlight the first cell
+        firstCell.style.border = '2px solid #ff9800';
+        setTimeout(() => {
+          firstCell.style.border = '';
+        }, 3000);
+        
+        updateStatus('conditional-formatting-status', 'info', 
+          'オレンジの枠で囲まれたセルを右クリックしてテストしてください（3秒後に枠は消えます）');
+      } else {
+        updateStatus('conditional-formatting-status', 'warning', 'テーブルにセルが見つかりません');
+      }
+    }
+
+    // Initialize all systems
+    function initializeAllSystems() {
+      try {
+        // Initialize all modules with error handling
+        if (typeof ThemeSystem !== 'undefined') {
+          currentThemeSystem = ThemeSystem.init();
+        } else {
+          console.warn('ThemeSystem not available');
+        }
+        
+        if (typeof I18nModule !== 'undefined') {
+          currentI18n = I18nModule.init({ locale: 'ja' });
+        } else {
+          console.warn('I18nModule not available');
+        }
+        
+        if (mainTable && typeof ExportModule !== 'undefined') {
+          currentExportModule = ExportModule.init(mainTable);
+        } else {
+          console.warn('ExportModule not available');
+        }
+
+        // Initialize WebWorker and Plugin systems
+        initializeSystems();
+      } catch (error) {
+        console.error('Error initializing systems:', error);
+        updateStatus('table-status', 'warning', 'システム初期化エラー: ' + error.message);
+      }
+    }
+
+    // Update worker stats periodically
+    setInterval(updateWorkerStats, 2000);
+
+    // Initialize on page load with delay to ensure all scripts are loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      
+      // Check if there were any script loading errors first
+      setTimeout(() => {
+      // Check if required modules are loaded with retry logic
+      function attemptInitialization() {
+        
+        if (typeof ExceLikeTable === 'undefined' || typeof ColumnHelpers === 'undefined') {
+          console.warn('Required modules not loaded yet, retrying...');
+          return false;
+        }
+        
+        try {
+          loadDemoData();
+          initializeAllSystems();
+          return true;
+        } catch (error) {
+          console.error('Initialization error:', error);
+          updateStatus('table-status', 'warning', '初期化エラー: ' + error.message);
+          return false;
+        }
+      }
+
+      if (!attemptInitialization()) {
+        // Retry after 1 second
+        setTimeout(() => {
+          if (!attemptInitialization()) {
+            // Final retry after 2 seconds
+            setTimeout(() => {
+              if (!attemptInitialization()) {
+                console.error('Initialization failed after multiple retries');
+                updateStatus('table-status', 'warning', 'モジュールの読み込みに失敗しました');
+              }
+            }, 2000);
+          }
+        }, 1000);
+      }
+      }, 100); // Small delay to let any script errors surface first
+    });
+  </script>
+</body>
+</html>

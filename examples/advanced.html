@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VanillaJS ExceLike Table - Advanced Example</title>
   <link rel="stylesheet" href="../src/ExceLikeTable.css">
+  <!-- Conditional Formatting Styles -->
+  <link rel="stylesheet" href="../src/plugins/conditional-formatting/conditional-formatting-styles.css">
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
@@ -134,12 +136,35 @@
       <button class="demo-btn" onclick="changeStatuses()">Change Statuses</button>
       <button class="demo-btn" onclick="addNewEmployee()">Add Employee</button>
       <button class="demo-btn" onclick="refreshData()">Refresh Data</button>
+      <button class="demo-btn" onclick="debugRatingColumn()" style="background: #ff4d4f; color: white;">Debug Rating Column</button>
     </div>
     
     <div class="table-container" id="table-container"></div>
   </div>
 
   <script src="../src/ExceLikeTable.js"></script>
+  
+  <!-- Conditional Formatting Plugin -->
+  <script src="../src/plugins/conditional-formatting/config.js"></script>
+  <script src="../src/plugins/conditional-formatting/utils.js"></script>
+  <script src="../src/plugins/conditional-formatting/types.js"></script>
+  <script src="../src/plugins/conditional-formatting/rule-engine.js"></script>
+  <script src="../src/plugins/conditional-formatting/data-manager.js"></script>
+  <script src="../src/plugins/conditional-formatting/format-applier.js"></script>
+  
+  <!-- Conditional Formatting Formatters -->
+  <script src="../src/plugins/conditional-formatting/formatters/BaseFormatter.js"></script>
+  <script src="../src/plugins/conditional-formatting/formatters/DataBarFormatter.js"></script>
+  <script src="../src/plugins/conditional-formatting/formatters/IconSetFormatter.js"></script>
+  
+  <script src="../src/plugins/conditional-formatting/context-menu-extension.js"></script>
+  
+  <!-- Enhanced Conditional Formatting Components -->
+  <script src="../src/plugins/conditional-formatting/data-migration-manager.js"></script>
+  <script src="../src/plugins/conditional-formatting/enhanced-ui-manager.js"></script>
+  <script src="../src/plugins/conditional-formatting/enhanced-rule-engine.js"></script>
+  
+  <script src="../src/plugins/conditional-formatting/conditional-formatting-plugin.js"></script>
   <script>
     let table;
     let employeeData = [];
@@ -276,10 +301,11 @@
         width: 100,
         sortable: true,
         filterable: true,
-        render: (value) => {
-          const stars = '★'.repeat(Math.floor(value)) + '☆'.repeat(5 - Math.floor(value));
-          return `<span style="color: #faad14;">${stars}</span><br><small>${value}/5</small>`;
-        }
+        // render関数をコメントアウト - Icon Setsでの星表示のため
+        // render: (value) => {
+        //   const stars = '★'.repeat(Math.floor(value)) + '☆'.repeat(5 - Math.floor(value));
+        //   return `<span style="color: #faad14;">${stars}</span><br><small>${value}/5</small>`;
+        // }
       }
     ];
     
@@ -330,6 +356,32 @@
       table.setData(employeeData);
     }
     
+    function debugRatingColumn() {
+      console.log('=== DEBUGGING RATING COLUMN ===');
+      console.log('Employee data sample (first 3 rows):');
+      employeeData.slice(0, 3).forEach((emp, i) => {
+        console.log(`Row ${i}:`, emp);
+        console.log(`  Rating value: "${emp.rating}" (type: ${typeof emp.rating})`);
+      });
+      
+      // Test the detection manually
+      console.log('\n=== MANUAL DETECTION TEST ===');
+      const sampleRatings = employeeData.slice(0, 5).map(emp => emp.rating);
+      console.log('Sample ratings:', sampleRatings);
+      
+      sampleRatings.forEach((rating, i) => {
+        let cleanValue = String(rating).trim().replace(/[¥,$円,]/g, '');
+        const isNumeric = !isNaN(cleanValue) && !isNaN(parseFloat(cleanValue)) && cleanValue !== '';
+        console.log(`Rating ${i}: "${rating}" -> cleaned: "${cleanValue}" -> isNumeric: ${isNumeric}`);
+      });
+      
+      console.log('\n=== RIGHT-CLICK TEST ===');
+      console.log('Now right-click on any Rating cell to see the debug output in console and check if Icon Sets appears.');
+      
+      alert('Check console for debug output, then right-click on a Rating cell to test detection.');
+    }
+    
+    
     // Initialize advanced table
     document.addEventListener('DOMContentLoaded', () => {
       employeeData = generateAdvancedData();
@@ -345,7 +397,15 @@
         },
         bordered: true,
         size: 'middle',
-        loading: false
+        loading: false,
+        plugins: [
+          {
+            name: 'conditional-formatting',
+            instance: new ConditionalFormattingPlugin({
+              enabled: true
+            })
+          }
+        ]
       });
     });
   </script>

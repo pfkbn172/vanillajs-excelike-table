@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enhanced Conditional Formatting Debug</title>
+  <link rel="stylesheet" href="src/ExceLikeTable.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 20px;
+      background: #f8f9fa;
+    }
+    .debug-info {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 10px 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .success { color: green; }
+    .error { color: red; }
+    .warning { color: orange; }
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .test-btn { background: #007bff; color: white; }
+    .test-btn:hover { background: #0056b3; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Enhanced Conditional Formatting Debug</h1>
+  
+  <div class="debug-info">
+    <h3>Component Loading Check</h3>
+    <div id="loading-status">チェック中...</div>
+  </div>
+  
+  <div class="debug-info">
+    <h3>Manual Tests</h3>
+    <button id="test-enhanced-ui" class="test-btn">Enhanced UI Manager Test</button>
+    <button id="test-enhanced-engine" class="test-btn">Enhanced Rule Engine Test</button>
+    <button id="test-integration" class="test-btn">Integration Test</button>
+  </div>
+  
+  <div class="debug-info">
+    <h3>Test Table</h3>
+    <div id="table-container"></div>
+  </div>
+  
+  <div class="debug-info">
+    <h3>Debug Log</h3>
+    <div id="debug-log"></div>
+  </div>
+
+  <!-- Core Table -->
+  <script src="src/ExceLikeTable.js"></script>
+  
+  <!-- Conditional Formatting Dependencies -->
+  <script src="src/plugins/conditional-formatting/config.js"></script>
+  <script src="src/plugins/conditional-formatting/utils.js"></script>
+  <script src="src/plugins/conditional-formatting/types.js"></script>
+  <script src="src/plugins/conditional-formatting/rule-engine.js"></script>
+  <script src="src/plugins/conditional-formatting/format-applier.js"></script>
+  <script src="src/plugins/conditional-formatting/context-menu-extension.js"></script>
+  
+  <!-- Enhanced Components -->
+  <script src="src/plugins/conditional-formatting/data-migration-manager.js"></script>
+  <script src="src/plugins/conditional-formatting/enhanced-ui-manager.js"></script>
+  <script src="src/plugins/conditional-formatting/enhanced-rule-engine.js"></script>
+  
+  <!-- Main Plugin -->
+  <script src="src/plugins/conditional-formatting/conditional-formatting-plugin.js"></script>
+  
+  <script>
+    let table;
+    
+    function log(message, type = 'info') {
+      const debugLog = document.getElementById('debug-log');
+      const timestamp = new Date().toLocaleTimeString();
+      const className = type === 'error' ? 'error' : type === 'warning' ? 'warning' : type === 'success' ? 'success' : '';
+      debugLog.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+      console.log(`[${type.toUpperCase()}] ${message}`);
+    }
+    
+    function checkComponentLoading() {
+      const statusDiv = document.getElementById('loading-status');
+      let status = [];
+      
+      // Check if enhanced components are available
+      if (typeof EnhancedConditionalFormattingUIManager !== 'undefined') {
+        status.push('<span class="success">✅ Enhanced UI Manager loaded</span>');
+      } else {
+        status.push('<span class="error">❌ Enhanced UI Manager NOT loaded</span>');
+      }
+      
+      if (typeof EnhancedConditionalFormattingRuleEngine !== 'undefined') {
+        status.push('<span class="success">✅ Enhanced Rule Engine loaded</span>');
+      } else {
+        status.push('<span class="error">❌ Enhanced Rule Engine NOT loaded</span>');
+      }
+      
+      if (typeof window.ConditionalFormattingTypes !== 'undefined' && 
+          window.ConditionalFormattingTypes.EnhancedConditionalFormattingRule) {
+        status.push('<span class="success">✅ Enhanced Rule Class loaded</span>');
+      } else {
+        status.push('<span class="error">❌ Enhanced Rule Class NOT loaded</span>');
+      }
+      
+      statusDiv.innerHTML = status.join('<br>');
+    }
+    
+    function testEnhancedUI() {
+      log('Testing Enhanced UI Manager...', 'info');
+      try {
+        if (typeof EnhancedConditionalFormattingUIManager !== 'undefined') {
+          const mockTable = { options: { columns: [] } };
+          const enhancedUI = new EnhancedConditionalFormattingUIManager(mockTable);
+          log('Enhanced UI Manager instance created successfully', 'success');
+          
+          // Test dialog creation
+          try {
+            enhancedUI.showDialog();
+            log('Enhanced dialog opened successfully', 'success');
+          } catch (e) {
+            log(`Enhanced dialog error: ${e.message}`, 'error');
+          }
+        } else {
+          log('EnhancedConditionalFormattingUIManager not available', 'error');
+        }
+      } catch (e) {
+        log(`Enhanced UI test failed: ${e.message}`, 'error');
+      }
+    }
+    
+    function testEnhancedEngine() {
+      log('Testing Enhanced Rule Engine...', 'info');
+      try {
+        if (typeof EnhancedConditionalFormattingRuleEngine !== 'undefined') {
+          const engine = new EnhancedConditionalFormattingRuleEngine();
+          log('Enhanced Rule Engine instance created successfully', 'success');
+          
+          // Test rule creation
+          if (window.ConditionalFormattingTypes?.EnhancedConditionalFormattingRule) {
+            const rule = window.ConditionalFormattingTypes.EnhancedConditionalFormattingRule.createSimple(
+              'test', 'greaterThan', 100, { backgroundColor: '#e8f5e8' }
+            );
+            engine.addRule(rule);
+            log('Enhanced rule added successfully', 'success');
+          }
+        } else {
+          log('EnhancedConditionalFormattingRuleEngine not available', 'error');
+        }
+      } catch (e) {
+        log(`Enhanced Engine test failed: ${e.message}`, 'error');
+      }
+    }
+    
+    function testIntegration() {
+      log('Testing Integration...', 'info');
+      
+      // Initialize table
+      const testData = [
+        { id: 1, name: 'Test', sales: 100000 }
+      ];
+      
+      table = new ExceLikeTable({
+        container: 'table-container',
+        data: testData,
+        columns: [
+          { key: 'id', title: 'ID', type: 'number' },
+          { key: 'name', title: 'Name', type: 'text' },
+          { key: 'sales', title: 'Sales', type: 'number' }
+        ],
+        plugins: ['conditional-formatting'],
+        height: 200
+      });
+      
+      setTimeout(() => {
+        const plugin = table?.pluginInstances?.['conditional-formatting'];
+        if (plugin) {
+          log('Plugin initialized successfully', 'success');
+          log(`Has enhanced components: ${plugin.hasEnhancedComponents}`, plugin.hasEnhancedComponents ? 'success' : 'warning');
+          
+          if (plugin.hasEnhancedComponents) {
+            try {
+              plugin.showEnhancedDialog();
+              log('Enhanced dialog called from plugin', 'success');
+            } catch (e) {
+              log(`Enhanced dialog call failed: ${e.message}`, 'error');
+            }
+          }
+        } else {
+          log('Plugin not initialized', 'error');
+        }
+      }, 1000);
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      checkComponentLoading();
+      
+      document.getElementById('test-enhanced-ui').addEventListener('click', testEnhancedUI);
+      document.getElementById('test-enhanced-engine').addEventListener('click', testEnhancedEngine);
+      document.getElementById('test-integration').addEventListener('click', testIntegration);
+      
+      log('Debug page initialized', 'info');
+    });
+  </script>
+</body>
+</html>

@@ -3,6 +3,22 @@
  * Excel-like table with filtering, sorting, pagination, and column pinning
  */
 
+// Import utilities (Node.js environment only)
+// In browser, utilities are loaded via script tags and available globally
+if (typeof module !== 'undefined' && module.exports) {
+  // Node.js environment - require modules
+  const DOMUtils = require('./dom-utils');
+  const PerformanceUtils = require('./performance-utils');
+}
+
+// Validate dependencies are available (browser and Node.js)
+if (typeof DOMUtils === 'undefined') {
+  throw new Error('DOMUtils not found. Please ensure dom-utils.js is loaded before ExceLikeTable.js');
+}
+if (typeof PerformanceUtils === 'undefined') {
+  throw new Error('PerformanceUtils not found. Please ensure performance-utils.js is loaded before ExceLikeTable.js');
+}
+
 // Predefined table presets for easy setup
 const TABLE_PRESETS = {
   simple: {
@@ -13,7 +29,7 @@ const TABLE_PRESETS = {
   },
   
   standard: {
-    features: ['sorting', 'filtering', 'pagination'],
+    features: ['sorting', 'filtering', 'pagination', 'columnSettings'],
     bordered: true,
     size: 'middle',
     pagination: { pageSize: 10, showSizeChanger: true }
@@ -141,9 +157,17 @@ const ColumnHelpers = {
       width: options.width || 100,
       sortable: options.sortable !== false,
       filterable: options.filterable !== false,
-      render: (value) => {
+      render: (value, record, column, cellElement) => {
         const color = statusColors[value] || '#000';
-        return `<span style="color: ${color}; font-weight: 500;">${value}</span>`;
+        
+        // Apply styles directly to the cell element if available
+        if (cellElement) {
+          cellElement.style.color = color;
+          cellElement.style.fontWeight = '500';
+        }
+        
+        // Return just the text value
+        return value;
       },
       ...options
     };
@@ -555,6 +579,11 @@ class ExceLikeTable {
     // Enable features based on configuration
     this.enabledFeatures = new Set(this.options.features);
 
+    // Update persistSettings based on features if not explicitly set
+    if (this.enabledFeatures.has('persistSettings') && this.options.persistSettings === false) {
+      this.options.persistSettings = true;
+    }
+
     // Initialize settings manager
     this.settingsManager = null;
     if (this.options.persistSettings) {
@@ -638,7 +667,12 @@ class ExceLikeTable {
   }
 
   async init() {
-    this.container.innerHTML = '';
+    // Safely clear container
+    if (DOMUtils) {
+      DOMUtils.clearElement(this.container);
+    } else {
+      this.container.innerHTML = '';
+    }
     this.container.className = 'excelike-table-wrapper';
     
     this.createStructure();
@@ -664,7 +698,14 @@ class ExceLikeTable {
     this.loadingOverlay = document.createElement('div');
     this.loadingOverlay.className = 'table-loading';
     this.loadingOverlay.style.display = this.options.loading ? 'flex' : 'none';
-    this.loadingOverlay.innerHTML = '<div>Loading...</div>';
+    
+    // Safe loading content
+    if (DOMUtils) {
+      const loadingText = DOMUtils.createElement('div', 'Loading...');
+      this.loadingOverlay.appendChild(loadingText);
+    } else {
+      this.loadingOverlay.innerHTML = '<div>Loading...</div>';
+    }
     
     // Table menu
     this.menuContainer = document.createElement('div');
@@ -700,6 +741,11 @@ class ExceLikeTable {
   }
 
   render() {
+    // Notify plugins before rendering
+    if (this.pluginSystem) {
+      this.pluginSystem.emitHook('render:beforeRender', { fullRender: true });
+    }
+    
     this.applyFilters();
     this.renderMenu();
     this.renderHeader();
@@ -707,6 +753,11 @@ class ExceLikeTable {
     this.renderPagination();
     // Apply current styling after rendering
     this.applyCurrentStyling();
+    
+    // Notify plugins after rendering
+    if (this.pluginSystem) {
+      this.pluginSystem.emitHook('render:afterRender', { fullRender: true });
+    }
   }
 
   renderMenu() {
@@ -754,10 +805,8 @@ class ExceLikeTable {
       </div>
     `);
 
-    // LocalStorage clear option (only if persistSettings is enabled)
-    if (this.options.persistSettings) {
-      menuItems.push('<div class="table-menu-item" data-action="clear-localstorage">LocalStorageクリア</div>');
-    }
+    // LocalStorage clear option (always available since plugins may store data)
+    menuItems.push('<div class="table-menu-item" data-action="clear-localstorage">LocalStorageクリア</div>');
 
     this.menuContainer.innerHTML = `
       <div class="table-menu-wrapper">
@@ -1037,9 +1086,20 @@ class ExceLikeTable {
   }
 
   handlePageChange(page) {
+    const oldPage = this.state.currentPage;
     this.state.currentPage = page;
     this.renderBody();
     this.renderPagination();
+    this.applyCurrentStyling(); // Apply current styling after page change
+    
+    // 🔄 Emit hook for pagination change
+    if (this.pluginSystem) {
+      this.pluginSystem.emitHook('pagination:afterChange', { 
+        oldPage,
+        newPage: page,
+        pageSize: this.state.pageSize || this.options.pagination?.pageSize || 10
+      });
+    }
   }
 
   handleColumnResize(columnKey, newWidth) {
@@ -1125,6 +1185,15 @@ class ExceLikeTable {
 
     this.state.filteredData = filtered;
     this.applySorting();
+    
+    // 🔄 Emit hook for filter completion
+    if (this.pluginSystem) {
+      this.pluginSystem.emitHook('filter:afterApply', { 
+        filteredData: filtered, 
+        originalData: this.state.data,
+        activeFilters: this.state.filters
+      });
+    }
   }
 
   applySorting() {
@@ -1145,6 +1214,15 @@ class ExceLikeTable {
             return 0;
           }
         });
+        
+        // 🔄 Emit hook for sort completion
+        if (this.pluginSystem) {
+          this.pluginSystem.emitHook('sort:afterSort', { 
+            sortedData: this.state.filteredData,
+            column: this.state.sortState.column,
+            direction: this.state.sortState.direction
+          });
+        }
       }
     }
   }
@@ -1220,6 +1298,7 @@ class ExceLikeTable {
     // Page size change
     this.tableContainer.addEventListener('change', (e) => {
       if (e.target.matches('.page-size-select')) {
+        const oldPageSize = this.state.pageSize || this.options.pagination?.pageSize || 10;
         this.state.pageSize = parseInt(e.target.value);
         this.state.currentPage = 1;
         // Re-render body and pagination with styling
@@ -1227,6 +1306,17 @@ class ExceLikeTable {
         this.renderPagination();
         this.applyCurrentStyling();
         this.autoSaveSettings();
+        
+        // 🔄 Emit hook for page size change
+        if (this.pluginSystem) {
+          this.pluginSystem.emitHook('pagination:afterChange', { 
+            oldPage: 1,
+            newPage: 1,
+            oldPageSize,
+            pageSize: this.state.pageSize,
+            type: 'pageSize'
+          });
+        }
       }
     });
 
@@ -1238,10 +1328,33 @@ class ExceLikeTable {
       }
     });
 
+    // Close menu when clicking outside
+    this.documentClickHandler = (e) => {
+      const menuWrapper = e.target.closest('.table-menu-wrapper');
+      if (!menuWrapper) {
+        // Click was outside all menu wrappers, close all dropdowns
+        const allDropdowns = this.tableContainer.querySelectorAll('.table-menu-dropdown');
+        allDropdowns.forEach(dropdown => {
+          dropdown.style.display = 'none';
+        });
+      }
+    };
+    document.addEventListener('click', this.documentClickHandler);
+
+    // Prevent menu from closing when clicking inside dropdown
+    this.tableContainer.addEventListener('click', (e) => {
+      if (e.target.closest('.table-menu-dropdown')) {
+        e.stopPropagation();
+      }
+    });
+
     // Column settings
     this.tableContainer.addEventListener('click', (e) => {
       if (e.target.matches('[data-action="column-settings"]')) {
         this.showColumnSettings();
+        // Close menu
+        const dropdown = e.target.closest('.table-menu-dropdown');
+        dropdown.style.display = 'none';
       }
     });
 
@@ -1635,6 +1748,22 @@ class ExceLikeTable {
     // Add event listeners
     this.attachFilterEvents(dropdown, column, originalFilters, originalRangeFilters, originalDateRangeFilters, originalFilteredData);
     
+    // Add click outside detection
+    const clickOutsideHandler = (e) => {
+      // Check if the click is outside the dropdown and not on the filter button
+      if (!dropdown.contains(e.target) && !e.target.closest('.filter-btn')) {
+        this.closeFilter();
+        document.removeEventListener('click', clickOutsideHandler);
+      }
+    };
+    
+    // Add event listener after a short delay to prevent immediate closing
+    setTimeout(() => {
+      document.addEventListener('click', clickOutsideHandler);
+    }, 0);
+    
+    // Store the handler so we can remove it when closing the filter
+    dropdown._clickOutsideHandler = clickOutsideHandler;
   }
 
   createTextFilter(uniqueValues, currentFilters, column) {
@@ -1655,7 +1784,7 @@ class ExceLikeTable {
         <div class="filter-option select-all">
           <label class="filter-option-label">
             <input type="checkbox" class="filter-checkbox" data-value="__all__" ${isAllSelected ? 'checked' : ''}>
-            <span class="filter-option-text">(すべて選択) <span class="filter-option-count">(${sortedValues.length})</span></span>
+            <span class="filter-option-text">(すべて選択) <span class="filter-option-count">(${this.countTotalDataItems(column)})</span></span>
           </label>
         </div>
         <div class="filter-options-list">
@@ -1717,6 +1846,56 @@ class ExceLikeTable {
     if (typeof value !== 'string') return false;
     // Check for year (4 digits), year-month (YYYY-MM), or full date (YYYY-MM-DD)
     return /^\d{4}(-\d{2})?(-\d{2})?$/.test(value);
+  }
+
+  // Helper function to count total data items when all values are selected for a column
+  countTotalDataItems(column) {
+    if (!this.state.data || !column) return 0;
+    
+    // Start with all data
+    let filteredData = [...this.state.data];
+    
+    // Apply filters from OTHER columns (not the current column)
+    Object.entries(this.state.filters).forEach(([key, values]) => {
+      if (key !== column.key && values && values.length > 0) {
+        filteredData = filteredData.filter(row => values.includes(row[key]));
+      }
+    });
+    
+    // Apply range filters from OTHER columns
+    Object.entries(this.state.rangeFilters).forEach(([key, range]) => {
+      if (key !== column.key && range) {
+        const col = this.options.columns.find(c => c.key === key);
+        if (col) {
+          filteredData = filteredData.filter(row => {
+            const value = parseFloat(row[col.dataIndex]);
+            if (isNaN(value)) return false;
+            if (range.min !== '' && value < parseFloat(range.min)) return false;
+            if (range.max !== '' && value > parseFloat(range.max)) return false;
+            return true;
+          });
+        }
+      }
+    });
+    
+    // Apply date range filters from OTHER columns
+    Object.entries(this.state.dateRangeFilters).forEach(([key, range]) => {
+      if (key !== column.key && range && (range.start || range.end)) {
+        const col = this.options.columns.find(c => c.key === key);
+        if (col) {
+          filteredData = filteredData.filter(row => {
+            const value = row[col.dataIndex];
+            if (!value) return false;
+            const date = new Date(value);
+            if (range.start && date < new Date(range.start)) return false;
+            if (range.end && date > new Date(range.end)) return false;
+            return true;
+          });
+        }
+      }
+    });
+    
+    return filteredData.length;
   }
 
   // Helper function to count data items for a specific month name within a year
@@ -1812,7 +1991,7 @@ class ExceLikeTable {
         <div class="filter-option select-all">
           <label class="filter-option-label">
             <input type="checkbox" class="filter-checkbox" data-value="__all__" ${selectAllChecked} data-state="${selectAllState}">
-            <span class="filter-option-text">(すべて選択) <span class="filter-option-count">(${sortedValues.length})</span></span>
+            <span class="filter-option-text">(すべて選択) <span class="filter-option-count">(${this.countTotalDataItems(column)})</span></span>
           </label>
         </div>
         <div class="filter-options-list">
@@ -1882,7 +2061,7 @@ class ExceLikeTable {
         <div class="filter-option select-all">
           <label class="filter-option-label">
             <input type="checkbox" class="filter-checkbox" data-value="__all__" ${isAllSelected ? 'checked' : ''}>
-            <span class="filter-option-text">(すべて選択) <span class="filter-option-count">(${values.length})</span></span>
+            <span class="filter-option-text">(すべて選択) <span class="filter-option-count">(${this.countTotalDataItems(column)})</span></span>
           </label>
         </div>
         <div class="date-filter-content">
@@ -2110,8 +2289,23 @@ class ExceLikeTable {
     const selectAllCheckbox = dropdown.querySelector('[data-value="__all__"]');
     if (selectAllCheckbox) {
       selectAllCheckbox.addEventListener('change', (e) => {
-        const checkboxes = dropdown.querySelectorAll('.filter-checkbox:not([data-value="__all__"]), .date-filter-checkbox');
-        checkboxes.forEach(cb => cb.checked = e.target.checked);
+        const searchInput = dropdown.querySelector('.filter-search-input');
+        const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+        
+        if (searchTerm) {
+          // When searching, only affect visible items
+          const allOptions = dropdown.querySelectorAll('.filter-option:not(.select-all)');
+          allOptions.forEach(option => {
+            if (option.style.display !== 'none') {
+              const checkbox = option.querySelector('.filter-checkbox');
+              if (checkbox) checkbox.checked = e.target.checked;
+            }
+          });
+        } else {
+          // No search term, affect all checkboxes
+          const checkboxes = dropdown.querySelectorAll('.filter-checkbox:not([data-value="__all__"]), .date-filter-checkbox');
+          checkboxes.forEach(cb => cb.checked = e.target.checked);
+        }
         
         // Reset indeterminate state
         e.target.indeterminate = false;
@@ -2163,13 +2357,90 @@ class ExceLikeTable {
     const searchInput = dropdown.querySelector('.filter-search-input');
     if (searchInput) {
       searchInput.addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase();
-        const options = dropdown.querySelectorAll('.filter-option:not(.select-all), .date-filter-group, .date-filter-item');
+        const searchTerm = e.target.value.toLowerCase().trim();
+        const options = dropdown.querySelectorAll('.filter-option:not(.select-all)');
+        const selectAllCheckbox = dropdown.querySelector('[data-value="__all__"]');
         
+        // First pass: show/hide options and handle checkboxes
         options.forEach(option => {
-          const text = option.querySelector('.filter-option-text, .date-filter-text')?.textContent.toLowerCase() || '';
-          option.style.display = text.includes(searchTerm) ? 'block' : 'none';
+          const text = option.querySelector('.filter-option-text')?.textContent.toLowerCase() || '';
+          const checkbox = option.querySelector('.filter-checkbox');
+          const matches = text.includes(searchTerm);
+          
+          option.style.display = matches || searchTerm === '' ? 'block' : 'none';
+          
+          // Auto-check matching items when searching
+          if (searchTerm !== '' && matches) {
+            checkbox.checked = true;
+          } else if (searchTerm !== '' && !matches) {
+            // Uncheck non-matching items when searching
+            checkbox.checked = false;
+          }
+          // When search is empty, keep existing checked state
         });
+        
+        // Always update select all checkbox state based on ALL items (not just visible)
+        if (selectAllCheckbox) {
+          const allCheckboxes = dropdown.querySelectorAll('.filter-checkbox:not([data-value="__all__"])');
+          const checkedCheckboxes = dropdown.querySelectorAll('.filter-checkbox:not([data-value="__all__"]):checked');
+          const totalCount = allCheckboxes.length;
+          const checkedCount = checkedCheckboxes.length;
+          
+          if (checkedCount === 0) {
+            // No items selected
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+          } else if (checkedCount === totalCount) {
+            // All items selected
+            selectAllCheckbox.checked = true;
+            selectAllCheckbox.indeterminate = false;
+          } else {
+            // Some items selected
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = true;
+          }
+        }
+        
+        // Update OK button state
+        updateOkButtonState();
+        
+        // Apply real-time filtering if search term is present
+        if (searchTerm !== '') {
+          applyRealtimeFilter();
+        }
+        
+        // For date filters, handle the hierarchy
+        if (column.filterType === 'date-hierarchy') {
+          const dateGroups = dropdown.querySelectorAll('.date-filter-group');
+          dateGroups.forEach(group => {
+            const groupText = group.querySelector('.date-filter-text')?.textContent.toLowerCase() || '';
+            const monthItems = group.querySelectorAll('.date-filter-month');
+            const dayItems = group.querySelectorAll('.date-filter-day');
+            let groupVisible = false;
+            
+            // Check year
+            if (groupText.includes(searchTerm) || searchTerm === '') {
+              groupVisible = true;
+            }
+            
+            // Check months
+            monthItems.forEach(month => {
+              const monthText = month.querySelector('.date-filter-text')?.textContent.toLowerCase() || '';
+              const monthMatches = monthText.includes(searchTerm) || searchTerm === '';
+              month.style.display = monthMatches ? 'block' : 'none';
+              if (monthMatches) groupVisible = true;
+              
+              // Check days within month
+              const days = month.querySelectorAll('.date-filter-day');
+              days.forEach(day => {
+                const dayText = day.querySelector('.date-filter-text')?.textContent.toLowerCase() || '';
+                day.style.display = (dayText.includes(searchTerm) || searchTerm === '') ? 'block' : 'none';
+              });
+            });
+            
+            group.style.display = groupVisible ? 'block' : 'none';
+          });
+        }
       });
     }
 
@@ -2472,6 +2743,10 @@ class ExceLikeTable {
   closeFilter() {
     const existingDropdown = document.querySelector('.filter-dropdown-wrapper');
     if (existingDropdown) {
+      // Remove click outside event listener if it exists
+      if (existingDropdown._clickOutsideHandler) {
+        document.removeEventListener('click', existingDropdown._clickOutsideHandler);
+      }
       existingDropdown.remove();
     }
     this.state.openFilter = null;
@@ -3165,6 +3440,14 @@ class ExceLikeTable {
     this.state.data = [...data];
     this.state.currentPage = 1;
     this.render();
+    
+    // 🔄 Emit hook for data update
+    if (this.pluginSystem) {
+      this.pluginSystem.emitHook('data:afterLoad', { 
+        newData: data,
+        type: 'setData'
+      });
+    }
   }
 
   updateData(data) {
@@ -3562,7 +3845,7 @@ class ExceLikeTable {
 
       // Clear all ExceLikeTable related LocalStorage data
       Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('excelike_')) {
+        if (key.startsWith('excelike_') || key.startsWith('table-plugin-')) {
           localStorage.removeItem(key);
         }
       });
@@ -3718,6 +4001,9 @@ class ExceLikeTable {
 
   destroy() {
     // Clean up event listeners and DOM
+    if (this.documentClickHandler) {
+      document.removeEventListener('click', this.documentClickHandler);
+    }
     this.container.innerHTML = '';
     this.closeFilter();
   }
@@ -3726,8 +4012,10 @@ class ExceLikeTable {
 // Export for different module systems
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = ExceLikeTable;
+  module.exports.ColumnHelpers = ColumnHelpers;
 }
 
 if (typeof window !== 'undefined') {
   window.ExceLikeTable = ExceLikeTable;
+  window.ColumnHelpers = ColumnHelpers;
 }

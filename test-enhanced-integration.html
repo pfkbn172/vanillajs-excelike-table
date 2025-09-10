@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Enhanced Conditional Formatting Integration</title>
+  <link rel="stylesheet" href="src/ExceLikeTable.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 20px;
+      background: #f8f9fa;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #e8e8e8;
+      border-radius: 6px;
+    }
+    .test-section h3 {
+      margin-top: 0;
+      color: #333;
+    }
+    .test-button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 5px;
+      font-weight: 500;
+    }
+    .test-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Enhanced Conditional Formatting Integration Test</h1>
+    
+    <div class="test-section">
+      <h3>📊 Test Data Table</h3>
+      <div id="table-container"></div>
+    </div>
+    
+    <div class="test-section">
+      <h3>🎛️ Enhanced Dialog Controls</h3>
+      <button id="test-enhanced-dialog" class="test-button">✨ Open Enhanced Dialog</button>
+      <button id="test-legacy-dialog" class="test-button">🔄 Open Legacy Dialog</button>
+      <button id="test-context-menu" class="test-button">📋 Test Context Menu (Right-click on table)</button>
+    </div>
+    
+    <div class="test-section">
+      <h3>📈 Component Status</h3>
+      <div id="status-display">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Core Table -->
+  <script src="src/ExceLikeTable.js"></script>
+  
+  <!-- Conditional Formatting Dependencies -->
+  <script src="src/plugins/conditional-formatting/config.js"></script>
+  <script src="src/plugins/conditional-formatting/utils.js"></script>
+  <script src="src/plugins/conditional-formatting/types.js"></script>
+  <script src="src/plugins/conditional-formatting/rule-engine.js"></script>
+  <script src="src/plugins/conditional-formatting/format-applier.js"></script>
+  <script src="src/plugins/conditional-formatting/context-menu-extension.js"></script>
+  
+  <!-- Enhanced Components -->
+  <script src="src/plugins/conditional-formatting/data-migration-manager.js"></script>
+  <script src="src/plugins/conditional-formatting/enhanced-ui-manager.js"></script>
+  <script src="src/plugins/conditional-formatting/enhanced-rule-engine.js"></script>
+  
+  <!-- Main Plugin -->
+  <script src="src/plugins/conditional-formatting/conditional-formatting-plugin.js"></script>
+  
+  <script>
+    let table;
+    
+    // Sample test data
+    const testData = [
+      { id: 1, name: 'Alice Johnson', department: 'Engineering', sales: 120000, progress: 85, status: 'Complete' },
+      { id: 2, name: 'Bob Smith', department: 'Sales', sales: 95000, progress: 60, status: 'In Progress' },
+      { id: 3, name: 'Carol Davis', department: 'Marketing', sales: 150000, progress: 90, status: 'Complete' },
+      { id: 4, name: 'David Wilson', department: 'Engineering', sales: 80000, progress: 45, status: 'Pending' },
+      { id: 5, name: 'Eva Brown', department: 'Sales', sales: 200000, progress: 95, status: 'Complete' }
+    ];
+    
+    // Initialize table
+    function initializeTable() {
+      table = new ExceLikeTable({
+        container: 'table-container',
+        data: testData,
+        columns: [
+          { key: 'id', title: 'ID', type: 'number' },
+          { key: 'name', title: 'Name', type: 'text' },
+          { key: 'department', title: 'Department', type: 'text' },
+          { key: 'sales', title: 'Sales ($)', type: 'number' },
+          { key: 'progress', title: 'Progress (%)', type: 'number' },
+          { key: 'status', title: 'Status', type: 'text' }
+        ],
+        plugins: ['conditional-formatting'],
+        height: 400
+      });
+      
+      // Update status display
+      updateStatusDisplay();
+    }
+    
+    // Update status display
+    function updateStatusDisplay() {
+      const statusDiv = document.getElementById('status-display');
+      const plugin = table?.pluginInstances?.['conditional-formatting'];
+      
+      if (plugin) {
+        const status = {
+          initialized: plugin.initialized,
+          hasEnhanced: plugin.hasEnhancedComponents,
+          useImproved: plugin.useImprovedArchitecture,
+          enhancedUIManager: !!plugin.enhancedUIManager,
+          enhancedRuleEngine: !!plugin.enhancedRuleEngine
+        };
+        
+        statusDiv.innerHTML = `
+          <div><strong>Plugin Status:</strong></div>
+          <ul>
+            <li>Initialized: ${status.initialized ? '✅' : '❌'}</li>
+            <li>Enhanced Components Available: ${status.hasEnhanced ? '✅' : '❌'}</li>
+            <li>Using Improved Architecture: ${status.useImproved ? '✅' : '❌'}</li>
+            <li>Enhanced UI Manager: ${status.enhancedUIManager ? '✅' : '❌'}</li>
+            <li>Enhanced Rule Engine: ${status.enhancedRuleEngine ? '✅' : '❌'}</li>
+          </ul>
+        `;
+      } else {
+        statusDiv.innerHTML = '<span style="color: red;">❌ Plugin not loaded</span>';
+      }
+    }
+    
+    // Event handlers
+    document.addEventListener('DOMContentLoaded', () => {
+      initializeTable();
+      
+      // Enhanced dialog test
+      document.getElementById('test-enhanced-dialog').addEventListener('click', () => {
+        const plugin = table?.pluginInstances?.['conditional-formatting'];
+        if (plugin) {
+          plugin.showEnhancedDialog();
+        } else {
+          alert('Plugin not available');
+        }
+      });
+      
+      // Legacy dialog test
+      document.getElementById('test-legacy-dialog').addEventListener('click', () => {
+        const plugin = table?.pluginInstances?.['conditional-formatting'];
+        if (plugin && plugin.uiManager) {
+          plugin.uiManager.showFormattingDialog({
+            selectedColumns: ['sales'],
+            cellData: null
+          });
+        } else {
+          alert('Plugin not available');
+        }
+      });
+      
+      // Context menu instruction
+      document.getElementById('test-context-menu').addEventListener('click', () => {
+        alert('Right-click on any cell in the table to see the enhanced context menu with the "New Rule (Enhanced)..." option!');
+      });
+    });
+  </script>
+</body>
+</html>
