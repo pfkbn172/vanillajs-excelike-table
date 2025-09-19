@@ -784,8 +784,9 @@
   font-weight: normal;
 }
 
-/* Column resize handle */
-.resize-handle {
+/* Column resize handle - 両方のクラス名に対応 */
+.resize-handle,
+.table-column-resizer {
   position: absolute;
   top: 0;
   right: 0;
@@ -795,9 +796,11 @@
   background: transparent;
   border-right: 2px solid transparent;
   transition: border-color 0.2s;
+  z-index: 200 !important;
 }
 
-.resize-handle:hover {
+.resize-handle:hover,
+.table-column-resizer:hover {
   border-right-color: #1890ff;
   cursor: ew-resize;
 }
@@ -1219,21 +1222,90 @@
   border-color: #1890ff;
 }
 
-/* Column pinning styles */
+/* Column pinning styles - 最適化されたバージョン */
+
+/* 基本固定列スタイル */
 .pinned-column {
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
-  background-color: #ffffff !important;
-  z-index: 100;
+  position: sticky !important;
+  left: var(--pinned-left, 0px) !important;
+  background-color: #fff !important;
+  z-index: 101;
+  min-width: fit-content;
 }
 
-/* Separate styling for pinned header cells */
-.table-header.pinned-column {
+/* 非固定列のクリッピング設定（固定列の後ろに完全に隠れるように） */
+.table td:not(.pinned-column),
+.table th:not(.pinned-column) {
+  z-index: 1;
+}
+
+/* 固定列の背景を強化して非固定列を完全に隠す */
+.pinned-column {
+  background-color: #fff !important;
+  /* リサイズハンドルを妨げないよう、影は内側に限定 */
+  box-shadow: inset 2px 0 0 rgba(24, 144, 255, 0.1);
+}
+
+.table-header.pinned-column,
+th.pinned-column {
   background-color: #fafafa !important;
+  box-shadow: inset 2px 0 0 rgba(24, 144, 255, 0.1);
 }
 
-/* Blue line only on the last pinned column */
+
+/* ヘッダー固定列（より高いz-index） */
+.table-header.pinned-column,
+th.pinned-column {
+  background-color: #fafafa !important;
+  z-index: 102;
+}
+
+/* 最後の固定列（境界線表示） */
 .last-pinned-column {
   border-right: 2px solid #1890ff !important;
+  z-index: 103;
+}
+
+/* 固定列範囲の境界線を非固定列より上に表示 */
+.last-pinned-column::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -1px;
+  bottom: 0;
+  width: 2px;
+  background: #1890ff;
+  z-index: 110;
+  pointer-events: none;
+}
+
+/* ヘッダーの最後の固定列 */
+th.last-pinned-column {
+  z-index: 104;
+}
+
+/* テーブル要素の基本設定 */
+.table td,
+.table th {
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* テーブルコンテナの設定 */
+.table-container {
+  position: relative;
+  isolation: isolate;
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+/* ヘッダーとピン列の複合スティッキー */
+.table thead th.pinned-column {
+  position: sticky !important;
+  top: 0;
+  left: var(--pinned-left, 0px) !important;
+  z-index: 105 !important;
+  background-color: #fafafa !important;
 }
 
 /* Scrollbar styling */
@@ -1300,5 +1372,184 @@
   
   .table tbody tr:hover {
     background-color: transparent;
+  }
+}
+
+/* ===== 共通モーダルスタイル ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: modal-fade-in 0.2s ease-out;
+}
+
+.modal {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: hidden;
+  animation: modal-slide-in 0.3s ease-out;
+}
+
+.modal-large {
+  width: 800px;
+}
+
+.modal-medium {
+  width: 600px;
+}
+
+.modal-small {
+  width: 400px;
+}
+
+/* ===== モーダルヘッダー ===== */
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e8e8e8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8f8f8;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #222;
+}
+
+.modal-close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px;
+  color: #555;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.modal-close-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: #222;
+}
+
+/* ===== モーダルボディ ===== */
+.modal-body {
+  padding: 24px;
+  max-height: 60vh;
+  overflow-y: auto;
+  background: white;
+}
+
+/* ===== モーダルフッター ===== */
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e8e8e8;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  background: #f8f8f8;
+}
+
+/* ===== 共通ボタンスタイル ===== */
+.btn {
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  outline: none;
+}
+
+.btn:focus {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.btn-primary {
+  background: #1890ff;
+  color: white;
+  border-color: #1890ff;
+}
+
+.btn-primary:hover {
+  background: #40a9ff;
+  border-color: #40a9ff;
+}
+
+.btn-primary:active {
+  background: #096dd9;
+  border-color: #096dd9;
+}
+
+.btn-secondary {
+  background: white;
+  color: #555;
+  border-color: #d0d0d0;
+}
+
+.btn-secondary:hover {
+  background: #e8e8e8;
+  color: #333;
+  border-color: #999;
+}
+
+/* ===== アニメーション ===== */
+@keyframes modal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-slide-in {
+  from {
+    transform: scale(0.9) translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ===== レスポンシブ ===== */
+@media (max-width: 768px) {
+  .modal {
+    width: 95vw !important;
+    margin: 10px;
+  }
+  
+  .modal-body {
+    padding: 16px;
+  }
+}
+
+/* ===== アクセシビリティ ===== */
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay,
+  .modal {
+    animation: none;
+    transition: none;
   }
 }

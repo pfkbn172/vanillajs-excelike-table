@@ -1,0 +1,407 @@
+/**
+ * Conditional Formatting Plugin Styles
+ * シンプルで使いやすいUIスタイル
+ */
+
+/* ===== CSS Variables (カスタムプロパティ) ===== */
+:root {
+  /* カラーパレット */
+  --cf-color-primary: #1890ff;
+  --cf-color-success: #52c41a;
+  --cf-color-error: #ff4d4f;
+  --cf-color-warning: #faad14;
+  
+  /* 背景色 */
+  --cf-bg-primary: #fafafa;
+  --cf-bg-secondary: #f9f9f9;
+  --cf-bg-white: #ffffff;
+  --cf-bg-light: #f8f8f8;
+  --cf-bg-preview: #f5f5f5;
+  
+  /* ボーダー */
+  --cf-border-light: #e0e0e0;
+  --cf-border-medium: #d0d0d0;
+  --cf-border-dark: #c0c0c0;
+  --cf-border-input: #ddd;
+  
+  /* テキスト色 */
+  --cf-text-primary: #222;
+  --cf-text-secondary: #333;
+  --cf-text-disabled: #999;
+  --cf-text-default: #000000;
+  
+  /* サイズ定数 */
+  --cf-border-radius: 6px;
+  --cf-border-radius-small: 4px;
+  --cf-border-radius-input: 3px;
+  
+  /* スペーシング */
+  --cf-spacing-xs: 4px;
+  --cf-spacing-sm: 8px;
+  --cf-spacing-md: 12px;
+  --cf-spacing-lg: 16px;
+  --cf-spacing-xl: 20px;
+  
+  /* フォントサイズ */
+  --cf-font-size-sm: 12px;
+  --cf-font-size-md: 14px;
+  --cf-font-size-lg: 16px;
+  
+  /* チェックボックス */
+  --cf-checkbox-size: 16px;
+  
+  /* カラー入力 */
+  --cf-color-input-width: 60px;
+  --cf-color-input-height: 40px;
+  
+  /* Z-index */
+  --cf-z-modal: 10000;
+  --cf-z-toast: 10001;
+  
+  /* アニメーション */
+  --cf-transition-fast: 0.2s ease;
+  --cf-transition-normal: 0.3s ease;
+}
+
+/* ===== 条件付き書式専用ボタン ===== */
+.cf-btn-icon {
+  background: none;
+  border: none;
+  padding: var(--cf-spacing-xs) var(--cf-spacing-sm);
+  cursor: pointer;
+  font-size: var(--cf-font-size-md);
+  border-radius: var(--cf-border-radius-small);
+  transition: background var(--cf-transition-fast);
+  line-height: 1;
+}
+
+.cf-btn-icon:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.cf-btn-icon:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ===== ツールバー ===== */
+.cf-rules-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--cf-spacing-xl);
+  padding: var(--cf-spacing-lg);
+  background: var(--cf-bg-primary);
+  border-radius: var(--cf-border-radius);
+  border: 1px solid var(--cf-border-light);
+}
+
+.cf-rules-stats {
+  font-size: var(--cf-font-size-md);
+  color: var(--cf-text-primary);
+}
+
+.cf-stats-text {
+  font-weight: 500;
+}
+
+/* ===== ルール一覧 ===== */
+.cf-rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cf-spacing-md);
+}
+
+.cf-rule-item {
+  border: 1px solid var(--cf-border-light);
+  border-radius: var(--cf-border-radius);
+  background: var(--cf-bg-secondary);
+  transition: all var(--cf-transition-fast);
+}
+
+.cf-rule-item:hover {
+  border-color: var(--cf-color-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.cf-rule-header {
+  padding: var(--cf-spacing-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--cf-spacing-lg);
+}
+
+
+.cf-rule-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cf-rule-name {
+  font-weight: 600;
+  font-size: var(--cf-font-size-md);
+  color: var(--cf-text-primary);
+  margin-bottom: var(--cf-spacing-xs);
+}
+
+.cf-rule-description {
+  font-size: 12px;
+  color: #333;
+  font-family: 'Courier New', monospace;
+}
+
+.cf-rule-preview {
+  flex-shrink: 0;
+}
+
+.cf-preview-cell {
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  min-width: 60px;
+  text-align: center;
+}
+
+.cf-rule-actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 4px;
+}
+
+/* ===== 空の状態 ===== */
+.cf-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #333;
+}
+
+.cf-empty-state p {
+  margin: 8px 0;
+}
+
+/* ===== フォーム ===== */
+.cf-rule-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cf-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cf-rule-form .cf-form-label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #222;
+}
+
+.cf-rule-form .cf-form-input,
+.cf-rule-form .cf-form-select {
+  padding: var(--cf-spacing-sm) var(--cf-spacing-md);
+  border: 1px solid var(--cf-border-medium);
+  border-radius: var(--cf-border-radius);
+  font-size: var(--cf-font-size-md);
+  transition: border-color var(--cf-transition-fast);
+  outline: none;
+  background: var(--cf-bg-secondary);
+  color: var(--cf-text-secondary);
+}
+
+.cf-rule-form .cf-form-input:focus,
+.cf-rule-form .cf-form-select:focus {
+  border-color: var(--cf-color-primary);
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  background: var(--cf-bg-white);
+}
+
+.cf-rule-form .cf-form-section {
+  padding: 20px;
+  background: #f8f8f8;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+.cf-rule-form .cf-form-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #222;
+}
+
+/* ===== カラー入力 ===== */
+.cf-color-input-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.cf-rule-form .cf-color-input {
+  width: var(--cf-color-input-width);
+  height: var(--cf-color-input-height);
+  border: 1px solid var(--cf-border-dark);
+  border-radius: var(--cf-border-radius);
+  cursor: pointer;
+  outline: none;
+  background: var(--cf-bg-secondary);
+  padding: 0;
+}
+
+.cf-color-input:focus {
+  border-color: var(--cf-color-primary);
+}
+
+.cf-color-text {
+  flex: 1;
+  font-family: 'Courier New', monospace;
+}
+
+/* ===== チェックボックス ===== */
+.cf-checkbox-group {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cf-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  user-select: none;
+}
+
+.cf-checkbox-label input[type="checkbox"] {
+  display: none;
+}
+
+.cf-rule-form .cf-checkbox-custom {
+  width: var(--cf-checkbox-size);
+  height: var(--cf-checkbox-size);
+  border: 2px solid var(--cf-border-dark);
+  border-radius: var(--cf-border-radius-input);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--cf-transition-fast);
+  position: relative;
+  background: var(--cf-bg-secondary);
+}
+
+.cf-checkbox-label input[type="checkbox"]:checked + .cf-checkbox-custom {
+  background: var(--cf-color-primary);
+  border-color: var(--cf-color-primary);
+}
+
+.cf-checkbox-label input[type="checkbox"]:checked + .cf-checkbox-custom::after {
+  content: '✓';
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* ===== プレビュー ===== */
+.cf-rule-form .cf-preview-container {
+  padding: 16px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+
+/* ===== 適用済みセル ===== */
+.cf-formatted {
+  /* 条件付き書式が適用されたセルを識別するためのクラス */
+  position: relative;
+}
+
+/* ===== トーストメッセージ ===== */
+.cf-toast {
+  position: fixed;
+  top: var(--cf-spacing-xl);
+  right: var(--cf-spacing-xl);
+  padding: var(--cf-spacing-md) var(--cf-spacing-xl);
+  border-radius: var(--cf-border-radius);
+  font-size: var(--cf-font-size-md);
+  font-weight: 500;
+  z-index: var(--cf-z-toast);
+  transform: translateX(100%);
+  transition: transform var(--cf-transition-normal);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.cf-toast-success {
+  background: var(--cf-color-success);
+  color: var(--cf-bg-white);
+}
+
+.cf-toast-error {
+  background: var(--cf-color-error);
+  color: var(--cf-bg-white);
+}
+
+.cf-toast-show {
+  transform: translateX(0);
+}
+
+
+/* ===== 条件付き書式の適用スタイル ===== */
+.cf-formatted {
+  /* 条件付き書式が適用されたセルに追加される基本クラス */
+}
+
+.cf-row-formatted {
+  /* 行全体書式が適用されたセルに追加される追加クラス */
+  transition: all 0.2s ease;
+}
+
+/* 行全体書式適用時のホバー効果 */
+tr:has(.cf-row-formatted):hover .cf-row-formatted {
+  opacity: 0.9;
+}
+
+/* ===== レスポンシブ ===== */
+@media (max-width: 768px) {
+  .cf-modal {
+    width: 95vw !important;
+    margin: 10px;
+  }
+  
+  .cf-modal-body {
+    padding: 16px;
+  }
+  
+  .cf-rule-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .cf-rule-actions {
+    align-self: flex-end;
+  }
+  
+  .cf-checkbox-group {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .cf-color-input-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* ===== アクセシビリティ ===== */
+@media (prefers-reduced-motion: reduce) {
+  .cf-toast {
+    animation: none;
+    transition: none;
+  }
+}
+
+
+/* Cache buster: 2025-09-17 14:40:00 */

@@ -647,6 +647,111 @@ class ExceLikeTable {
       this.state.pinnedColumns[col.key] = false;
     });
   }
+  
+  /**
+   * Get column width with fallback
+   * @private
+   */
+  getColumnWidth(column) {
+    return this.state.columnWidths[column.key] || column.width || 150;
+  }
+
+  /**
+   * Calculate column positions for pinned columns
+   * @param {Array} columns - Array of column configurations
+   * @returns {Object} Map of column key to left position
+   */
+  /**
+   * 統一列順序システム - ヘッダーとボディで絶対に同じ順序を保証
+   */
+  getOrderedColumns() {
+    const visibleColumns = this.getVisibleColumns();
+    const pinnedCols = visibleColumns.filter(col => this.state.pinnedColumns[col.key]);
+    const unpinnedCols = visibleColumns.filter(col => !this.state.pinnedColumns[col.key]);
+    
+    return {
+      all: [...pinnedCols, ...unpinnedCols],
+      pinned: pinnedCols,
+      unpinned: unpinnedCols
+    };
+  }
+
+  /**
+   * 列幅の統一取得メソッド
+   */
+  getColumnWidth(column) {
+    return this.state.columnWidths[column.key] || column.width || 150;
+  }
+
+  /**
+   * 最後の固定列のキーを取得
+   */
+  getLastPinnedColumnKey() {
+    const orderedColumns = this.getOrderedColumns();
+    return orderedColumns.pinned.length > 0 ? 
+           orderedColumns.pinned[orderedColumns.pinned.length - 1].key : null;
+  }
+
+  /**
+   * 改善された位置計算 - すべての列の位置情報を計算
+   */
+  calculateAllColumnPositions() {
+    const orderedColumns = this.getOrderedColumns();
+    const positions = {};
+    let currentLeft = 0;
+    
+    orderedColumns.all.forEach(column => {
+      const width = this.getColumnWidth(column);
+      positions[column.key] = {
+        left: currentLeft,
+        width: width,
+        isPinned: this.state.pinnedColumns[column.key] || false
+      };
+      currentLeft += width;
+    });
+    
+    return positions;
+  }
+
+  /**
+   * 共通スタイル適用メソッド - ヘッダーとボディで統一
+   */
+  applyColumnStyles(element, column, positions) {
+    const position = positions[column.key];
+    if (!position) return;
+    
+    // 基本的な幅設定
+    element.style.width = `${position.width}px`;
+    
+    // 固定列のスタイル適用
+    if (position.isPinned) {
+      element.classList.add('pinned-column');
+      // CSS変数のみ設定（CSSで処理）
+      element.style.setProperty('--pinned-left', `${position.left}px`);
+      
+      // 最後の固定列判定
+      const lastPinnedKey = this.getLastPinnedColumnKey();
+      if (column.key === lastPinnedKey) {
+        element.classList.add('last-pinned-column');
+      }
+    }
+  }
+
+  /**
+   * 旧メソッド（互換性のため残す）
+   */
+  calculateColumnPositions(columns) {
+    const positions = {};
+    let currentLeft = 0;
+    
+    columns.forEach(column => {
+      positions[column.key] = currentLeft;
+      const width = this.getColumnWidth(column);
+      currentLeft += width;
+    });
+    
+    return positions;
+  }
 
   checkFixedHeight() {
     // Check if the container has a fixed height set
@@ -776,6 +881,9 @@ class ExceLikeTable {
 
     // Column settings
     menuItems.push('<div class="table-menu-item" data-action="column-settings">表示列設定</div>');
+    
+    // Conditional formatting
+    menuItems.push('<div class="table-menu-item" data-action="conditional-formatting">条件付き書式</div>');
 
     // Font size submenu
     menuItems.push(`
@@ -821,33 +929,17 @@ class ExceLikeTable {
   renderHeader() {
     const headerRow = document.createElement('tr');
     
-    const visibleColumns = this.getVisibleColumns();
-    const pinnedColumns = visibleColumns.filter(col => this.state.pinnedColumns[col.key]);
-    const unpinnedColumns = visibleColumns.filter(col => !this.state.pinnedColumns[col.key]);
-    const orderedColumns = [...pinnedColumns, ...unpinnedColumns];
+    // 新しい統一システムを使用
+    const orderedColumns = this.getOrderedColumns();
+    const positions = this.calculateAllColumnPositions();
+    
 
-    let leftPosition = 0;
-
-    orderedColumns.forEach((column, index) => {
+    orderedColumns.all.forEach((column, index) => {
       const th = document.createElement('th');
       th.className = 'table-header';
-      th.style.width = `${this.state.columnWidths[column.key]}px`;
       
-      // Apply pinning styles
-      if (this.state.pinnedColumns[column.key]) {
-        th.classList.add('pinned-column');
-        th.style.position = 'sticky';
-        th.style.left = `${leftPosition}px`;
-        th.style.zIndex = '101';
-        
-        // Check if this is the last pinned column
-        const isLastPinned = index === pinnedColumns.length - 1;
-        if (isLastPinned) {
-          th.classList.add('last-pinned-column');
-        }
-        
-        leftPosition += this.state.columnWidths[column.key];
-      }
+      // 統一スタイル適用メソッドを使用
+      this.applyColumnStyles(th, column, positions);
 
       const headerContent = document.createElement('div');
       headerContent.className = 'header-content';
@@ -931,39 +1023,27 @@ class ExceLikeTable {
   renderBody() {
     this.tbody.innerHTML = '';
     
-    const visibleColumns = this.getVisibleColumns();
-    const pinnedColumns = visibleColumns.filter(col => this.state.pinnedColumns[col.key]);
-    const unpinnedColumns = visibleColumns.filter(col => !this.state.pinnedColumns[col.key]);
-    const orderedColumns = [...pinnedColumns, ...unpinnedColumns];
-
+    // 新しい統一システムを使用
+    const orderedColumns = this.getOrderedColumns();
+    const positions = this.calculateAllColumnPositions();
     const paginatedData = this.getPaginatedData();
+    
 
     paginatedData.forEach(record => {
       const row = document.createElement('tr');
-      let leftPosition = 0;
 
-      orderedColumns.forEach((column, index) => {
+      orderedColumns.all.forEach((column, index) => {
         const td = document.createElement('td');
         td.className = 'table-cell';
-        td.style.width = `${this.state.columnWidths[column.key]}px`;
+        
+        // Add data attributes for conditional formatting
+        td.dataset.column = column.key;
 
-        // Apply pinning styles
-        if (this.state.pinnedColumns[column.key]) {
-          td.classList.add('pinned-column');
-          td.style.position = 'sticky';
-          td.style.left = `${leftPosition}px`;
-          td.style.zIndex = '100';
-          
-          // Check if this is the last pinned column
-          const isLastPinned = index === pinnedColumns.length - 1;
-          if (isLastPinned) {
-            td.classList.add('last-pinned-column');
-          }
-          
-          leftPosition += this.state.columnWidths[column.key];
-        }
+        // 統一スタイル適用メソッドを使用
+        this.applyColumnStyles(td, column, positions);
 
         const value = record[column.dataIndex];
+        td.dataset.value = value;
         const content = column.render ? column.render(value, record) : value;
         
         if (typeof content === 'string') {
@@ -1260,6 +1340,7 @@ class ExceLikeTable {
 
   // Event attachment
   attachEvents() {
+    
     // Sort events
     this.tableContainer.addEventListener('click', (e) => {
       if (e.target.closest('.sort-indicator')) {
@@ -1352,6 +1433,16 @@ class ExceLikeTable {
     this.tableContainer.addEventListener('click', (e) => {
       if (e.target.matches('[data-action="column-settings"]')) {
         this.showColumnSettings();
+        // Close menu
+        const dropdown = e.target.closest('.table-menu-dropdown');
+        dropdown.style.display = 'none';
+      }
+    });
+
+    // Conditional formatting
+    this.tableContainer.addEventListener('click', (e) => {
+      if (e.target.matches('[data-action="conditional-formatting"]')) {
+        this.showConditionalFormatting();
         // Close menu
         const dropdown = e.target.closest('.table-menu-dropdown');
         dropdown.style.display = 'none';
@@ -3824,6 +3915,28 @@ class ExceLikeTable {
       }
     };
     document.addEventListener('keydown', handleEscape);
+  }
+
+  /**
+   * Show conditional formatting management screen
+   */
+  showConditionalFormatting() {
+    // プレースホルダー実装 - 後で条件付き書式プラグインで置き換え
+    console.log('条件付き書式管理画面を開く');
+    
+    // 条件付き書式プラグインが読み込まれているかチェック
+    if (typeof window.ConditionalFormatting === 'undefined') {
+      alert('条件付き書式プラグインが読み込まれていません。\nプラグインファイルを読み込んでください。');
+      return;
+    }
+    
+    // プラグインが初期化されていない場合は初期化
+    if (!this.conditionalFormatting) {
+      this.conditionalFormatting = new window.ConditionalFormatting(this);
+    }
+    
+    // 管理画面を表示
+    this.conditionalFormatting.showManagementScreen();
   }
 
   /**

@@ -168,6 +168,9 @@
       border-radius: 10px;
     }
   </style>
+  
+  <!-- Conditional Formatting Plugin CSS -->
+  <link rel="stylesheet" href="src/plugins/conditional-formatting/conditional-formatting.css">
 </head>
 <body>
   <div class="container">
@@ -210,6 +213,10 @@
           <p>拡張可能アーキテクチャ、動的読み込み</p>
         </div>
         <div class="feature-card">
+          <h3>🎨 条件付き書式</h3>
+          <p>セル値に基づく自動書式設定、優先度管理</p>
+        </div>
+        <div class="feature-card">
           <h3>🧪 テスト</h3>
           <p>Jest + jsdom、ユニット・統合テスト</p>
         </div>
@@ -232,6 +239,31 @@
       <div id="plugin-status" class="status"></div>
     </div>
 
+    <!-- Conditional Formatting Demo Section -->
+    <div class="demo-section">
+      <h2>🎨 条件付き書式デモ</h2>
+      <p>セル値に基づいて自動的に書式を適用する機能です</p>
+      
+      <div class="controls">
+        <button onclick="openConditionalFormatting()">📋 条件付き書式管理</button>
+        <button onclick="createSampleRules()">🎯 サンプルルール作成</button>
+        <button onclick="applyConditionalFormatting()">✅ ルール適用</button>
+        <button onclick="clearConditionalFormatting()">🧹 書式クリア</button>
+        <button onclick="showConditionalFormattingStats()">📊 統計表示</button>
+      </div>
+      
+      <div class="status info">
+        <strong>使用方法:</strong>
+        <ol style="margin: 8px 0; padding-left: 20px;">
+          <li>テーブル右上の設定ボタン（⚙️）→「Conditional Format」をクリック</li>
+          <li>「+ New Rule」で新しいルールを作成</li>
+          <li>条件（列、演算子、値、データ型）と書式（色、スタイル）を設定</li>
+          <li>「Apply All」でルールを適用</li>
+        </ol>
+      </div>
+      
+      <div id="cf-status" class="status">条件付き書式が利用可能です</div>
+    </div>
 
     <!-- WebWorker Demo Section -->
     <div class="demo-section">
@@ -365,6 +397,16 @@
   <script src="src/plugins/column-resizer-plugin.js"></script>
   <script src="src/plugins/row-selection-plugin.js"></script>
   
+  <!-- Conditional Formatting Plugin - 依存関係順序に注意 -->
+  <script src="src/plugins/conditional-formatting/constants.js"></script>
+  <script src="src/plugins/conditional-formatting/utils.js"></script>
+  <script src="src/plugins/conditional-formatting/performance-optimizations.js"></script>
+  <script src="src/plugins/conditional-formatting/rule.js"></script>
+  <script src="src/plugins/conditional-formatting/evaluator.js"></script>
+  <script src="src/plugins/conditional-formatting/applier.js"></script>
+  <script src="src/plugins/conditional-formatting/manager.js"></script>
+  <script src="src/plugins/conditional-formatting/ui.js"></script>
+  <script src="src/plugins/conditional-formatting/conditional-formatting.js"></script>
   
   <!-- Load main table last -->
   <script src="src/ExceLikeTable.js"></script>
@@ -444,6 +486,24 @@
         } else {
           console.warn('PluginSystem not available or mainTable not initialized');
           updateStatus('plugin-status', 'warning', 'プラグインシステムが利用できません');
+        }
+        
+        // Initialize conditional formatting automatically
+        if (mainTable && typeof ConditionalFormatting !== 'undefined') {
+          setTimeout(() => {
+            try {
+              // Initialize conditional formatting plugin
+              if (!mainTable.conditionalFormatting) {
+                mainTable.conditionalFormatting = new ConditionalFormatting(mainTable, {
+                  autoLoad: true,
+                  autoApply: true
+                });
+                console.log('Conditional formatting initialized automatically');
+              }
+            } catch (error) {
+              console.error('Error auto-initializing conditional formatting:', error);
+            }
+          }, 500); // Initialize before plugins but after table is ready
         }
       } catch (error) {
         console.error('Error initializing plugin/worker systems:', error);
@@ -1361,6 +1421,172 @@ const plugin = {
       }
       }, 100); // Small delay to let any script errors surface first
     });
+
+    // ===== Conditional Formatting Functions =====
+    
+    function openConditionalFormatting() {
+      updateStatus('cf-status', 'info', '条件付き書式管理画面を開いています...');
+      try {
+        if (mainTable) {
+          mainTable.showConditionalFormatting();
+          updateStatus('cf-status', 'success', '条件付き書式管理画面を開きました');
+        } else {
+          updateStatus('cf-status', 'warning', 'テーブルが初期化されていません');
+        }
+      } catch (error) {
+        console.error('Error opening conditional formatting:', error);
+        updateStatus('cf-status', 'error', 'エラー: ' + error.message);
+      }
+    }
+    
+    function createSampleRules() {
+      updateStatus('cf-status', 'info', 'サンプルルールを作成しています...');
+      try {
+        if (!mainTable) {
+          updateStatus('cf-status', 'warning', 'テーブルが初期化されていません');
+          return;
+        }
+        
+        // 条件付き書式プラグインを初期化（まだされていない場合）
+        if (!mainTable.conditionalFormatting) {
+          mainTable.conditionalFormatting = new ConditionalFormatting(mainTable, {
+            autoLoad: true,
+            autoApply: true
+          });
+        }
+        
+        // サンプルルール1: 高齢者 (行全体)
+        const rule1 = mainTable.conditionalFormatting.createRule({
+          name: '高齢者 (35歳以上)',
+          applyTo: 'row',
+          condition: {
+            column: 'age',
+            operator: 'greater-equal',
+            value: '35',
+            dataType: 'number'
+          },
+          format: {
+            backgroundColor: '#fff3cd',
+            color: '#856404',
+            fontWeight: true
+          }
+        });
+        
+        // サンプルルール2: 高給与 (セルのみ)
+        const rule2 = mainTable.conditionalFormatting.createRule({
+          name: '高給与 (70000以上)',
+          applyTo: 'cell',
+          condition: {
+            column: 'salary',
+            operator: 'greater-equal',
+            value: '70000',
+            dataType: 'number'
+          },
+          format: {
+            backgroundColor: '#d1ecf1',
+            color: '#0c5460',
+            fontWeight: true,
+            fontStyle: true
+          }
+        });
+        
+        // サンプルルール3: アクティブステータス (セルのみ)
+        const rule3 = mainTable.conditionalFormatting.createRule({
+          name: 'アクティブステータス',
+          applyTo: 'cell',
+          condition: {
+            column: 'status',
+            operator: 'equals',
+            value: 'Active',
+            dataType: 'text'
+          },
+          format: {
+            backgroundColor: '#d4edda',
+            color: '#155724'
+          }
+        });
+        
+        let successCount = 0;
+        if (rule1) successCount++;
+        if (rule2) successCount++;
+        if (rule3) successCount++;
+        
+        updateStatus('cf-status', 'success', `${successCount}個のサンプルルールを作成しました`);
+        
+      } catch (error) {
+        console.error('Error creating sample rules:', error);
+        updateStatus('cf-status', 'error', 'サンプルルール作成エラー: ' + error.message);
+      }
+    }
+    
+    function applyConditionalFormatting() {
+      updateStatus('cf-status', 'info', '条件付き書式を適用しています...');
+      try {
+        if (!mainTable) {
+          updateStatus('cf-status', 'warning', 'テーブルが初期化されていません');
+          return;
+        }
+        
+        if (!mainTable.conditionalFormatting) {
+          mainTable.conditionalFormatting = new ConditionalFormatting(mainTable, {
+            autoLoad: true,
+            autoApply: true
+          });
+        }
+        
+        mainTable.conditionalFormatting.applyRules();
+        const stats = mainTable.conditionalFormatting.getStats();
+        updateStatus('cf-status', 'success', `${stats.rules.enabled}個のルールを${stats.appliedCells}個のセルに適用しました`);
+        
+      } catch (error) {
+        console.error('Error applying conditional formatting:', error);
+        updateStatus('cf-status', 'error', 'ルール適用エラー: ' + error.message);
+      }
+    }
+    
+    function clearConditionalFormatting() {
+      updateStatus('cf-status', 'info', '条件付き書式をクリアしています...');
+      try {
+        if (mainTable && mainTable.conditionalFormatting) {
+          mainTable.conditionalFormatting.clearAllFormatting();
+          updateStatus('cf-status', 'success', 'すべての条件付き書式をクリアしました');
+        } else {
+          updateStatus('cf-status', 'info', 'クリアする書式がありません');
+        }
+      } catch (error) {
+        console.error('Error clearing conditional formatting:', error);
+        updateStatus('cf-status', 'error', '書式クリアエラー: ' + error.message);
+      }
+    }
+    
+    function showConditionalFormattingStats() {
+      updateStatus('cf-status', 'info', '統計情報を取得しています...');
+      try {
+        if (!mainTable) {
+          updateStatus('cf-status', 'warning', 'テーブルが初期化されていません');
+          return;
+        }
+        
+        if (!mainTable.conditionalFormatting) {
+          mainTable.conditionalFormatting = new ConditionalFormatting(mainTable, {
+            autoLoad: true,
+            autoApply: true
+          });
+        }
+        
+        const stats = mainTable.conditionalFormatting.getStats();
+        const message = `ルール: ${stats.rules.total}個 (有効: ${stats.rules.enabled}, 無効: ${stats.rules.disabled}), 適用済みセル: ${stats.appliedCells}個`;
+        updateStatus('cf-status', 'info', message);
+        
+        // コンソールにも詳細情報を出力
+        console.log('Conditional Formatting Stats:', stats);
+        
+      } catch (error) {
+        console.error('Error getting conditional formatting stats:', error);
+        updateStatus('cf-status', 'error', '統計取得エラー: ' + error.message);
+      }
+    }
+    
   </script>
 </body>
 </html>

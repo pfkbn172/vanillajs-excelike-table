@@ -9,40 +9,78 @@ const ColumnResizerPlugin = {
   description: 'Adds drag-to-resize functionality for table columns',
   author: 'ExceLike Table Team',
 
-  // Plugin state
-  isResizing: false,
-  startX: 0,
-  startWidth: 0,
-  currentColumn: null,
-  resizeHandle: null,
+  // Plugin state - 統一された状態管理
+  state: {
+    isResizing: false,
+    isDragging: false,
+    startX: 0,
+    startWidth: 0,
+    currentColumn: null,
+    resizeHandle: null,
+    dragThreshold: 3, // ドラッグ開始の閾値（px）
+    observer: null,
+    boundHandlers: null // イベントハンドラーの参照保持
+  },
+  
+  // Configuration constants
+  config: {
+    MIN_COLUMN_WIDTH: 50,
+    HANDLE_WIDTH: 8,
+    HANDLE_ZONE_WIDTH: 16,
+    RETRY_DELAYS: [100, 500, 1000, 2000]
+  },
   
   /**
-   * Initialize plugin
+   * Initialize plugin - モジュール化された初期化
    * @param {Object} table - Table instance
    * @param {Object} api - Plugin API
    */
   init(table, api) {
-    // console.log('[ColumnResizer] Initializing plugin');
     this.table = table;
     this.api = api;
+    this.state.boundHandlers = this._createBoundHandlers();
     
-    // Add CSS for resize handles
+    this._initializeComponents();
+    this._registerHooks();
+    this._startDelayedInitialization();
+  },
+  
+  /**
+   * バウンドイベントハンドラーを作成
+   */
+  _createBoundHandlers() {
+    return {
+      mouseDown: this.handleMouseDown.bind(this),
+      mouseMove: this.handleMouseMove.bind(this),
+      mouseUp: this.handleMouseUp.bind(this)
+    };
+  },
+  
+  /**
+   * コンポーネントを初期化
+   */
+  _initializeComponents() {
     this.addStyles();
-    
-    // Add resize handles after table renders
-    this.api.registerHook('render:afterRender', this.addResizeHandles.bind(this));
-    
-    // Try multiple times to ensure table is rendered
-    const attempts = [100, 500, 1000, 2000];
-    attempts.forEach(delay => {
-      setTimeout(() => {
-        // console.log(`[ColumnResizer] Attempting to add resize handles after ${delay}ms`);
-        this.addResizeHandles();
-      }, delay);
-    });
-    
-    // Handle mouse events
+    this.observeTableChanges();
     this.bindEvents();
+  },
+  
+  /**
+   * フックを登録
+   */
+  _registerHooks() {
+    if (this.api?.registerHook) {
+      this.api.registerHook('render:afterRender', this.addResizeHandles.bind(this));
+    }
+  },
+  
+  /**
+   * 遅延初期化を開始
+   */
+  _startDelayedInitialization() {
+    this.config.RETRY_DELAYS.forEach(delay => {
+      setTimeout(() => this.addResizeHandles(), delay);
+    });
   },
 
   /**
@@ -52,25 +90,34 @@ const ColumnResizerPlugin = {
     // console.log('[ColumnResizer] Adding styles');
     const css = `
       /* Ensure headers can contain resizers */
-      th.table-header {
+      th.table-header,
+      th {
         position: relative !important;
         overflow: visible !important;
+      }
+      
+      /* Ensure header row has proper positioning */
+      thead tr,
+      .table-header-row {
+        position: relative;
       }
       
       .table-column-resizer {
         position: absolute;
         top: 0;
-        right: -3px;
-        width: 6px;
+        right: -5px;
+        width: 10px;
         height: 100%;
         cursor: col-resize;
         background: transparent;
         z-index: 1000;
+        border-right: 2px solid transparent;
       }
       
       .table-column-resizer:hover,
       .table-column-resizer.active {
-        background: rgba(24, 144, 255, 0.2);
+        background: rgba(24, 144, 255, 0.3);
+        border-right: 2px solid #1890ff;
       }
       
       /* Remove transitions during resize for smooth updates */
@@ -111,20 +158,29 @@ const ColumnResizerPlugin = {
    * Add resize handles to column headers
    */
   addResizeHandles() {
-    // Try different selectors to find header cells
-    let headerCells = this.table.container.querySelectorAll('thead th.table-header');
-    if (!headerCells.length) {
-      headerCells = this.table.container.querySelectorAll('th.table-header');
-    }
-    if (!headerCells.length) {
-      headerCells = this.table.container.querySelectorAll('th');
+    // Try different selectors to find header cells with priority order
+    const selectors = [
+      'thead th.table-header',
+      'th.table-header', 
+      'thead th',
+      'th',
+      '.table-header',
+      'table thead tr th',
+      '.table thead th'
+    ];
+    
+    let headerCells = null;
+    
+    for (const selector of selectors) {
+      headerCells = this.table.container.querySelectorAll(selector);
+      if (headerCells.length > 0) {
+        break;
+      }
     }
     
-    // console.log('[ColumnResizer] Table container:', this.table.container);
-    // console.log('[ColumnResizer] Found header cells:', headerCells.length, headerCells);
-    
-    if (headerCells.length === 0) {
-      console.warn('[ColumnResizer] No header cells found!');
+    if (!headerCells || headerCells.length === 0) {
+      // Try again in a moment
+      setTimeout(() => this.addResizeHandles(), 250);
       return;
     }
     
@@ -147,13 +203,23 @@ const ColumnResizerPlugin = {
       const resizer = document.createElement('div');
       resizer.className = 'table-column-resizer';
       resizer.setAttribute('data-column-index', index);
+      resizer.title = `Resize column ${index + 1}`;
       
-      // console.log(`[ColumnResizer] Adding resizer to column ${index}`);
       
       cell.appendChild(resizer);
       
-      // Add event listeners
-      resizer.addEventListener('mousedown', this.handleMouseDown.bind(this));
+      // Add event listeners for better interaction
+      resizer.addEventListener('mousedown', this.state.boundHandlers.mouseDown);
+      resizer.addEventListener('mouseenter', (e) => {
+        e.target.style.background = 'rgba(24, 144, 255, 0.3)';
+        e.target.style.borderRight = '2px solid #1890ff';
+      });
+      resizer.addEventListener('mouseleave', (e) => {
+        if (!e.target.classList.contains('active')) {
+          e.target.style.background = 'transparent';
+          e.target.style.borderRight = '2px solid transparent';
+        }
+      });
     });
     
     // Update table minimum width after adding all resizers
@@ -164,8 +230,8 @@ const ColumnResizerPlugin = {
    * Bind global events
    */
   bindEvents() {
-    document.addEventListener('mousemove', this.handleMouseMove.bind(this));
-    document.addEventListener('mouseup', this.handleMouseUp.bind(this));
+    document.addEventListener('mousemove', this.state.boundHandlers.mouseMove);
+    document.addEventListener('mouseup', this.state.boundHandlers.mouseUp);
   },
 
   /**
@@ -176,27 +242,25 @@ const ColumnResizerPlugin = {
     event.preventDefault();
     event.stopPropagation();
     
-    this.isResizing = true;
-    this.startX = event.clientX;
-    this.currentColumn = parseInt(event.target.dataset.columnIndex);
-    this.resizeHandle = event.target;
+    // すでにリサイズ中の場合は無視
+    if (this.state.isResizing) return;
+    
+    this.state.isResizing = true;
+    this.state.isDragging = false; // ドラッグ状態をリセット
+    this.state.startX = event.clientX;
+    this.state.currentColumn = parseInt(event.target.dataset.columnIndex);
+    this.state.resizeHandle = event.target;
     
     // Get current column width
-    const headerCell = this.resizeHandle.parentElement;
-    this.startWidth = headerCell.offsetWidth;
+    const headerCell = this.state.resizeHandle.parentElement;
+    this.state.startWidth = headerCell.offsetWidth;
     
-    // Add resizing class to table
-    this.table.container.classList.add('table-resizing');
-    this.resizeHandle.classList.add('active');
+    // ハンドルのアクティブ状態のみ表示（テーブルへのクラスはドラッグ開始時に追加）
+    this.state.resizeHandle.classList.add('active');
     
-    // Don't create resize guide since we update width in real-time
-    // this.createResizeGuide(event.clientX);
-    
-    // Emit hook
-    this.api.emitHook('column:resizeStart', {
-      columnIndex: this.currentColumn,
-      startWidth: this.startWidth
-    });
+    // イベントをすぐにキャプチャ（重要）
+    document.addEventListener('mousemove', this.state.boundHandlers.mouseMove);
+    document.addEventListener('mouseup', this.state.boundHandlers.mouseUp);
   },
 
   /**
@@ -204,23 +268,46 @@ const ColumnResizerPlugin = {
    * @param {Event} event - Mouse event
    */
   handleMouseMove(event) {
-    if (!this.isResizing) return;
+    if (!this.state.isResizing) return;
     
-    const deltaX = event.clientX - this.startX;
-    const newWidth = Math.max(this.startWidth + deltaX, 50); // Minimum width 50px
+    const deltaX = event.clientX - this.state.startX;
+    const absDeltaX = Math.abs(deltaX);
     
-    // Update resize guide position (if we're using it)
-    // this.updateResizeGuide(event.clientX);
+    // 闾値を超えるまではドラッグ状態にしない
+    if (!this.state.isDragging && absDeltaX < this.state.dragThreshold) {
+      return;
+    }
+    
+    // 初回のドラッグ開始時の処理
+    if (!this.state.isDragging) {
+      this.state.isDragging = true;
+      this.table.container.classList.add('table-resizing');
+      
+      // カーソルを設定
+      document.body.style.cursor = 'col-resize';
+      
+      // ドラッグ開始フックを発行
+      if (this.api?.emitHook) {
+        this.api.emitHook('column:resizeStart', {
+          columnIndex: this.state.currentColumn,
+          startWidth: this.state.startWidth
+        });
+      }
+    }
+    
+    const newWidth = Math.max(this.state.startWidth + deltaX, this.config.MIN_COLUMN_WIDTH);
     
     // Apply width in real-time for visual feedback
-    this.applyColumnWidth(this.currentColumn, newWidth, true); // true = temporary update
+    this.applyColumnWidth(this.state.currentColumn, newWidth, true); // true = temporary update
     
     // Emit hook for real-time updates
-    this.api.emitHook('column:resizing', {
-      columnIndex: this.currentColumn,
-      newWidth,
-      deltaX
-    });
+    if (this.api?.emitHook) {
+      this.api.emitHook('column:resizing', {
+        columnIndex: this.state.currentColumn,
+        newWidth,
+        deltaX
+      });
+    }
   },
 
   /**
@@ -228,34 +315,47 @@ const ColumnResizerPlugin = {
    * @param {Event} event - Mouse event
    */
   handleMouseUp(event) {
-    if (!this.isResizing) return;
+    if (!this.state.isResizing) return;
     
-    this.isResizing = false;
+    this.state.isResizing = false;
     
-    // Calculate new width
-    const deltaX = event.clientX - this.startX;
-    const newWidth = Math.max(this.startWidth + deltaX, 50);
-    
-    // Apply new width
-    this.applyColumnWidth(this.currentColumn, newWidth);
-    
-    // Cleanup
-    this.table.container.classList.remove('table-resizing');
-    if (this.resizeHandle) {
-      this.resizeHandle.classList.remove('active');
+    // 実際にドラッグした場合のみ列幅を変更
+    if (this.state.isDragging) {
+      const deltaX = event.clientX - this.state.startX;
+      const newWidth = Math.max(this.state.startWidth + deltaX, this.config.MIN_COLUMN_WIDTH);
+      
+      // Apply new width
+      this.applyColumnWidth(this.state.currentColumn, newWidth);
+      
+      // Emit hook
+      if (this.api?.emitHook) {
+        this.api.emitHook('column:resizeEnd', {
+          columnIndex: this.state.currentColumn,
+          newWidth,
+          oldWidth: this.state.startWidth
+        });
+      }
     }
-    // this.removeResizeGuide();
     
-    // Emit hook
-    this.api.emitHook('column:resizeEnd', {
-      columnIndex: this.currentColumn,
-      newWidth,
-      oldWidth: this.startWidth
-    });
+    // Cleanup - ハンドルの状態をリセット
+    this.table.container.classList.remove('table-resizing');
+    if (this.state.resizeHandle) {
+      this.state.resizeHandle.classList.remove('active');
+      // ハンドルのスタイルもリセット
+      this.state.resizeHandle.style.background = 'transparent';
+      this.state.resizeHandle.style.borderRight = '2px solid transparent';
+    }
+    
+    // カーソルをリセット
+    document.body.style.cursor = '';
+    
+    // リサイズガイドがあれば削除
+    this.removeResizeGuide();
     
     // Reset state
-    this.currentColumn = null;
-    this.resizeHandle = null;
+    this.state.isDragging = false;
+    this.state.currentColumn = null;
+    this.state.resizeHandle = null;
   },
 
   /**
@@ -328,8 +428,15 @@ const ColumnResizerPlugin = {
       cell.style.maxWidth = `${width}px`;
     });
     
+    // 他の列の幅を固定して変更されないようにする
+    this.preserveOtherColumnWidths(columnIndex);
+    
     // Update table minimum width to ensure horizontal scroll
     this.updateTableMinWidth();
+    
+    // 固定列がある場合は位置を再計算（一時的な更新でも実行）
+    // DOM更新後に実行するため少し遅延
+    setTimeout(() => this.updatePinnedColumnPositions(), 0);
     
     // Only save permanent changes
     if (!isTemporary) {
@@ -344,7 +451,71 @@ const ColumnResizerPlugin = {
   },
 
   /**
-   * Update table minimum width based on column widths
+   * 固定列の位置を再計算して更新 - DOM要素から実際の幅を取得
+   */
+  updatePinnedColumnPositions() {
+    // ヘッダー行から実際の列幅を取得
+    const headerCells = this.table.container.querySelectorAll('th.table-header');
+    if (headerCells.length === 0) return;
+    
+    // 累積位置を計算
+    let currentLeft = 0;
+    const positions = [];
+    
+    headerCells.forEach((cell, index) => {
+      positions[index] = currentLeft;
+      currentLeft += cell.offsetWidth;
+    });
+    
+    // 固定列の位置を更新（ヘッダー）
+    const pinnedHeaderCells = this.table.container.querySelectorAll('th.pinned-column');
+    pinnedHeaderCells.forEach(cell => {
+      const columnIndex = Array.from(cell.parentNode.children).indexOf(cell);
+      if (positions[columnIndex] !== undefined) {
+        cell.style.setProperty('--pinned-left', `${positions[columnIndex]}px`);
+      }
+    });
+    
+    // 固定列の位置を更新（ボディセル）
+    const rows = this.table.container.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+      const pinnedCells = row.querySelectorAll('td.pinned-column');
+      pinnedCells.forEach(cell => {
+        const columnIndex = Array.from(cell.parentNode.children).indexOf(cell);
+        if (positions[columnIndex] !== undefined) {
+          cell.style.setProperty('--pinned-left', `${positions[columnIndex]}px`);
+        }
+      });
+    });
+  },
+
+  /**
+   * 他の列の幅を固定して変更されないようにする
+   */
+  preserveOtherColumnWidths(changedColumnIndex) {
+    const headerCells = this.table.container.querySelectorAll('th.table-header');
+    
+    headerCells.forEach((cell, index) => {
+      if (index !== changedColumnIndex) {
+        // 現在の幅を取得して固定
+        const currentWidth = cell.offsetWidth;
+        cell.style.width = `${currentWidth}px`;
+        cell.style.minWidth = `${currentWidth}px`;
+        cell.style.maxWidth = `${currentWidth}px`;
+        
+        // 対応するボディセルも固定
+        const bodyCells = this.table.container.querySelectorAll(`tbody td:nth-child(${index + 1})`);
+        bodyCells.forEach(bodyCell => {
+          bodyCell.style.width = `${currentWidth}px`;
+          bodyCell.style.minWidth = `${currentWidth}px`;
+          bodyCell.style.maxWidth = `${currentWidth}px`;
+        });
+      }
+    });
+  },
+
+  /**
+   * Update table minimum width based on column widths - 他の列幅を維持
    */
   updateTableMinWidth() {
     const headerCells = this.table.container.querySelectorAll('th.table-header');
@@ -354,24 +525,17 @@ const ColumnResizerPlugin = {
       totalWidth += cell.offsetWidth;
     });
     
-    // Get container width to force scrolling if needed
-    const containerWidth = this.table.container.offsetWidth;
-    const finalWidth = Math.max(totalWidth, containerWidth);
-    
-    
-    // Set width on both table and table wrapper
+    // テーブル全体の幅を総列幅に設定（他の列を圧縮しないため）
     const table = this.table.container.querySelector('table');
-    const tableWrapper = this.table.container.querySelector('.table-wrapper');
     
     if (table) {
-      table.style.minWidth = `${finalWidth}px`;
-      table.style.width = totalWidth > containerWidth ? `${totalWidth}px` : 'auto';
+      // 明示的にテーブル幅を設定して他の列が縮小されるのを防ぐ
+      table.style.width = `${totalWidth}px`;
+      table.style.minWidth = `${totalWidth}px`;
     }
     
-    // Force table container to show scrollbars
-    if (totalWidth > containerWidth) {
-      this.table.container.style.overflowX = 'auto';
-    }
+    // コンテナに水平スクロールを許可
+    this.table.container.style.overflowX = 'auto';
   },
 
   /**
@@ -418,21 +582,113 @@ const ColumnResizerPlugin = {
   },
 
   /**
-   * Plugin cleanup
+   * Observe table changes to re-add resize handles when needed
+   */
+  observeTableChanges() {
+    if (this.state.observer) {
+      this.state.observer.disconnect();
+    }
+
+    this.state.observer = new MutationObserver((mutations) => {
+      let shouldUpdate = false;
+      
+      mutations.forEach(mutation => {
+        if (mutation.type === 'childList') {
+          // Check if header elements were added/removed
+          const addedNodes = Array.from(mutation.addedNodes);
+          const removedNodes = Array.from(mutation.removedNodes);
+          
+          if (addedNodes.some(node => node.tagName === 'TH' || node.tagName === 'THEAD') ||
+              removedNodes.some(node => node.tagName === 'TH' || node.tagName === 'THEAD')) {
+            shouldUpdate = true;
+          }
+        } else if (mutation.type === 'attributes') {
+          // Check if pinned column classes were changed
+          const target = mutation.target;
+          if (target.tagName === 'TH' && 
+              (target.classList.contains('pinned-column') || 
+               target.classList.contains('last-pinned-column') ||
+               mutation.oldValue?.includes('pinned-column'))) {
+            shouldUpdate = true;
+          }
+        }
+      });
+      
+      if (shouldUpdate) {
+        setTimeout(() => this.addResizeHandles(), 100);
+      }
+    });
+
+    this.state.observer.observe(this.table.container, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'style'],
+      attributeOldValue: true
+    });
+  },
+
+  /**
+   * Plugin cleanup - メモリリーク防止
    */
   destroy() {
-    // Remove event listeners
-    document.removeEventListener('mousemove', this.handleMouseMove.bind(this));
-    document.removeEventListener('mouseup', this.handleMouseUp.bind(this));
-    
-    // Remove resize handles
-    const resizers = this.table.container.querySelectorAll('.table-column-resizer');
-    resizers.forEach(resizer => resizer.remove());
-    
-    // Remove CSS
-    this.api.removeCSS('column-resizer-plugin');
-    
-    // Remove resize guide if exists
+    this._removeEventListeners();
+    this._cleanupState();
+    this._stopObserving();
+    this._removeStyles();
+    this._removeResizeElements();
+  },
+  
+  /**
+   * イベントリスナーを除去
+   */
+  _removeEventListeners() {
+    if (this.state.boundHandlers) {
+      document.removeEventListener('mousemove', this.state.boundHandlers.mouseMove);
+      document.removeEventListener('mouseup', this.state.boundHandlers.mouseUp);
+    }
+  },
+  
+  /**
+   * 状態をクリーンアップ
+   */
+  _cleanupState() {
+    Object.assign(this.state, {
+      isResizing: false,
+      isDragging: false,
+      currentColumn: null,
+      resizeHandle: null,
+      boundHandlers: null
+    });
+  },
+  
+  /**
+   * DOM監視を停止
+   */
+  _stopObserving() {
+    if (this.state.observer) {
+      this.state.observer.disconnect();
+      this.state.observer = null;
+    }
+  },
+  
+  /**
+   * スタイルを除去
+   */
+  _removeStyles() {
+    if (this.api?.removeCSS) {
+      this.api.removeCSS('column-resizer-plugin');
+    }
+  },
+  
+  /**
+   * リサイズ要素を除去
+   */
+  _removeResizeElements() {
+    if (this.table?.container) {
+      const resizers = this.table.container.querySelectorAll('.table-column-resizer');
+      resizers.forEach(resizer => resizer.remove());
+    }
     this.removeResizeGuide();
   }
 };
