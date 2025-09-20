@@ -55,7 +55,7 @@ describe('DOMUtils', () => {
     });
 
     test('should remove event handlers', () => {
-      const malicious = '<div onclick="alert(\\'XSS\\')">Click me</div>';
+      const malicious = '<div onclick="alert(\'XSS\')">Click me</div>';
       const sanitized = DOMUtils.sanitizeHTML(malicious);
       
       expect(sanitized).not.toContain('onclick');
@@ -65,10 +65,10 @@ describe('DOMUtils', () => {
 
     test('should handle multiple types of XSS attempts', () => {
       const testCases = [
-        '<img src=x onerror="alert(\\'XSS\\')">',
-        '<svg onload="alert(\\'XSS\\')">',
-        '<iframe src="javascript:alert(\\'XSS\\')"></iframe>',
-        '<a href="javascript:alert(\\'XSS\\')">Link</a>'
+        '<img src=x onerror="alert(\'XSS\')">',
+        '<svg onload="alert(\'XSS\')">',
+        '<iframe src="javascript:alert(\'XSS\')"></iframe>',
+        '<a href="javascript:alert(\'XSS\')">Link</a>'
       ];
 
       testCases.forEach(testCase => {

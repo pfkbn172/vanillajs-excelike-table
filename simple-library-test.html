@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple Library Test - ExceLike Table</title>
+  <link rel="stylesheet" href="dist/excelike-table-bundle.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .table-container {
+      height: 500px;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+    .controls {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 4px;
+    }
+    .controls button, .controls select {
+      margin: 5px;
+      padding: 8px 16px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: white;
+      cursor: pointer;
+    }
+    .status {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      background: #e8f5e8;
+      color: #2e7d32;
+      border: 1px solid #4caf50;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📚 Simple Library Test</h1>
+    <p>このページは最小限の記述でライブラリが正常に動作するかテストします。</p>
+    
+    <div class="controls">
+      <button onclick="testBasicFeatures()">基本機能テスト</button>
+      <button onclick="testAdvancedFeatures()">高度機能テスト</button>
+      <button onclick="testExportFeatures()">エクスポートテスト</button>
+      <button onclick="testPluginFeatures()">プラグインテスト</button>
+      <button onclick="testThemeFeatures()">テーマテスト</button>
+      <select onchange="changeLanguage(this.value)">
+        <option value="ja">日本語</option>
+        <option value="en">English</option>
+        <option value="es">Español</option>
+      </select>
+    </div>
+
+    <div id="status" class="status">ライブラリ準備完了</div>
+    
+    <div class="table-container" id="table-container"></div>
+  </div>
+
+  <!-- ライブラリの読み込み -->
+  <script src="dist/excelike-table-bundle.js"></script>
+  
+  <script>
+    // シンプルなテストデータ
+    const testData = [
+      { id: 1, name: 'Alice', age: 25, department: 'IT', salary: 50000, joinDate: '2020-01-15' },
+      { id: 2, name: 'Bob', age: 30, department: 'Sales', salary: 45000, joinDate: '2019-06-20' },
+      { id: 3, name: 'Charlie', age: 35, department: 'Marketing', salary: 55000, joinDate: '2018-03-10' },
+      { id: 4, name: 'Diana', age: 28, department: 'IT', salary: 52000, joinDate: '2021-09-05' },
+      { id: 5, name: 'Eve', age: 32, department: 'HR', salary: 48000, joinDate: '2017-12-12' }
+    ];
+
+    // グローバル変数でテーブルを保持
+    let table;
+
+    // ライブラリ初期化テスト
+    function initializeTable() {
+      try {
+        // 最小限の設定でテーブル初期化
+        table = new ExceLikeTable('#table-container', {
+          data: testData,
+          columns: [
+            { dataIndex: 'id', title: 'ID', width: 80 },
+            { dataIndex: 'name', title: 'Name', width: 120 },
+            { dataIndex: 'age', title: 'Age', width: 80 },
+            { dataIndex: 'department', title: 'Department', width: 120 },
+            { dataIndex: 'salary', title: 'Salary', width: 100 },
+            { dataIndex: 'joinDate', title: 'Join Date', width: 120 }
+          ],
+          pagination: { pageSize: 10 }
+        });
+        
+        updateStatus('ライブラリ初期化成功');
+        return true;
+      } catch (error) {
+        updateStatus('初期化エラー: ' + error.message, 'error');
+        return false;
+      }
+    }
+
+    // 基本機能テスト
+    function testBasicFeatures() {
+      try {
+        if (!table) {
+          updateStatus('テーブルが初期化されていません', 'error');
+          return;
+        }
+
+        // データ取得テスト
+        const data = table.getData();
+        console.log('Data retrieved:', data);
+
+        // データ設定テスト
+        const newData = [...testData, { id: 6, name: 'Frank', age: 29, department: 'Finance', salary: 49000, joinDate: '2022-01-01' }];
+        table.setData(newData);
+
+        updateStatus('基本機能テスト完了 - データ操作正常');
+      } catch (error) {
+        updateStatus('基本機能テストエラー: ' + error.message, 'error');
+      }
+    }
+
+    // 高度機能テスト
+    function testAdvancedFeatures() {
+      try {
+        if (!table) {
+          updateStatus('テーブルが初期化されていません', 'error');
+          return;
+        }
+
+        // フィルタテスト
+        table.setFilter([{ column: 'age', operator: 'greater_than', value: 30 }]);
+        
+        // ソートテスト
+        table.setSort([{ column: 'salary', direction: 'desc' }]);
+
+        updateStatus('高度機能テスト完了 - フィルタ・ソート正常');
+      } catch (error) {
+        updateStatus('高度機能テストエラー: ' + error.message, 'error');
+      }
+    }
+
+    // エクスポート機能テスト
+    function testExportFeatures() {
+      try {
+        if (!table) {
+          updateStatus('テーブルが初期化されていません', 'error');
+          return;
+        }
+
+        // CSV エクスポートテスト
+        table.exportData('csv');
+        
+        // JSON エクスポートテスト
+        table.exportData('json');
+
+        updateStatus('エクスポート機能テスト完了');
+      } catch (error) {
+        updateStatus('エクスポート機能テストエラー: ' + error.message, 'error');
+      }
+    }
+
+    // プラグイン機能テスト
+    function testPluginFeatures() {
+      try {
+        if (!table) {
+          updateStatus('テーブルが初期化されていません', 'error');
+          return;
+        }
+
+        // プラグイン管理テスト
+        if (table.plugins) {
+          const availablePlugins = table.plugins.getAvailable();
+          console.log('Available plugins:', availablePlugins);
+          
+          updateStatus('プラグイン機能テスト完了');
+        } else {
+          updateStatus('プラグイン機能が利用できません', 'warning');
+        }
+      } catch (error) {
+        updateStatus('プラグイン機能テストエラー: ' + error.message, 'error');
+      }
+    }
+
+    // テーマ機能テスト
+    function testThemeFeatures() {
+      try {
+        if (!table) {
+          updateStatus('テーブルが初期化されていません', 'error');
+          return;
+        }
+
+        // テーマ変更テスト
+        if (table.setTheme) {
+          table.setTheme('dark');
+          setTimeout(() => {
+            table.setTheme('default');
+            updateStatus('テーマ機能テスト完了');
+          }, 1000);
+        } else {
+          updateStatus('テーマ機能が利用できません', 'warning');
+        }
+      } catch (error) {
+        updateStatus('テーマ機能テストエラー: ' + error.message, 'error');
+      }
+    }
+
+    // 言語変更テスト
+    function changeLanguage(lang) {
+      try {
+        if (!table) {
+          updateStatus('テーブルが初期化されていません', 'error');
+          return;
+        }
+
+        if (table.setLanguage) {
+          table.setLanguage(lang);
+          updateStatus(`言語を${lang}に変更しました`);
+        } else {
+          updateStatus('言語変更機能が利用できません', 'warning');
+        }
+      } catch (error) {
+        updateStatus('言語変更エラー: ' + error.message, 'error');
+      }
+    }
+
+    // ステータス更新
+    function updateStatus(message, type = 'success') {
+      const statusEl = document.getElementById('status');
+      statusEl.textContent = message;
+      statusEl.className = 'status ' + type;
+      console.log('Status:', message);
+    }
+
+    // ページ読み込み時の初期化
+    document.addEventListener('DOMContentLoaded', function() {
+      // ExceLikeTableクラスが利用可能かチェック
+      if (typeof ExceLikeTable === 'undefined') {
+        updateStatus('ExceLikeTableライブラリが読み込まれていません', 'error');
+        return;
+      }
+
+      // ライブラリ初期化
+      initializeTable();
+    });
+  </script>
+</body>
+</html>

@@ -643,8 +643,9 @@ class ExceLikeTable {
   initializeColumns() {
     this.options.columns.forEach(col => {
       this.state.columnWidths[col.key] = col.width || 150;
-      this.state.visibleColumns[col.key] = true;
-      this.state.pinnedColumns[col.key] = false;
+      this.state.visibleColumns[col.key] = col.hidden !== true;
+      // 列定義のpinned設定を初期値として使用（保存された設定で後から上書きされる）
+      this.state.pinnedColumns[col.key] = col.pinned === true;
     });
   }
   
@@ -740,6 +741,9 @@ class ExceLikeTable {
   /**
    * 旧メソッド（互換性のため残す）
    */
+  /**
+   * 統一された列管理システム - 列位置と幅を一元計算
+   */
   calculateColumnPositions(columns) {
     const positions = {};
     let currentLeft = 0;
@@ -751,6 +755,235 @@ class ExceLikeTable {
     });
     
     return positions;
+  }
+
+  /**
+   * 列幅変更時の統一更新メソッド
+   */
+  updateColumnWidth(columnKey, newWidth) {
+    // 状態を更新
+    this.state.columnWidths[columnKey] = newWidth;
+    
+    // DOM要素を更新
+    this.applyColumnWidthToDOM(columnKey, newWidth);
+    
+    // 固定列位置を再計算
+    this.updateAllPinnedPositions();
+    
+    // 自動保存（デバウンス）
+    if (this.saveStateDebounced) {
+      this.saveStateDebounced();
+    }
+  }
+
+  /**
+   * 指定列のDOM要素に幅を適用
+   */
+  applyColumnWidthToDOM(columnKey, width) {
+    const columnIndex = this.options.columns.findIndex(col => col.key === columnKey);
+    if (columnIndex === -1) return;
+
+    // ヘッダーセルを更新
+    const headerCell = this.container.querySelector(`th.table-header:nth-child(${columnIndex + 1})`);
+    if (headerCell) {
+      headerCell.style.width = `${width}px`;
+      headerCell.style.minWidth = `${width}px`;
+      headerCell.style.maxWidth = `${width}px`;
+    }
+
+    // ボディセルを更新
+    const bodyCells = this.container.querySelectorAll(`tbody td:nth-child(${columnIndex + 1})`);
+    bodyCells.forEach(cell => {
+      cell.style.width = `${width}px`;
+      cell.style.minWidth = `${width}px`;
+      cell.style.maxWidth = `${width}px`;
+    });
+  }
+
+  /**
+   * 全固定列の位置を再計算・更新
+   */
+  updateAllPinnedPositions() {
+    const headerCells = this.container.querySelectorAll('th.table-header');
+    if (headerCells.length === 0) return;
+    
+    // 実際のDOM要素から列位置を計算
+    let currentLeft = 0;
+    const positions = [];
+    
+    headerCells.forEach((cell, index) => {
+      positions[index] = currentLeft;
+      currentLeft += cell.offsetWidth;
+    });
+    
+    // 固定列の位置を更新
+    this.applyPinnedPositions(positions);
+  }
+
+  /**
+   * 計算された位置を固定列に適用
+   */
+  applyPinnedPositions(positions) {
+    // ヘッダーの固定列
+    const pinnedHeaders = this.container.querySelectorAll('th.pinned-column');
+    pinnedHeaders.forEach(cell => {
+      const columnIndex = Array.from(cell.parentNode.children).indexOf(cell);
+      if (positions[columnIndex] !== undefined) {
+        cell.style.setProperty('--pinned-left', `${positions[columnIndex]}px`);
+      }
+    });
+    
+    // ボディの固定列
+    const rows = this.container.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+      const pinnedCells = row.querySelectorAll('td.pinned-column');
+      pinnedCells.forEach(cell => {
+        const columnIndex = Array.from(cell.parentNode.children).indexOf(cell);
+        if (positions[columnIndex] !== undefined) {
+          cell.style.setProperty('--pinned-left', `${positions[columnIndex]}px`);
+        }
+      });
+    });
+  }
+
+  /**
+   * 統一された永続化システム
+   */
+  initializePersistence() {
+    // ストレージキーの生成
+    const tableId = this.options.tableId || 'default';
+    this.storageKey = `excelike-table-${tableId}-state`;
+    
+    // デバウンス保存関数
+    this.saveStateDebounced = this.debounce(() => this.saveState(), 300);
+    
+    // ページ終了時の保存
+    window.addEventListener('beforeunload', () => this.saveState());
+  }
+
+  /**
+   * 状態をLocalStorageに保存
+   */
+  saveState() {
+    try {
+      const state = {
+        version: '1.0.0',
+        timestamp: Date.now(),
+        columnState: {
+          widths: this.state.columnWidths,
+          pinned: Object.keys(this.state.pinnedColumns).filter(key => this.state.pinnedColumns[key])
+        }
+      };
+      
+      localStorage.setItem(this.storageKey, JSON.stringify(state));
+    } catch (error) {
+      // QuotaExceededError等のエラーは無視（サイレント失敗）
+      if (error.name === 'QuotaExceededError') {
+        // 古いデータを削除して再試行
+        this.cleanupOldStorageData();
+        try {
+          localStorage.setItem(this.storageKey, JSON.stringify(state));
+        } catch (retryError) {
+          // 再試行も失敗したら諦める
+        }
+      }
+    }
+  }
+
+  /**
+   * LocalStorageから状態を復元
+   */
+  loadState() {
+    try {
+      const saved = localStorage.getItem(this.storageKey);
+      if (!saved) return false;
+      
+      const state = JSON.parse(saved);
+      if (state.version === '1.0.0') {
+        this.applyLoadedState(state);
+        return true;
+      }
+    } catch (error) {
+      // 破損データは削除
+      localStorage.removeItem(this.storageKey);
+    }
+    return false;
+  }
+
+  /**
+   * 読み込んだ状態を適用
+   */
+  applyLoadedState(savedState) {
+    if (!savedState.columnState) return;
+    
+    // 列幅の復元
+    if (savedState.columnState.widths) {
+      Object.entries(savedState.columnState.widths).forEach(([key, width]) => {
+        // 列が存在する場合のみ適用
+        if (this.options.columns.find(col => col.key === key)) {
+          this.state.columnWidths[key] = width;
+          // DOMにも幅を適用
+          this.applyColumnWidthToDOM(key, width);
+        }
+      });
+    }
+    
+    // 固定列の復元
+    if (savedState.columnState.pinned !== undefined) {
+      // まず全ての列の固定状態をfalseにリセット
+      this.options.columns.forEach(col => {
+        this.state.pinnedColumns[col.key] = false;
+      });
+      
+      // 保存された固定列のみtrueに設定
+      if (Array.isArray(savedState.columnState.pinned)) {
+        savedState.columnState.pinned.forEach(key => {
+          // 列が存在する場合のみ適用
+          if (this.options.columns.find(col => col.key === key)) {
+            this.state.pinnedColumns[key] = true;
+          }
+        });
+      }
+    }
+  }
+
+  /**
+   * 古いストレージデータの削除
+   */
+  cleanupOldStorageData() {
+    const keys = Object.keys(localStorage);
+    const tableKeys = keys.filter(key => key.startsWith('excelike-table-'));
+    
+    // タイムスタンプでソートして古いものから削除
+    const sortedKeys = tableKeys.map(key => {
+      try {
+        const data = JSON.parse(localStorage.getItem(key));
+        return { key, timestamp: data.timestamp || 0 };
+      } catch {
+        return { key, timestamp: 0 };
+      }
+    }).sort((a, b) => a.timestamp - b.timestamp);
+    
+    // 古い半分を削除
+    const deleteCount = Math.floor(sortedKeys.length / 2);
+    for (let i = 0; i < deleteCount; i++) {
+      localStorage.removeItem(sortedKeys[i].key);
+    }
+  }
+
+  /**
+   * デバウンス関数
+   */
+  debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
   }
 
   checkFixedHeight() {
@@ -771,24 +1004,62 @@ class ExceLikeTable {
     }
   }
 
+  /**
+   * Initialize plugin system and register plugins
+   */
+  initializePluginSystem() {
+    try {
+      // Initialize plugin system if available
+      if (typeof PluginSystem !== 'undefined') {
+        this.pluginSystem = PluginSystem.init(this);
+        
+        // Register column resizer plugin if available and feature is enabled
+        if (typeof ColumnResizerPlugin !== 'undefined' && this.isFeatureEnabled('columnResizing')) {
+          this.pluginSystem.registerPlugin('column-resizer', ColumnResizerPlugin);
+          this.pluginSystem.enablePlugin('column-resizer');
+        }
+      } else {
+        console.warn('[ExceLikeTable] PluginSystem not available');
+      }
+    } catch (error) {
+      console.error('[ExceLikeTable] Plugin system initialization failed:', error);
+      this.pluginSystem = null;
+    }
+  }
+
+
   async init() {
-    // Safely clear container
-    if (DOMUtils) {
-      DOMUtils.clearElement(this.container);
-    } else {
-      this.container.innerHTML = '';
+    try {
+      // Safely clear container
+      if (DOMUtils) {
+        DOMUtils.clearElement(this.container);
+      } else {
+        this.container.innerHTML = '';
+      }
+      this.container.className = 'excelike-table-wrapper';
+      
+      // Initialize plugin system
+      this.initializePluginSystem();
+      
+      // 永続化システムの初期化（構造作成前に状態を復元）
+      this.initializePersistence();
+      
+      this.createStructure();
+      
+      // Load saved settings after structure is created
+      if (this.settingsManager) {
+        await this.loadSettings();
+      }
+      
+      // レンダリング前に保存された状態を復元
+      this.loadState();
+      
+      this.render();
+      this.attachEvents();
+    } catch (error) {
+      console.error('[ExceLikeTable] Initialization failed:', error);
+      throw error;
     }
-    this.container.className = 'excelike-table-wrapper';
-    
-    this.createStructure();
-    
-    // Load saved settings after structure is created
-    if (this.settingsManager) {
-      await this.loadSettings();
-    }
-    
-    this.render();
-    this.attachEvents();
   }
 
   createStructure() {
@@ -1200,6 +1471,11 @@ class ExceLikeTable {
     this.state.pinnedColumns[columnKey] = pinned;
     this.render();
     this.autoSaveSettings();
+    
+    // 自動保存（デバウンス）
+    if (this.saveStateDebounced) {
+      this.saveStateDebounced();
+    }
   }
 
   // Data processing methods
@@ -1743,7 +2019,6 @@ class ExceLikeTable {
     const uniqueValues = [...new Set(this.state.data.map(item => item[column.dataIndex]))];
     const currentFilters = this.state.filters[column.key] || [];
 
-    console.log('📊 Unique values for', column.key + ':', uniqueValues.slice(0, 5), '...(', uniqueValues.length, 'total)');
 
     let dropdownContent = '';
 
@@ -1774,8 +2049,6 @@ class ExceLikeTable {
       </div>
     `;
     
-    console.log('📄 Generated dropdown HTML preview (first 500 chars):');
-    console.log(dropdown.innerHTML.substring(0, 500) + '...');
 
     // Position dropdown
     document.body.appendChild(dropdown);
@@ -1783,7 +2056,6 @@ class ExceLikeTable {
     // Get column header element to position next to the entire column
     const columnHeader = button.closest('.table-header');
     const headerRect = columnHeader ? columnHeader.getBoundingClientRect() : button.getBoundingClientRect();
-    console.log('📍 Header rect:', headerRect);
     const dropdownRect = dropdown.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
@@ -2261,11 +2533,6 @@ class ExceLikeTable {
 
     // Cancel button - restore original state
     dropdown.querySelector('.filter-btn-cancel').addEventListener('click', () => {
-      console.log('🔍 Cancel - Before restore:', {
-        filteredDataCount: this.state.filteredData.length,
-        totalDataCount: this.options.data.length,
-        hasAnyFilter: this.state.filteredData.length < this.options.data.length
-      });
       
       this.state.filters = originalFilters;
       this.state.rangeFilters = originalRangeFilters;
@@ -2273,11 +2540,6 @@ class ExceLikeTable {
       this.state.filteredData = originalFilteredData;
       this.state.currentPage = 1;
       
-      console.log('🔍 Cancel - After restore:', {
-        filteredDataCount: this.state.filteredData.length,
-        totalDataCount: this.options.data.length,
-        hasAnyFilter: this.state.filteredData.length < this.options.data.length
-      });
       
       this.renderBody();
       this.renderPagination();
@@ -2549,8 +2811,6 @@ class ExceLikeTable {
     
     // Set initial "Select All" checkbox state after dropdown is created
     this.updateSelectAllCheckboxState(dropdown, column);
-    
-    console.log('🎊 attachFilterEvents completed for column:', column.key, 'filterType:', column.filterType);
   }
 
   updateSelectAllCheckboxState(dropdown, column) {
@@ -2939,6 +3199,12 @@ class ExceLikeTable {
       });
 
       this.render();
+      
+      // 状態を保存
+      if (this.saveStateDebounced) {
+        this.saveStateDebounced();
+      }
+      
       overlay.remove();
     });
 
@@ -3922,7 +4188,6 @@ class ExceLikeTable {
    */
   showConditionalFormatting() {
     // プレースホルダー実装 - 後で条件付き書式プラグインで置き換え
-    console.log('条件付き書式管理画面を開く');
     
     // 条件付き書式プラグインが読み込まれているかチェック
     if (typeof window.ConditionalFormatting === 'undefined') {

@@ -1222,73 +1222,30 @@
   border-color: #1890ff;
 }
 
-/* Column pinning styles - 最適化されたバージョン */
+/* Column pinning styles - 統一されたz-index管理システム */
 
-/* 基本固定列スタイル */
-.pinned-column {
-  position: sticky !important;
-  left: var(--pinned-left, 0px) !important;
-  background-color: #fff !important;
-  z-index: 101;
-  min-width: fit-content;
-}
-
-/* 非固定列のクリッピング設定（固定列の後ろに完全に隠れるように） */
-.table td:not(.pinned-column),
-.table th:not(.pinned-column) {
-  z-index: 1;
-}
-
-/* 固定列の背景を強化して非固定列を完全に隠す */
-.pinned-column {
-  background-color: #fff !important;
-  /* リサイズハンドルを妨げないよう、影は内側に限定 */
-  box-shadow: inset 2px 0 0 rgba(24, 144, 255, 0.1);
-}
-
-.table-header.pinned-column,
-th.pinned-column {
-  background-color: #fafafa !important;
-  box-shadow: inset 2px 0 0 rgba(24, 144, 255, 0.1);
-}
-
-
-/* ヘッダー固定列（より高いz-index） */
-.table-header.pinned-column,
-th.pinned-column {
-  background-color: #fafafa !important;
-  z-index: 102;
-}
-
-/* 最後の固定列（境界線表示） */
-.last-pinned-column {
-  border-right: 2px solid #1890ff !important;
-  z-index: 103;
-}
-
-/* 固定列範囲の境界線を非固定列より上に表示 */
-.last-pinned-column::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: -1px;
-  bottom: 0;
-  width: 2px;
-  background: #1890ff;
-  z-index: 110;
-  pointer-events: none;
-}
-
-/* ヘッダーの最後の固定列 */
-th.last-pinned-column {
-  z-index: 104;
+/* ベースz-indexレベル定義 */
+:root {
+  --z-table-cell: 1;
+  --z-pinned-cell: 101;
+  --z-pinned-header: 102;
+  --z-pinned-last: 103;
+  --z-pinned-last-header: 104;
+  --z-pinned-border: 105;
+  --z-resize-handle: 1000;
 }
 
 /* テーブル要素の基本設定 */
+.table {
+  position: relative;
+  isolation: isolate;
+}
+
 .table td,
 .table th {
   position: relative;
   box-sizing: border-box;
+  z-index: var(--z-table-cell);
 }
 
 /* テーブルコンテナの設定 */
@@ -1299,13 +1256,56 @@ th.last-pinned-column {
   overflow-y: auto;
 }
 
-/* ヘッダーとピン列の複合スティッキー */
-.table thead th.pinned-column {
+/* 基本固定列スタイル */
+.table .pinned-column {
+  position: sticky !important;
+  left: var(--pinned-left, 0px) !important;
+  background-color: #fff !important;
+  z-index: var(--z-pinned-cell);
+  min-width: fit-content;
+  /* 内側シャドウで境界を示す */
+  box-shadow: inset -1px 0 0 rgba(24, 144, 255, 0.1);
+}
+
+/* ヘッダー固定列 */
+.table .table-header.pinned-column,
+.table th.pinned-column {
+  background-color: #fafafa !important;
+  z-index: var(--z-pinned-header);
   position: sticky !important;
   top: 0;
   left: var(--pinned-left, 0px) !important;
-  z-index: 105 !important;
-  background-color: #fafafa !important;
+}
+
+/* 最後の固定列 - 青いボーダーライン */
+.table .last-pinned-column {
+  z-index: var(--z-pinned-last);
+  position: sticky !important;
+  /* 青いボーダーラインが確実に固定されるよう、親要素も sticky に設定 */
+}
+
+.table .last-pinned-column::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 2px;
+  background: #1890ff;
+  z-index: var(--z-pinned-border);
+  pointer-events: none;
+  /* 疑似要素も固定列と一緒に移動するように */
+  transform: translateZ(0);
+}
+
+/* ヘッダーの最後の固定列 */
+.table th.last-pinned-column {
+  z-index: var(--z-pinned-last-header);
+}
+
+/* リサイズハンドルは最上位に配置 */
+.table-column-resizer {
+  z-index: var(--z-resize-handle) !important;
 }
 
 /* Scrollbar styling */

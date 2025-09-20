@@ -57,12 +57,13 @@
         throw new ValidationError(`ルールID ${rule.id} は既に存在します`);
       }
       
-      // 優先度が未設定の場合は最後に追加
+      // 優先度が未設定の場合は最高優先度（1）を割り当て、既存ルールを後にシフト
       if (rule.priority === 0) {
-        const maxPriority = this.rules.length > 0 
-          ? Math.max(...this.rules.map(r => r.priority)) 
-          : 0;
-        rule.priority = maxPriority + 1;
+        // 既存ルールの優先度を1つずつ後ろにシフト
+        this.rules.forEach(existingRule => {
+          existingRule.priority += 1;
+        });
+        rule.priority = 1; // 新しいルールは最高優先度
       }
       
       this.rules.push(rule);

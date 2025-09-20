@@ -336,31 +336,77 @@
       return null; // 無効なルールが検出された
     }
     
-    // 優先度の低い順(数値の大きい順)でソート
-    return rules.sort((a, b) => b.priority - a.priority);
+    // 優先度の高い順でソート（数値が小さいほど高優先度、後で適用されて勝つ）
+    return rules.sort((a, b) => a.priority - b.priority);
   }
   
   /**
-   * ルールをセルに適用（最適化版）
+   * ルールをセルに適用（優先度競合解決版）
    */
   _applyRulesToCells(rules, cells) {
     let totalApplications = 0;
     
-    // セルごとにルールを評価（O(n×m)の最適化）
+    // セル単位の最終的な書式を決定するマップ
+    const cellFormatMap = new Map();
+    
+    // Phase 1: 全ルールを評価してセルごとの最高優先度ルールを特定
     cells.forEach(cellInfo => {
-      const matchingRules = rules.filter(rule => 
-        cellInfo.column === rule.condition.column);
+      const cellKey = this._getCellKey(cellInfo.element);
+      const applicableRules = [];
       
-      // マッチする列のルールのみ評価
-      matchingRules.forEach(rule => {
-        if (this._evaluateRuleWithCache(cellInfo.value, rule)) {
-          this.applier.applyToCell(cellInfo.element, rule);
-          totalApplications++;
+      rules.forEach(rule => {
+        // 直接マッチング（セル対象）
+        if (rule.applyTo === 'cell' && cellInfo.column === rule.condition.column) {
+          if (this._evaluateRuleWithCache(cellInfo.value, rule)) {
+            applicableRules.push({ rule, type: 'cell', targetCell: cellInfo });
+          }
+        }
+        // 行レベルマッチング（他の列の値を評価して行全体に適用）
+        else if (rule.applyTo === 'row') {
+          const rowCells = this._getRowCells(cellInfo.element);
+          const triggerCell = rowCells.find(cell => cell.column === rule.condition.column);
+          if (triggerCell && this._evaluateRuleWithCache(triggerCell.value, rule)) {
+            applicableRules.push({ rule, type: 'row', targetCell: cellInfo });
+          }
         }
       });
+      
+      // 最高優先度のルールを選択（priority値が小さいほど高優先度）
+      if (applicableRules.length > 0) {
+        const bestRule = applicableRules.sort((a, b) => a.rule.priority - b.rule.priority)[0];
+        cellFormatMap.set(cellKey, bestRule);
+      }
+    });
+    
+    // Phase 2: 決定されたルールを適用
+    cellFormatMap.forEach((ruleData, cellKey) => {
+      const { rule, targetCell } = ruleData;
+      this.applier.applyCellFormat(targetCell.element, rule);
+      totalApplications++;
     });
     
     return totalApplications;
+  }
+  
+  /**
+   * セルの一意キーを生成
+   */
+  _getCellKey(cellElement) {
+    const row = cellElement.closest('tr');
+    const rowIndex = row ? Array.from(row.parentNode.children).indexOf(row) : 0;
+    const cellIndex = Array.from(row.children).indexOf(cellElement);
+    return `${rowIndex}-${cellIndex}`;
+  }
+  
+  /**
+   * 行内の全セル情報を取得
+   */
+  _getRowCells(cellElement) {
+    const row = cellElement.closest('tr');
+    if (!row) return [];
+    
+    const cells = Array.from(row.children);
+    return cells.map(cell => this.extractCellInfoFromElement(cell)).filter(info => info !== null);
   }
   
   /**

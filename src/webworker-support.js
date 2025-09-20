@@ -574,7 +574,7 @@ const WebWorkerSupport = {
     // Set timeout for task
     const timeout = setTimeout(() => {
       this.handleTaskTimeout(availableWorker, task);
-    }, options.timeout || 30000);
+    }, task.options.timeout || 30000);
     
     task.timeout = timeout;
     

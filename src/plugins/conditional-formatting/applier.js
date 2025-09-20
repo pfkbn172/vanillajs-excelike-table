@@ -20,8 +20,9 @@ class ConditionalFormattingApplier {
     }
     
     try {
+      // NOTE: この方法は非推奨 - 新しいロジックでは applyCellFormat を直接使用
       if (rule.applyTo === 'row') {
-        // 行全体に適用
+        // 行全体に適用（ただし、個別セル制御では使用しない）
         this.applyToRow(cellElement, rule);
       } else {
         // セルのみに適用

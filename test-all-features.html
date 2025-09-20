@@ -498,7 +498,6 @@
                   autoLoad: true,
                   autoApply: true
                 });
-                console.log('Conditional formatting initialized automatically');
               }
             } catch (error) {
               console.error('Error auto-initializing conditional formatting:', error);
@@ -954,6 +953,7 @@ const plugin = {
         mainTable = new ExceLikeTable('#main-table', {
           data: generateLargeDataset(1000),
           preset: 'advanced',
+          tableId: 'main-test-table',
           columns: [
             ColumnHelpers.text('id', 'ID', { width: 60 }),
             ColumnHelpers.text('name', '氏名', { width: 120 }),
@@ -1536,7 +1536,9 @@ const plugin = {
         
         mainTable.conditionalFormatting.applyRules();
         const stats = mainTable.conditionalFormatting.getStats();
-        updateStatus('cf-status', 'success', `${stats.rules.enabled}個のルールを${stats.appliedCells}個のセルに適用しました`);
+        const enabledRules = stats && stats.rules && typeof stats.rules.enabled !== 'undefined' ? stats.rules.enabled : 0;
+        const appliedCells = stats && typeof stats.appliedCells !== 'undefined' ? stats.appliedCells : 0;
+        updateStatus('cf-status', 'success', `${enabledRules}個のルールを${appliedCells}個のセルに適用しました`);
         
       } catch (error) {
         console.error('Error applying conditional formatting:', error);
