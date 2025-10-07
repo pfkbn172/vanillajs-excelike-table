@@ -14,13 +14,13 @@ const VirtualScroll = {
       container,
       itemHeight = 50,
       buffer = 5,
-      totalItems = 0,
       renderItem,
       getItemData,
       onScroll,
       estimatedItemHeight = itemHeight
     } = options;
 
+    let totalItems = options.totalItems || 0;
     let scrollTop = 0;
     let containerHeight = 0;
     let visibleStartIndex = 0;
