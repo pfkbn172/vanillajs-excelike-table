@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Filter State Cleanup Test</title>
+  <link rel="stylesheet" href="dist/excelike-table.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #1890ff;
+      padding-bottom: 10px;
+    }
+    .info {
+      background: #e6f7ff;
+      border-left: 4px solid #1890ff;
+      padding: 15px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Filter State Cleanup Test</h1>
+
+  <div class="info">
+    <strong>🎯 Test Scenario:</strong> Reproducing the bug where filter icon stays colored when all data is displayed<br>
+    <strong>Steps:</strong> The page will simulate conflicting filter state, then open the filter panel to test cleanup
+  </div>
+
+  <div id="table1"></div>
+
+  <script src="dist/excelike-table.browser.js?v=20251007-1042"></script>
+  <script>
+    // Make table instance globally accessible
+    window.table1 = null;
+
+    const table1Data = [
+      { id: 1, name: 'Alice Johnson', age: 28, city: 'New York', salary: 85000, joinDate: '2020-03-15', status: 'Active' },
+      { id: 2, name: 'Bob Smith', age: 35, city: 'Los Angeles', salary: 92000, joinDate: '2019-07-22', status: 'Active' },
+      { id: 3, name: 'Carol Davis', age: null, city: '', salary: 78000, joinDate: null, status: 'On Leave' },
+      { id: 4, name: 'David Brown', age: 42, city: 'Houston', salary: 105000, joinDate: '2018-05-30', status: 'Active' },
+      { id: 5, name: 'Emma Wilson', age: 26, city: 'Phoenix', salary: 72000, joinDate: '2022-09-12', status: 'Active' },
+      { id: 6, name: '', age: 39, city: null, salary: null, joinDate: '2019-11-05', status: '' },
+      { id: 7, name: 'Grace Lee', age: 33, city: 'San Antonio', salary: 88000, joinDate: '2020-08-18', status: 'Active' },
+      { id: 8, name: 'Henry Garcia', age: 45, city: 'San Diego', salary: 110000, joinDate: '2017-03-25', status: 'Active' },
+      { id: 9, name: 'Ivy Martinez', age: null, city: 'Dallas', salary: 81000, joinDate: '', status: 'Active' },
+      { id: 10, name: 'Jack Anderson', age: 37, city: 'San Jose', salary: 95000, joinDate: '2019-12-20', status: 'On Leave' }
+    ];
+
+    window.table1 = new ExceLikeTable('#table1', {
+      tableId: 'filter-test-table',
+      data: table1Data,
+      columns: [
+        { key: 'name', title: 'Name', dataIndex: 'name' },
+        { key: 'age', title: 'Age', dataIndex: 'age' },
+        { key: 'city', title: 'City', dataIndex: 'city' },
+        { key: 'joinDate', title: 'Join Date', dataIndex: 'joinDate' },
+        { key: 'status', title: 'Status', dataIndex: 'status' }
+      ]
+    });
+
+    console.log('✅ Table created successfully!');
+
+    // Simulate the conflicting state that the automatic test script creates
+    setTimeout(() => {
+      console.log('🔧 Simulating conflicting filter state...');
+      console.log('Before:', {
+        filterModes: JSON.parse(JSON.stringify(table1.state.filterModes || {})),
+        filters: JSON.parse(JSON.stringify(table1.state.filters || {})),
+        rangeFilters: JSON.parse(JSON.stringify(table1.state.rangeFilters || {}))
+      });
+
+      // Set up conflicting state: both range mode AND value filter
+      table1.state.filterModes = { age: 'range' };
+      table1.state.rangeFilters = { age: { min: 30, max: 40 } };
+      table1.state.filters = { age: [null] };  // This should be cleaned up when panel opens
+      table1.state.rangeIncludeBlanks = { age: false };
+
+      // Apply the conflicting filters
+      table1.applyFilters();
+      table1.renderBody();
+      table1.renderPagination();
+
+      console.log('After setup:', {
+        filterModes: JSON.parse(JSON.stringify(table1.state.filterModes)),
+        filters: JSON.parse(JSON.stringify(table1.state.filters)),
+        rangeFilters: JSON.parse(JSON.stringify(table1.state.rangeFilters)),
+        filteredCount: table1.state.filteredData.length
+      });
+
+      console.log('✅ Conflicting state created. Now click the Age filter button to test cleanup.');
+    }, 1000);
+  </script>
+</body>
+</html>

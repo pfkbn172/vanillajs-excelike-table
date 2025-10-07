@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pinned Column Z-index Test</title>
+    <link rel="stylesheet" href="src/ExceLikeTable.css">
+    <style>
+        body {
+            margin: 20px;
+            font-family: Arial, sans-serif;
+        }
+        #table-container {
+            height: 300px;
+            border: 1px solid #ccc;
+        }
+        .control-panel {
+            margin: 20px 0;
+        }
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>ピン留め列 Z-index テスト</h1>
+    
+    <div class="control-panel">
+        <button onclick="pinFirstColumn()">1列目をピン留め</button>
+        <button onclick="scrollVertically()">垂直スクロール（500px）</button>
+        <button onclick="checkZIndex()">Z-index確認</button>
+        <button onclick="resetScroll()">スクロールリセット</button>
+    </div>
+    
+    <div id="table-container" class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th class="table-header">Full Name</th>
+                    <th class="table-header">Email</th>
+                    <th class="table-header">Department</th>
+                    <th class="table-header">Salary</th>
+                    <th class="table-header">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+    
+    <div id="status"></div>
+    
+    <script>
+        // テストデータを生成
+        const tbody = document.querySelector('tbody');
+        for (let i = 0; i < 50; i++) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="table-cell">User ${i + 1}</td>
+                <td class="table-cell">user${i + 1}@example.com</td>
+                <td class="table-cell">Department ${i % 5}</td>
+                <td class="table-cell">$${50000 + i * 1000}</td>
+                <td class="table-cell">${i % 2 === 0 ? 'Active' : 'Inactive'}</td>
+            `;
+            tbody.appendChild(tr);
+        }
+        
+        function pinFirstColumn() {
+            // ヘッダーとデータの最初の列にpinned-columnクラスを追加
+            document.querySelectorAll('th:first-child, td:first-child').forEach(el => {
+                el.classList.add('pinned-column', 'last-pinned-column');
+                el.style.setProperty('--pinned-left', '0px');
+            });
+            updateStatus('1列目がピン留めされました');
+        }
+        
+        function scrollVertically() {
+            const container = document.querySelector('.table-container');
+            container.scrollTop = 500;
+            updateStatus('500px垂直スクロールしました');
+            
+            // スクロール後に重なりをチェック
+            setTimeout(checkOverlap, 100);
+        }
+        
+        function checkZIndex() {
+            const pinnedHeader = document.querySelector('th.pinned-column');
+            const pinnedData = document.querySelector('td.pinned-column');
+            const thead = document.querySelector('thead');
+            const tbody = document.querySelector('tbody');
+            
+            let info = '<h3>Z-index情報:</h3><ul>';
+            
+            if (pinnedHeader) {
+                const style = window.getComputedStyle(pinnedHeader);
+                info += `<li>Pinned Header: z-index=${style.zIndex}, position=${style.position}</li>`;
+            }
+            if (pinnedData) {
+                const style = window.getComputedStyle(pinnedData);
+                info += `<li>Pinned Data: z-index=${style.zIndex}, position=${style.position}</li>`;
+            }
+            if (thead) {
+                const style = window.getComputedStyle(thead);
+                info += `<li>THEAD: z-index=${style.zIndex}, position=${style.position}</li>`;
+            }
+            if (tbody) {
+                const style = window.getComputedStyle(tbody);
+                info += `<li>TBODY: z-index=${style.zIndex}, position=${style.position}</li>`;
+            }
+            
+            info += '</ul>';
+            updateStatus(info);
+        }
+        
+        function checkOverlap() {
+            const pinnedHeader = document.querySelector('th.pinned-column');
+            const firstVisibleData = document.querySelector('tbody tr:nth-child(10) td.pinned-column');
+            
+            if (pinnedHeader && firstVisibleData) {
+                const headerRect = pinnedHeader.getBoundingClientRect();
+                const dataRect = firstVisibleData.getBoundingClientRect();
+                
+                if (dataRect.top < headerRect.bottom && dataRect.bottom > headerRect.top) {
+                    updateStatus('⚠️ 警告: データがヘッダーと重なっています！', 'error');
+                } else {
+                    updateStatus('✅ 正常: ヘッダーが正しく表示されています', 'success');
+                }
+            }
+        }
+        
+        function resetScroll() {
+            const container = document.querySelector('.table-container');
+            container.scrollTop = 0;
+            updateStatus('スクロール位置をリセットしました');
+        }
+        
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+    </script>
+    
+    <style>
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        #status .info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        #status .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        #status .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+    </style>
+</body>
+</html>

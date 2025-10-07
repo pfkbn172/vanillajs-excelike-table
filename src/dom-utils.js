@@ -3,6 +3,8 @@
  * Prevents XSS attacks by using safe DOM methods
  */
 
+import SecurityUtils from './security-utils.js';
+
 const DOMUtils = {
   /**
    * Create element with safe text content
@@ -48,22 +50,12 @@ const DOMUtils = {
   },
 
   /**
-   * Basic HTML sanitization
-   * NOTE: For production, use a library like DOMPurify
+   * HTML sanitization using SecurityUtils (DOMPurify)
    * @param {string} html - HTML to sanitize
    * @returns {string} - Sanitized HTML
    */
   sanitizeHTML(html) {
-    // Remove script tags and event handlers
-    const div = document.createElement('div');
-    div.textContent = html;
-    const text = div.innerHTML;
-    
-    // Basic sanitization - removes script tags and on* attributes
-    return text
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, '')
-      .replace(/\s*on\w+\s*=\s*[^\s>]*/gi, '');
+    return SecurityUtils.sanitizeHTML(html);
   },
 
   /**

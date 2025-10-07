@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CF Test - No Cache</title>
+  <!-- Add cache-busting query parameter -->
+  <link rel="stylesheet" href="src/ExceLikeTable.css?v=<?php echo time(); ?>">
+  <link rel="stylesheet" href="src/plugins/conditional-formatting/conditional-formatting.css?v=<?php echo time(); ?>">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h2 { color: #333; }
+    .test-cell {
+      padding: 10px;
+      margin: 5px;
+      border: 1px solid #ddd;
+      display: inline-block;
+      min-width: 100px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Conditional Formatting Test - Cache Busted</h1>
+    
+    <h2>Manual Style Test</h2>
+    <div class="test-cell" style="background-color: #ffcccc; color: #cc0000;">
+      This should be red background with red text
+    </div>
+    <div class="test-cell" style="background-color: #ccffcc; color: #006600;">
+      This should be green background with green text
+    </div>
+    <div class="test-cell" style="background-color: #cce5ff; color: #0066cc;">
+      This should be blue background with blue text
+    </div>
+    
+    <h2>Table Test</h2>
+    <div id="tableContainer"></div>
+    
+    <h2>Applied Styles</h2>
+    <div id="style-info" style="margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 4px; font-family: monospace;"></div>
+  </div>
+
+  <script>
+    // Force cache refresh by adding timestamp
+    const scripts = [
+      'src/dom-utils.js',
+      'src/performance-utils.js',
+      'src/virtual-scroll.js',
+      'src/accessibility.js',
+      'src/i18n.js',
+      'src/theme-system.js',
+      'src/export-module.js',
+      'src/plugin-system.js',
+      'src/webworker-support.js',
+      'src/plugins/column-resizer-plugin.js',
+      'src/plugins/row-selection-plugin.js',
+      'src/plugins/conditional-formatting/constants.js',
+      'src/plugins/conditional-formatting/utils.js',
+      'src/plugins/conditional-formatting/performance-optimizations.js',
+      'src/plugins/conditional-formatting/rule.js',
+      'src/plugins/conditional-formatting/evaluator.js',
+      'src/plugins/conditional-formatting/applier.js',
+      'src/plugins/conditional-formatting/manager.js',
+      'src/plugins/conditional-formatting/ui.js',
+      'src/plugins/conditional-formatting/conditional-formatting.js',
+      'src/ExceLikeTable.js'
+    ];
+    
+    const timestamp = Date.now();
+    let loadedCount = 0;
+    
+    function loadScript(src, callback) {
+      const script = document.createElement('script');
+      script.src = src + '?v=' + timestamp;
+      script.onload = callback;
+      document.body.appendChild(script);
+    }
+    
+    function loadAllScripts(index = 0) {
+      if (index < scripts.length) {
+        loadScript(scripts[index], () => {
+          loadedCount++;
+          console.log(`Loaded ${loadedCount}/${scripts.length}: ${scripts[index]}`);
+          loadAllScripts(index + 1);
+        });
+      } else {
+        initializeTable();
+      }
+    }
+    
+    function initializeTable() {
+      console.log('All scripts loaded, initializing table...');
+      
+      const sampleData = [
+        ['Product', 'Value'],
+        ['A', -50],
+        ['B', 100],
+        ['C', -25],
+        ['D', 200],
+        ['E', 0]
+      ];
+      
+      const table = new ExceLikeTable('tableContainer', {
+        data: sampleData,
+        plugins: ['ConditionalFormattingPlugin'],
+        columnHeaders: ['Product', 'Value'],
+        columnTypes: ['string', 'number'],
+        height: '300px'
+      });
+      
+      setTimeout(() => {
+        const cfPlugin = table.getPlugin('ConditionalFormattingPlugin');
+        const cfManager = cfPlugin.getManager();
+        
+        // Add a simple rule: negative values = red
+        cfManager.addRule({
+          name: 'Negative Values',
+          type: 'cell_value',
+          column: 1,
+          operator: '<',
+          value: 0,
+          format: {
+            backgroundColor: '#ffcccc',
+            color: '#cc0000',
+            fontWeight: true
+          }
+        });
+        
+        cfManager.applyAll();
+        
+        // Check results
+        setTimeout(() => {
+          const cells = table.element.querySelectorAll('td');
+          let styledCells = 0;
+          const styleInfo = document.getElementById('style-info');
+          let info = 'Cell Styles Applied:\n\n';
+          
+          cells.forEach((cell, i) => {
+            if (cell.style.backgroundColor || cell.style.color) {
+              styledCells++;
+              info += `Cell ${i}: "${cell.textContent}"\n`;
+              info += `  Background: ${cell.style.backgroundColor}\n`;
+              info += `  Color: ${cell.style.color}\n`;
+              info += `  Classes: ${cell.className}\n\n`;
+            }
+          });
+          
+          info += `\nTotal styled cells: ${styledCells}`;
+          styleInfo.textContent = info;
+          
+          console.log('Conditional formatting check complete:', styledCells, 'cells styled');
+        }, 500);
+      }, 500);
+    }
+    
+    // Start loading
+    loadAllScripts();
+  </script>
+</body>
+</html>

@@ -3,6 +3,8 @@
  * Handles efficient rendering of large datasets
  */
 
+import SecurityUtils from './security-utils.js';
+
 const VirtualScroll = {
   /**
    * Create virtual scrolling instance
@@ -432,7 +434,8 @@ const VirtualScroll = {
       if (column.render) {
         const rendered = column.render(value, rowData, column);
         if (typeof rendered === 'string') {
-          cell.innerHTML = rendered;
+          // Sanitize HTML to prevent XSS
+          cell.innerHTML = SecurityUtils.sanitizeHTML(rendered);
         } else if (rendered instanceof HTMLElement) {
           cell.appendChild(rendered);
         }

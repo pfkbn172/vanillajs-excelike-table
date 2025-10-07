@@ -1,5 +1,55 @@
 /* ExceLike Table - VanillaJS Version Styles */
 
+/* =====================================================
+   CSS Variables - Shadow System & Theme Configuration
+   =====================================================
+   
+   SHADOW SYSTEM OVERVIEW:
+   This table component uses a comprehensive shadow system to provide 
+   visual boundaries between fixed and scrollable areas:
+   
+   1. HEADER ROW SHADOWS: Applied to all sticky headers to separate them
+      from scrollable content below
+      
+   2. PINNED COLUMN SHADOWS: Only applied to the LAST pinned column to 
+      create a clear visual boundary between fixed and scrollable columns
+      
+   3. UI ELEMENT SHADOWS: Consistent shadow styling for dropdowns, modals,
+      tooltips, and interactive elements
+      
+   The shadow system is automatically applied when using ExceLikeTable
+   with no additional configuration required.
+   ===================================================== */
+:root {
+  /* Fixed Element Shadow Configuration
+     Used for sticky headers and pinned columns to create visual boundaries */
+  --shadow-header-row: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-header-row-light: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --shadow-column-light: 2px 0 6px rgba(0, 0, 0, 0.1);
+  --shadow-column-strong: 6px 0 16px rgba(0, 0, 0, 0.3);
+  --shadow-border-column: inset -1px 0 0 rgba(24, 144, 255, 0.3);
+  --shadow-border-column-light: inset -1px 0 0 rgba(24, 144, 255, 0.15);
+  
+  /* UI Element Shadow Configuration
+     Used for dropdowns, modals, tooltips, and interactive elements */
+  --shadow-dropdown: 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  --shadow-modal: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-tooltip: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-focus: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  --shadow-element-hover: 0 4px 8px rgba(0, 0, 0, 0.3);
+  --shadow-element-default: 0 2px 4px rgba(0, 0, 0, 0.2);
+  
+  /* Filter Effects for Enhanced Shadow Rendering */
+  --filter-shadow-header: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+  
+  /* Performance Optimization Variables
+     Enable hardware acceleration for smooth scrolling and animations */
+  --transform-gpu: translateZ(0);
+  --backface-hidden: hidden;
+  --will-change-scroll: scroll-position;
+  --will-change-transform: transform;
+}
+
 .excelike-table-wrapper {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
@@ -8,8 +58,11 @@
   -moz-osx-font-smoothing: grayscale;
   position: relative;
   width: 100%;
+  height: 100%;
   background: white;
   font-size: var(--table-font-size, 14px);
+  display: flex;
+  flex-direction: column;
 }
 
 .excelike-table-wrapper * {
@@ -47,6 +100,7 @@
   flex: 1;
   min-height: 0;
   width: 100%;
+  max-height: 100%;
 }
 
 /* Sticky header for fixed height tables */
@@ -54,20 +108,13 @@
   height: 100%;
 }
 
-.table-container.fixed-height .table-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background-color: #fafafa;
-}
-
 .table {
   width: auto;
-  min-width: 100%;
+  min-width: fit-content;
   border-collapse: collapse;
   background-color: #fff;
   font-size: 14px;
-  table-layout: auto;
+  table-layout: fixed;
 }
 
 .table.bordered {
@@ -86,16 +133,52 @@
   background-color: #fafafa;
   border-bottom: 1px solid #d9d9d9;
   padding: 0;
-  position: relative;
-  overflow: visible;
   position: sticky;
+  position: -webkit-sticky;
   top: 0;
   z-index: 100;
+  overflow: visible;
+  /* Row boundary effect for visual clarity - supports border-collapse */
+  box-shadow: var(--shadow-header-row) !important;
+  /* Resolves shadow display issues with border-collapse */
+  border-spacing: 0;
+  /* Additional settings to ensure reliable shadow display */
+  filter: var(--filter-shadow-header);
+  /* Performance optimization for sticky positioning */
+  transform: var(--transform-gpu);
+  backface-visibility: var(--backface-hidden);
+  will-change: var(--will-change-transform);
 }
 
-/* Enhanced sticky header for better visibility */
-.table-container.fixed-height .table-header {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+/* Non-pinned header styles (z-index + shadow isolation + background) */
+.table .table-header:not(.pinned-column) {
+  z-index: 100;
+  /* Ensures shadow display even for non-fixed columns */
+  isolation: isolate;
+  /* Background color required for shadow visibility */
+  background-color: #fafafa;
+}
+
+/* Ensure thead is also sticky */
+.table thead {
+  position: sticky;
+  position: -webkit-sticky;
+  top: 0;
+  z-index: 100;
+  background-color: #fafafa;
+}
+
+/* Fix for Safari */
+.table thead th {
+  position: sticky;
+  position: -webkit-sticky;
+  top: 0;
+  background-color: inherit;
+}
+
+/* ピン留めされていないth要素 */
+.table thead th:not(.pinned-column) {
+  z-index: 100;
 }
 
 .table.bordered .table-header {
@@ -262,7 +345,7 @@
   background: white;
   border: 1px solid #d9d9d9;
   border-radius: 6px;
-  box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-dropdown);
   min-width: 250px;
   max-width: 400px;
   font-size: 14px;
@@ -304,7 +387,7 @@
 
 .filter-search-input:focus {
   border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  box-shadow: var(--shadow-focus);
 }
 
 .filter-dropdown-content {
@@ -424,6 +507,252 @@
   color: #40a9ff;
 }
 
+/* Filter Mode Tabs */
+.filter-mode-tabs {
+  display: flex;
+  border-bottom: 1px solid #f0f0f0;
+  background: white;
+  flex-shrink: 0;
+}
+
+.filter-mode-tab {
+  flex: 1;
+  padding: 8px 16px;
+  background: white;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.filter-mode-tab:hover {
+  color: #1890ff;
+  background: #f5f5f5;
+}
+
+.filter-mode-tab.active {
+  color: #1890ff;
+  border-bottom-color: #1890ff;
+  font-weight: 500;
+}
+
+/* Filter Mode Content */
+.filter-mode-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.filter-mode-panel {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.filter-mode-panel.active {
+  display: flex;
+}
+
+/* Range Description */
+.range-description {
+  padding: 8px 12px;
+  background: #e6f7ff;
+  border: 1px solid #91d5ff;
+  border-radius: 4px;
+  color: rgba(0, 0, 0, 0.85);
+  font-size: 13px;
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* Range Sliders */
+/* Dual-thumb range slider container */
+.dual-range-slider-container {
+  position: relative;
+  margin: 12px 0 8px 0;
+  padding: 0;
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.dual-range-slider-track {
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  width: calc(100% - 18px);
+  height: 6px;
+  background: #d3d3d3;
+  border-radius: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.dual-range-slider-range {
+  position: absolute;
+  height: 6px;
+  background: #1890ff;
+  border-radius: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  transition: left 0.1s, width 0.1s;
+}
+
+.dual-range-slider {
+  position: absolute;
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+}
+
+.dual-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #1890ff;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: background 0.2s, transform 0.2s;
+  pointer-events: auto;
+  position: relative;
+  z-index: 3;
+}
+
+.dual-range-slider::-webkit-slider-thumb:hover {
+  background: #40a9ff;
+  transform: scale(1.1);
+}
+
+.dual-range-slider::-webkit-slider-thumb:active {
+  background: #096dd9;
+  transform: scale(0.95);
+}
+
+.dual-range-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #1890ff;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: background 0.2s, transform 0.2s;
+  pointer-events: auto;
+  position: relative;
+  z-index: 3;
+}
+
+.dual-range-slider::-moz-range-thumb:hover {
+  background: #40a9ff;
+  transform: scale(1.1);
+}
+
+.dual-range-slider::-moz-range-thumb:active {
+  background: #096dd9;
+  transform: scale(0.95);
+}
+
+.dual-range-slider-min::-webkit-slider-thumb {
+  background: #52c41a;
+  z-index: 4;
+}
+
+.dual-range-slider-min::-webkit-slider-thumb:hover {
+  background: #73d13d;
+}
+
+.dual-range-slider-min::-webkit-slider-thumb:active {
+  background: #389e0d;
+}
+
+.dual-range-slider-min::-moz-range-thumb {
+  background: #52c41a;
+  z-index: 4;
+}
+
+.dual-range-slider-min::-moz-range-thumb:hover {
+  background: #73d13d;
+}
+
+.dual-range-slider-min::-moz-range-thumb:active {
+  background: #389e0d;
+}
+
+/* Number Range Slider (custom implementation like date slider) */
+.number-range-slider-container {
+  position: relative;
+  padding: 8px 0;
+}
+
+.number-range-slider {
+  position: relative;
+  height: 6px;
+  background: #f0f0f0;
+  border-radius: 3px;
+  margin: 16px 0;
+  cursor: pointer;
+}
+
+.number-range-track {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: #1890ff;
+  border-radius: 3px;
+}
+
+.number-range-thumb {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 16px;
+  height: 16px;
+  background: #1890ff;
+  border: 2px solid white;
+  border-radius: 50%;
+  cursor: grab;
+  box-shadow: var(--shadow-element-default);
+  z-index: 2;
+}
+
+.number-range-thumb:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+  box-shadow: var(--shadow-element-hover);
+}
+
+.number-range-thumb:active {
+  cursor: grabbing;
+}
+
+.number-range-thumb-min {
+  background: #52c41a;
+}
+
+.number-range-thumb-min:hover {
+  background: #73d13d;
+}
+
+/* Blank value checkbox */
+.range-blank-option {
+  margin: 8px 0 4px 0;
+  padding: 4px 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
 .filter-options-list {
   /* max-height will be set dynamically in JavaScript */
   overflow-y: auto;
@@ -475,7 +804,7 @@
 
 .range-input:focus {
   border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  box-shadow: var(--shadow-focus);
 }
 
 .range-slider-container {
@@ -510,13 +839,13 @@
   border: 2px solid white;
   border-radius: 50%;
   cursor: grab;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-element-default);
   z-index: 2;
 }
 
 .range-thumb:hover {
   transform: translate(-50%, -50%) scale(1.1);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-element-hover);
 }
 
 /* Date Range Filter Styles */
@@ -558,7 +887,7 @@
 
 .date-range-input:focus {
   border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  box-shadow: var(--shadow-focus);
 }
 
 .date-range-slider-container {
@@ -593,13 +922,13 @@
   border: 2px solid white;
   border-radius: 50%;
   cursor: grab;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-element-default);
   z-index: 2;
 }
 
 .date-range-thumb:hover {
   transform: translate(-50%, -50%) scale(1.1);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-element-hover);
 }
 
 /* Date Filter Styles */
@@ -796,7 +1125,7 @@
   background: transparent;
   border-right: 2px solid transparent;
   transition: border-color 0.2s;
-  z-index: 200 !important;
+  z-index: var(--z-resize-handle);
 }
 
 .resize-handle:hover,
@@ -814,6 +1143,8 @@
   white-space: nowrap;
   position: relative;
   cursor: pointer;
+  /* データセル全体に軽い背景色を設定 */
+  background-color: #fff;
 }
 
 .header-title {
@@ -854,7 +1185,7 @@
   z-index: 10000;
   pointer-events: none;
   white-space: nowrap;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-tooltip);
   border: 1px solid rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(4px);
   transition: opacity 0.2s ease;
@@ -963,7 +1294,7 @@
 .page-size-select:focus {
   outline: none;
   border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  box-shadow: var(--shadow-focus);
 }
 
 /* Table Menu */
@@ -1001,7 +1332,7 @@
   background: white;
   border: 1px solid #d9d9d9;
   border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-dropdown);
   z-index: 1000;
   min-width: 150px;
   margin-top: 4px;
@@ -1038,7 +1369,7 @@
   background: white;
   border: 1px solid #d9d9d9;
   border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-dropdown);
   min-width: 100px;
   display: none;
   z-index: 1001;
@@ -1072,7 +1403,7 @@
 .column-settings-modal {
   background: white;
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-modal);
   width: 400px;
   max-height: 80vh;
   display: flex;
@@ -1222,23 +1553,40 @@
   border-color: #1890ff;
 }
 
-/* Column pinning styles - 統一されたz-index管理システム */
+/* =============================================================================
+   Column Pinning & Header Fixing - Clean Implementation
+   ============================================================================= */
 
-/* ベースz-indexレベル定義 */
+/* CSS Variables - Z-index Hierarchy */
 :root {
+  /* Base layers */
   --z-table-cell: 1;
+  --z-table-body: 1;
+  --z-table-header: 10;
+  
+  /* Pinned elements */
   --z-pinned-cell: 101;
-  --z-pinned-header: 102;
-  --z-pinned-last: 103;
-  --z-pinned-last-header: 104;
+  --z-pinned-header: 120;
+  --z-pinned-last-header: 125;
   --z-pinned-border: 105;
+  
+  /* Interactive elements */
   --z-resize-handle: 1000;
 }
 
-/* テーブル要素の基本設定 */
+/* Base Table Structure */
 .table {
   position: relative;
   isolation: isolate;
+}
+
+.table tbody {
+  position: relative;
+  z-index: var(--z-table-body);
+}
+
+.table thead {
+  z-index: var(--z-table-header);
 }
 
 .table td,
@@ -1248,65 +1596,70 @@
   z-index: var(--z-table-cell);
 }
 
-/* テーブルコンテナの設定 */
 .table-container {
   position: relative;
   isolation: isolate;
-  overflow-x: auto;
-  overflow-y: auto;
+  overflow: auto;
 }
 
-/* 基本固定列スタイル */
+/* Column Pinning Styles with enhanced boundary effects */
 .table .pinned-column {
-  position: sticky !important;
-  left: var(--pinned-left, 0px) !important;
-  background-color: #fff !important;
+  position: sticky;
+  left: var(--pinned-left, 0px);
+  background-color: #fff;
   z-index: var(--z-pinned-cell);
   min-width: fit-content;
-  /* 内側シャドウで境界を示す */
-  box-shadow: inset -1px 0 0 rgba(24, 144, 255, 0.1);
-}
-
-/* ヘッダー固定列 */
-.table .table-header.pinned-column,
-.table th.pinned-column {
-  background-color: #fafafa !important;
-  z-index: var(--z-pinned-header);
-  position: sticky !important;
-  top: 0;
-  left: var(--pinned-left, 0px) !important;
-}
-
-/* 最後の固定列 - 青いボーダーライン */
-.table .last-pinned-column {
-  z-index: var(--z-pinned-last);
-  position: sticky !important;
-  /* 青いボーダーラインが確実に固定されるよう、親要素も sticky に設定 */
-}
-
-.table .last-pinned-column::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 2px;
-  background: #1890ff;
-  z-index: var(--z-pinned-border);
-  pointer-events: none;
-  /* 疑似要素も固定列と一緒に移動するように */
+  /* 列境界エフェクト - 右側にシャドウを追加して固定エリアを明確化 */
+  box-shadow: 
+    var(--shadow-border-column-light),
+    var(--shadow-column-light);
+  will-change: transform;
   transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
-/* ヘッダーの最後の固定列 */
-.table th.last-pinned-column {
+/* Pinned data cells - disable top positioning (shadow only on last pinned column) */
+.table tbody .pinned-column {
+  top: auto;
+}
+
+/* Pinned header cells - dual-axis sticky positioning (shadow only on last pinned column) */
+.table .table-header.pinned-column,
+.table thead th.pinned-column {
+  background-color: #fafafa;
+  z-index: var(--z-pinned-header);
+  top: 0;
+  left: var(--pinned-left, 0px);
+  isolation: isolate;
+  /* Add shadow to bottom of header row (column shadow only on last pinned column) */
+  box-shadow: var(--shadow-header-row-light);  /* Row shadow only */
+  /* Performance optimization for dual-axis sticky positioning */
+  transform: var(--transform-gpu);
+  backface-visibility: var(--backface-hidden);
+  will-change: var(--will-change-transform);
+}
+
+/* Last pinned column - enhanced visual separator with strong boundary effect */
+.table .last-pinned-column {
   z-index: var(--z-pinned-last-header);
+  /* Last pinned column has strong boundary effect with darker shadows */
+  box-shadow: 
+    var(--shadow-border-column),     /* Column border */
+    var(--shadow-column-strong),     /* Column shadow */
+    var(--shadow-header-row-light) !important; /* Row shadow */
+  /* Performance optimization for enhanced visual effects */
+  transform: var(--transform-gpu);
+  backface-visibility: var(--backface-hidden);
+  will-change: var(--will-change-transform);
 }
 
-/* リサイズハンドルは最上位に配置 */
-.table-column-resizer {
-  z-index: var(--z-resize-handle) !important;
+/* Last pinned column border - remove blue line for clean shadow-only effect */
+.table .last-pinned-column::after {
+  /* Disable blue border line */
+  display: none;
 }
+
+/* Column Resizer Integration - Handled above with .resize-handle */
 
 /* Scrollbar styling */
 .filter-dropdown-content::-webkit-scrollbar {
@@ -1393,7 +1746,7 @@
 .modal {
   background: white;
   border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-modal);
   max-width: 90vw;
   max-height: 90vh;
   overflow: hidden;
@@ -1481,7 +1834,7 @@
 }
 
 .btn:focus {
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  box-shadow: var(--shadow-focus);
 }
 
 .btn-primary {

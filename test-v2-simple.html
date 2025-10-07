@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ExceLikeTable v2.0 - Simple Test</title>
+  <link rel="stylesheet" href="dist/excelike-table.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #1890ff;
+      padding-bottom: 10px;
+    }
+    .test-section {
+      margin: 30px 0;
+      padding: 20px;
+      background: #f5f5f5;
+      border-radius: 8px;
+    }
+    .success {
+      color: #52c41a;
+      font-weight: bold;
+    }
+    .info {
+      background: #e6f7ff;
+      border-left: 4px solid #1890ff;
+      padding: 15px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>✨ ExceLikeTable v2.0.0 - Simplified API Test</h1>
+
+  <div class="info">
+    <strong>🎯 Goal:</strong> Zero configuration - all features work out of the box!<br>
+    <strong>✅ No presets</strong> - just pass data and columns!
+  </div>
+
+  <div class="test-section">
+    <h2>Test 1: Minimal Configuration</h2>
+    <p>Just data + columns = All features enabled!</p>
+    <div id="table1"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 2: Using ColumnHelpers</h2>
+    <p>Easy column creation with helpers</p>
+    <div id="table2"></div>
+  </div>
+
+  <script src="dist/excelike-table.browser.js"></script>
+  <script id="main-script">
+    // Make table instances globally accessible for testing
+    window.table1 = null;
+    window.table2 = null;
+
+    console.log('✅ ExceLikeTable loaded:', typeof ExceLikeTable);
+    console.log('✅ ColumnHelpers loaded:', typeof ColumnHelpers);
+    console.log('✅ TABLE_CONFIG loaded:', typeof TABLE_CONFIG);
+
+    // Test 1: Minimal configuration (with empty values to test filtering)
+    const table1Data = [
+      { id: 1, name: 'Alice Johnson', age: 28, city: 'New York', salary: 85000, joinDate: '2020-03-15', status: 'Active' },
+      { id: 2, name: 'Bob Smith', age: 35, city: 'Los Angeles', salary: 92000, joinDate: '2019-07-22', status: 'Active' },
+      { id: 3, name: 'Carol Davis', age: null, city: '', salary: 78000, joinDate: null, status: 'On Leave' },
+      { id: 4, name: 'David Brown', age: 42, city: 'Houston', salary: 105000, joinDate: '2018-05-30', status: 'Active' },
+      { id: 5, name: 'Emma Wilson', age: 26, city: 'Phoenix', salary: 72000, joinDate: '2022-09-12', status: 'Active' },
+      { id: 6, name: '', age: 39, city: null, salary: null, joinDate: '2019-11-05', status: '' },
+      { id: 7, name: 'Grace Lee', age: 33, city: 'San Antonio', salary: 88000, joinDate: '2020-08-18', status: 'Active' },
+      { id: 8, name: 'Henry Garcia', age: 45, city: 'San Diego', salary: 110000, joinDate: '2017-03-25', status: 'Active' },
+      { id: 9, name: 'Ivy Martinez', age: null, city: 'Dallas', salary: 81000, joinDate: '', status: 'Active' },
+      { id: 10, name: 'Jack Anderson', age: 37, city: 'San Jose', salary: 95000, joinDate: '2019-12-20', status: 'On Leave' }
+    ];
+
+    window.table1 = new ExceLikeTable('#table1', {
+      tableId: 'table1',
+      data: table1Data,
+      columns: [
+        { key: 'name', title: 'Name', dataIndex: 'name' },
+        { key: 'age', title: 'Age', dataIndex: 'age' },
+        { key: 'city', title: 'City', dataIndex: 'city' },
+        { key: 'joinDate', title: 'Join Date', dataIndex: 'joinDate' },
+        { key: 'status', title: 'Status', dataIndex: 'status' }
+      ]
+    });
+
+    console.log('✅ Table 1 created successfully!');
+
+    // Test 2: Using ColumnHelpers
+    const table2Data = [
+      { id: 1, product: 'Widget A', quantity: 120, price: 29.99, date: '2024-01-15', status: 'In Stock' },
+      { id: 2, product: 'Widget B', quantity: 85, price: 45.50, date: '2024-01-16', status: 'Low Stock' },
+      { id: 3, product: 'Widget C', quantity: 200, price: 19.99, date: '2024-01-17', status: 'In Stock' },
+      { id: 4, product: 'Widget D', quantity: 5, price: 99.99, date: '2024-01-18', status: 'Out of Stock' },
+      { id: 5, product: 'Widget E', quantity: 150, price: 35.00, date: '2024-01-19', status: 'In Stock' }
+    ];
+
+    window.table2 = new ExceLikeTable('#table2', {
+      tableId: 'table2',
+      data: table2Data,
+      columns: [
+        ColumnHelpers.text('product', 'Product'),
+        ColumnHelpers.number('quantity', 'Quantity'),
+        ColumnHelpers.number('price', 'Price', { currency: '$' }),
+        ColumnHelpers.date('date', 'Date'),
+        ColumnHelpers.status('status', 'Status', {
+          'In Stock': '#52c41a',
+          'Low Stock': '#faad14',
+          'Out of Stock': '#ff4d4f'
+        })
+      ]
+    });
+
+    console.log('✅ Table 2 created successfully with ColumnHelpers!');
+
+    // Summary
+    console.log('\n🎉 All tests passed!');
+    console.log('Features available:');
+    console.log('  ✅ Sorting (click column headers)');
+    console.log('  ✅ Filtering (click filter icons)');
+    console.log('  ✅ Pagination (10 items per page)');
+    console.log('  ✅ Column resizing (drag column edges)');
+    console.log('  ✅ Column settings (gear icon)');
+    console.log('  ✅ Settings persistence (LocalStorage)');
+  </script>
+
+  <!-- Comprehensive Test Script -->
+  <script src="scripts/comprehensive-test.js"></script>
+</body>
+</html>

@@ -3,52 +3,12 @@
  * Excel-like table with filtering, sorting, pagination, and column pinning
  */
 
-// Import utilities (Node.js environment only)
-// In browser, utilities are loaded via script tags and available globally
-if (typeof module !== 'undefined' && module.exports) {
-  // Node.js environment - require modules
-  const DOMUtils = require('./dom-utils');
-  const PerformanceUtils = require('./performance-utils');
-}
+/**
+ * ExceLike Table - Pure JavaScript implementation
+ * All features enabled by default - no configuration needed!
+ */
 
-// Validate dependencies are available (browser and Node.js)
-if (typeof DOMUtils === 'undefined') {
-  throw new Error('DOMUtils not found. Please ensure dom-utils.js is loaded before ExceLikeTable.js');
-}
-if (typeof PerformanceUtils === 'undefined') {
-  throw new Error('PerformanceUtils not found. Please ensure performance-utils.js is loaded before ExceLikeTable.js');
-}
 
-// Predefined table presets for easy setup
-const TABLE_PRESETS = {
-  simple: {
-    features: ['sorting'],
-    bordered: true,
-    size: 'middle',
-    pagination: { pageSize: 10 }
-  },
-  
-  standard: {
-    features: ['sorting', 'filtering', 'pagination', 'columnSettings'],
-    bordered: true,
-    size: 'middle',
-    pagination: { pageSize: 10, showSizeChanger: true }
-  },
-  
-  advanced: {
-    features: ['sorting', 'filtering', 'pagination', 'columnSettings', 'persistSettings'],
-    bordered: true,
-    size: 'middle',
-    pagination: { pageSize: 10, showSizeChanger: true }
-  },
-  
-  excel: {
-    features: ['sorting', 'filtering', 'pagination', 'columnSettings', 'persistSettings', 'columnResizing', 'columnPinning'],
-    bordered: true,
-    size: 'middle',
-    pagination: { pageSize: 10, showSizeChanger: true }
-  }
-};
 
 // Configuration constants
 const TABLE_CONFIG = {
@@ -385,11 +345,26 @@ class TableSettingsManager {
       sanitizedColumnWidths[column] = sanitizedWidth;
     }
 
+    // ✅ Validate and sanitize filter state
+    const sanitizedFilters = this.validateFilterState(table.state);
+
     return {
       // Column settings
       columnWidths: sanitizedColumnWidths,
       visibleColumns: { ...table.state.visibleColumns },
       pinnedColumns: { ...table.state.pinnedColumns },
+      
+      // ✅ Filter settings (validated and complete)
+      filters: sanitizedFilters.filters,
+      rangeFilters: sanitizedFilters.rangeFilters,
+      dateRangeFilters: sanitizedFilters.dateRangeFilters,
+      filterModes: sanitizedFilters.filterModes,
+      rangeIncludeBlanks: sanitizedFilters.rangeIncludeBlanks,
+      dateRangeIncludeBlanks: sanitizedFilters.dateRangeIncludeBlanks,
+      
+      // Sort settings
+      sortColumn: table.state.sortColumn,
+      sortOrder: table.state.sortOrder,
       
       // Display settings
       fontSize: table.state.fontSize,
@@ -400,6 +375,88 @@ class TableSettingsManager {
       version: '1.0.0',
       timestamp: Date.now()
     };
+  }
+
+
+  /**
+   * Validate and sanitize filter state to prevent conflicts
+   * Ensures that for each column, only one filter type is active
+   * @param {Object} state - Table state object
+   * @returns {Object} Sanitized filter state
+   */
+  validateFilterState(state) {
+    const result = {
+      filters: {},
+      rangeFilters: {},
+      dateRangeFilters: {},
+      filterModes: {},
+      rangeIncludeBlanks: {},
+      dateRangeIncludeBlanks: {}
+    };
+
+    // Get all columns that have any filter state
+    const allFilteredColumns = new Set([
+      ...Object.keys(state.filters || {}),
+      ...Object.keys(state.rangeFilters || {}),
+      ...Object.keys(state.dateRangeFilters || {}),
+      ...Object.keys(state.filterModes || {})
+    ]);
+
+    // Validate each column's filter state
+    allFilteredColumns.forEach(columnKey => {
+      const mode = state.filterModes?.[columnKey];
+
+      // ✅ Case 1: Range mode - keep only range filters
+      if (mode === 'range') {
+        // Check if range filter exists
+        if (state.rangeFilters?.[columnKey]) {
+          result.rangeFilters[columnKey] = state.rangeFilters[columnKey];
+          result.filterModes[columnKey] = 'range';
+          if (state.rangeIncludeBlanks?.[columnKey] !== undefined) {
+            result.rangeIncludeBlanks[columnKey] = state.rangeIncludeBlanks[columnKey];
+          }
+        } else if (state.dateRangeFilters?.[columnKey]) {
+          result.dateRangeFilters[columnKey] = state.dateRangeFilters[columnKey];
+          result.filterModes[columnKey] = 'range';
+          if (state.dateRangeIncludeBlanks?.[columnKey] !== undefined) {
+            result.dateRangeIncludeBlanks[columnKey] = state.dateRangeIncludeBlanks[columnKey];
+          }
+        }
+        // ❌ Discard conflicting value filters
+        
+      }
+      // ✅ Case 2: Values mode - keep only value filters
+      else if (mode === 'values') {
+        if (state.filters?.[columnKey]) {
+          result.filters[columnKey] = state.filters[columnKey];
+          result.filterModes[columnKey] = 'values';
+        }
+        // ❌ Discard conflicting range filters
+        
+      }
+      // ✅ Case 3: No explicit mode - infer from data
+      else {
+        // Priority: range filters > date range filters > value filters
+        if (state.rangeFilters?.[columnKey]) {
+          result.rangeFilters[columnKey] = state.rangeFilters[columnKey];
+          result.filterModes[columnKey] = 'range';
+          if (state.rangeIncludeBlanks?.[columnKey] !== undefined) {
+            result.rangeIncludeBlanks[columnKey] = state.rangeIncludeBlanks[columnKey];
+          }
+        } else if (state.dateRangeFilters?.[columnKey]) {
+          result.dateRangeFilters[columnKey] = state.dateRangeFilters[columnKey];
+          result.filterModes[columnKey] = 'range';
+          if (state.dateRangeIncludeBlanks?.[columnKey] !== undefined) {
+            result.dateRangeIncludeBlanks[columnKey] = state.dateRangeIncludeBlanks[columnKey];
+          }
+        } else if (state.filters?.[columnKey]) {
+          result.filters[columnKey] = state.filters[columnKey];
+          result.filterModes[columnKey] = 'values';
+        }
+      }
+    });
+
+    return result;
   }
 
   /**
@@ -424,7 +481,35 @@ class TableSettingsManager {
         Object.assign(table.state.pinnedColumns, settings.pinnedColumns);
       }
 
-      // Filters and sort settings are not persisted - they reset on reload
+      // ✅ Apply filter settings with validation
+      // Create a temporary state object for validation
+      const tempState = {
+        filters: settings.filters || {},
+        rangeFilters: settings.rangeFilters || {},
+        dateRangeFilters: settings.dateRangeFilters || {},
+        filterModes: settings.filterModes || {},
+        rangeIncludeBlanks: settings.rangeIncludeBlanks || {},
+        dateRangeIncludeBlanks: settings.dateRangeIncludeBlanks || {}
+      };
+
+      // Validate and sanitize filter state
+      const validatedFilters = this.validateFilterState(tempState);
+
+      // Apply validated filter state
+      table.state.filters = validatedFilters.filters;
+      table.state.rangeFilters = validatedFilters.rangeFilters;
+      table.state.dateRangeFilters = validatedFilters.dateRangeFilters;
+      table.state.filterModes = validatedFilters.filterModes;
+      table.state.rangeIncludeBlanks = validatedFilters.rangeIncludeBlanks;
+      table.state.dateRangeIncludeBlanks = validatedFilters.dateRangeIncludeBlanks;
+
+      // Apply sort settings
+      if (settings.sortColumn) {
+        table.state.sortColumn = settings.sortColumn;
+      }
+      if (settings.sortOrder) {
+        table.state.sortOrder = settings.sortOrder;
+      }
 
       // Apply display settings
       if (settings.fontSize) {
@@ -523,19 +608,19 @@ class TableSettingsManager {
 class ExceLikeTable {
   /**
    * Create an ExceLike Table instance
+   * All features are enabled by default - just pass your data and columns!
+   * 
    * @param {string|HTMLElement} container - Container element or selector
    * @param {Object} options - Configuration options
    * @param {Array} options.data - Table data array
    * @param {Array} options.columns - Column definitions (use ColumnHelpers for easier setup)
-   * @param {string} options.preset - Predefined configuration: 'simple', 'standard', 'advanced', 'excel'
-   * @param {Array} options.features - Enabled features array (overrides preset)
    * @param {string} options.rowKey - Unique row identifier key (default: 'id')
    * @param {Object|boolean} options.pagination - Pagination settings or false to disable
    * @param {boolean} options.bordered - Show table borders (default: true)
    * @param {string} options.size - Table size: 'small', 'middle', 'large' (default: 'middle')
    * @param {string} options.tableId - Unique table identifier for settings persistence
+   * @param {boolean} options.persistSettings - Enable settings persistence (default: true)
    * @param {TableStorageAdapter} options.storageAdapter - Custom storage implementation
-   * @param {boolean} options.persistSettings - Enable settings persistence
    */
   constructor(container, options = {}) {
     // Validate container
@@ -548,43 +633,37 @@ class ExceLikeTable {
       throw new Error('Container element not found');
     }
 
-    // Apply preset configuration if specified
-    let presetConfig = {};
-    if (options.preset && TABLE_PRESETS[options.preset]) {
-      presetConfig = { ...TABLE_PRESETS[options.preset] };
-    }
-
-    // Initialize options with defaults, preset, and user options
+    // Simple options with all features enabled by default
     this.options = {
-      data: [],
-      columns: [],
-      rowKey: 'id',
-      pagination: {
+      // Data
+      data: options.data || [],
+      columns: options.columns || [],
+      rowKey: options.rowKey || 'id',
+      
+      // Pagination (enabled by default, customizable)
+      pagination: options.pagination !== false ? {
         pageSize: 10,
         showSizeChanger: true,
         showTotal: null,
-        current: 1
-      },
-      bordered: true,
-      size: 'middle',
-      loading: false,
-      tableId: 'default',
-      persistSettings: false,
-      storageAdapter: null,
-      features: ['sorting', 'filtering', 'pagination', 'columnSettings', 'persistSettings', 'columnResizing', 'columnPinning'],
-      ...presetConfig,
+        current: 1,
+        ...(typeof options.pagination === 'object' ? options.pagination : {})
+      } : false,
+      
+      // Styling
+      bordered: options.bordered !== false,
+      size: options.size || 'middle',
+      loading: options.loading || false,
+      
+      // Settings persistence (enabled by default)
+      tableId: options.tableId || 'excelike-table',
+      persistSettings: options.persistSettings !== false,
+      storageAdapter: options.storageAdapter || null,
+      
+      // Any other custom options
       ...options
     };
 
-    // Enable features based on configuration
-    this.enabledFeatures = new Set(this.options.features);
-
-    // Update persistSettings based on features if not explicitly set
-    if (this.enabledFeatures.has('persistSettings') && this.options.persistSettings === false) {
-      this.options.persistSettings = true;
-    }
-
-    // Initialize settings manager
+    // Initialize settings manager (always available)
     this.settingsManager = null;
     if (this.options.persistSettings) {
       this.settingsManager = new TableSettingsManager(
@@ -598,9 +677,10 @@ class ExceLikeTable {
       data: [...this.options.data],
       filteredData: [...this.options.data],
       filters: {},
+      filterModes: {}, // 'range' or 'values' for each numeric column
       sortState: { column: null, direction: null },
-      currentPage: this.options.pagination.current || 1,
-      pageSize: this.options.pagination.pageSize || 10,
+      currentPage: this.options.pagination ? (this.options.pagination.current || 1) : 1,
+      pageSize: this.options.pagination ? (this.options.pagination.pageSize || 10) : 10,
       columnWidths: {},
       visibleColumns: {},
       pinnedColumns: {},
@@ -626,15 +706,7 @@ class ExceLikeTable {
     this.init();
   }
 
-  /**
-   * Check if a feature is enabled
-   * @param {string} feature - Feature name to check
-   * @returns {boolean} Whether the feature is enabled
-   * @private
-   */
-  isFeatureEnabled(feature) {
-    return this.enabledFeatures.has(feature);
-  }
+
 
   /**
    * Initialize column configurations
@@ -642,6 +714,19 @@ class ExceLikeTable {
    */
   initializeColumns() {
     this.options.columns.forEach(col => {
+      // Set default values for all features (enabled by default)
+      if (col.sortable === undefined) col.sortable = true;
+      if (col.filterable === undefined) col.filterable = true;
+      
+      // Auto-detect date columns and set filterType
+      if (col.filterType === undefined && this.options.data && this.options.data.length > 0) {
+        const sampleValues = this.options.data.slice(0, 10).map(row => row[col.dataIndex]);
+        const isDateColumn = sampleValues.some(val => val && TableUtils.isDateValue(val));
+        if (isDateColumn) {
+          col.filterType = 'date-hierarchy';
+        }
+      }
+      
       this.state.columnWidths[col.key] = col.width || 150;
       this.state.visibleColumns[col.key] = col.hidden !== true;
       // 列定義のpinned設定を初期値として使用（保存された設定で後から上書きされる）
@@ -867,11 +952,21 @@ class ExceLikeTable {
   saveState() {
     try {
       const state = {
-        version: '1.0.0',
+        version: '1.1.0',
         timestamp: Date.now(),
         columnState: {
           widths: this.state.columnWidths,
           pinned: Object.keys(this.state.pinnedColumns).filter(key => this.state.pinnedColumns[key])
+        },
+        filterState: {
+          filters: this.state.filters,
+          rangeFilters: this.state.rangeFilters,
+          dateRangeFilters: this.state.dateRangeFilters,
+          filterModes: this.state.filterModes
+        },
+        sortState: {
+          column: this.state.sortState.column,
+          direction: this.state.sortState.direction
         }
       };
       
@@ -899,7 +994,7 @@ class ExceLikeTable {
       if (!saved) return false;
       
       const state = JSON.parse(saved);
-      if (state.version === '1.0.0') {
+      if (state.version === '1.0.0' || state.version === '1.1.0') {
         this.applyLoadedState(state);
         return true;
       }
@@ -914,35 +1009,85 @@ class ExceLikeTable {
    * 読み込んだ状態を適用
    */
   applyLoadedState(savedState) {
-    if (!savedState.columnState) return;
-    
-    // 列幅の復元
-    if (savedState.columnState.widths) {
-      Object.entries(savedState.columnState.widths).forEach(([key, width]) => {
-        // 列が存在する場合のみ適用
-        if (this.options.columns.find(col => col.key === key)) {
-          this.state.columnWidths[key] = width;
-          // DOMにも幅を適用
-          this.applyColumnWidthToDOM(key, width);
-        }
-      });
-    }
-    
-    // 固定列の復元
-    if (savedState.columnState.pinned !== undefined) {
-      // まず全ての列の固定状態をfalseにリセット
-      this.options.columns.forEach(col => {
-        this.state.pinnedColumns[col.key] = false;
-      });
-      
-      // 保存された固定列のみtrueに設定
-      if (Array.isArray(savedState.columnState.pinned)) {
-        savedState.columnState.pinned.forEach(key => {
+    // 列状態の復元
+    if (savedState.columnState) {
+      // 列幅の復元
+      if (savedState.columnState.widths) {
+        Object.entries(savedState.columnState.widths).forEach(([key, width]) => {
           // 列が存在する場合のみ適用
           if (this.options.columns.find(col => col.key === key)) {
-            this.state.pinnedColumns[key] = true;
+            this.state.columnWidths[key] = width;
+            // DOMにも幅を適用
+            this.applyColumnWidthToDOM(key, width);
           }
         });
+      }
+      
+      // 固定列の復元
+      if (savedState.columnState.pinned !== undefined) {
+        // まず全ての列の固定状態をfalseにリセット
+        this.options.columns.forEach(col => {
+          this.state.pinnedColumns[col.key] = false;
+        });
+        
+        // 保存された固定列のみtrueに設定
+        if (Array.isArray(savedState.columnState.pinned)) {
+          savedState.columnState.pinned.forEach(key => {
+            // 列が存在する場合のみ適用
+            if (this.options.columns.find(col => col.key === key)) {
+              this.state.pinnedColumns[key] = true;
+            }
+          });
+        }
+      }
+    }
+    
+    // フィルタ状態の復元 (v1.1.0以降)
+    if (savedState.version === '1.1.0' && savedState.filterState) {
+      // 基本フィルタの復元
+      if (savedState.filterState.filters) {
+        Object.entries(savedState.filterState.filters).forEach(([key, filters]) => {
+          // 列が存在する場合のみ適用
+          if (this.options.columns.find(col => col.key === key)) {
+            this.state.filters[key] = filters;
+          }
+        });
+      }
+      
+      // 範囲フィルタの復元
+      if (savedState.filterState.rangeFilters) {
+        Object.entries(savedState.filterState.rangeFilters).forEach(([key, range]) => {
+          if (this.options.columns.find(col => col.key === key)) {
+            this.state.rangeFilters[key] = range;
+          }
+        });
+      }
+      
+      // 日付範囲フィルタの復元
+      if (savedState.filterState.dateRangeFilters) {
+        Object.entries(savedState.filterState.dateRangeFilters).forEach(([key, dateRange]) => {
+          if (this.options.columns.find(col => col.key === key)) {
+            this.state.dateRangeFilters[key] = dateRange;
+          }
+        });
+      }
+
+      // フィルタモードの復元
+      if (savedState.filterState.filterModes) {
+        Object.entries(savedState.filterState.filterModes).forEach(([key, mode]) => {
+          if (this.options.columns.find(col => col.key === key)) {
+            this.state.filterModes[key] = mode;
+          }
+        });
+      }
+    }
+
+    // ソート状態の復元 (v1.1.0以降)
+    if (savedState.version === '1.1.0' && savedState.sortState) {
+      const { column, direction } = savedState.sortState;
+      // 列が存在し、有効な方向の場合のみ適用
+      if (column && direction && this.options.columns.find(col => col.key === column)) {
+        this.state.sortState = { column, direction };
       }
     }
   }
@@ -1014,7 +1159,7 @@ class ExceLikeTable {
         this.pluginSystem = PluginSystem.init(this);
         
         // Register column resizer plugin if available and feature is enabled
-        if (typeof ColumnResizerPlugin !== 'undefined' && this.isFeatureEnabled('columnResizing')) {
+        if (typeof ColumnResizerPlugin !== 'undefined') {
           this.pluginSystem.registerPlugin('column-resizer', ColumnResizerPlugin);
           this.pluginSystem.enablePlugin('column-resizer');
         }
@@ -1056,6 +1201,9 @@ class ExceLikeTable {
       
       this.render();
       this.attachEvents();
+      
+      // Auto-initialize conditional formatting plugin if available
+      this.initializeConditionalFormatting();
     } catch (error) {
       console.error('[ExceLikeTable] Initialization failed:', error);
       throw error;
@@ -1137,18 +1285,12 @@ class ExceLikeTable {
   }
 
   renderMenu() {
-    // Don't render menu if columnSettings feature is disabled
-    if (!this.isFeatureEnabled('columnSettings')) {
-      this.menuContainer.innerHTML = '';
-      return;
-    }
+    // Column settings always available (no feature check needed)
 
     let menuItems = [];
 
-    // Clear filters option (moved to top - only if filtering is enabled)
-    if (this.isFeatureEnabled('filtering')) {
-      menuItems.push('<div class="table-menu-item" data-action="clear-all-filters">フィルタ全解除</div>');
-    }
+    // Clear filters option (filtering always enabled)
+    menuItems.push('<div class="table-menu-item" data-action="clear-all-filters">フィルタ全解除</div>');
 
     // Column settings
     menuItems.push('<div class="table-menu-item" data-action="column-settings">表示列設定</div>');
@@ -1226,13 +1368,13 @@ class ExceLikeTable {
       controls.className = 'header-controls';
 
       // Sort controls
-      if (column.sortable && this.isFeatureEnabled('sorting')) {
+      if (column.sortable) {
         const sortControls = this.createSortControls(column);
         controls.appendChild(sortControls);
       }
 
       // Filter controls
-      if (column.filterable && this.isFeatureEnabled('filtering')) {
+      if (column.filterable) {
         const filterBtn = this.createFilterButton(column);
         controls.appendChild(filterBtn);
       }
@@ -1241,7 +1383,7 @@ class ExceLikeTable {
       headerContent.appendChild(controls);
       
       // Resize handle (add to headerContent for proper positioning)
-      if (this.isFeatureEnabled('columnResizing')) {
+      if (true) {
         const resizeHandle = document.createElement('div');
         resizeHandle.className = 'resize-handle';
         resizeHandle.dataset.column = column.key;
@@ -1335,7 +1477,7 @@ class ExceLikeTable {
 
   renderPagination() {
     // Don't render pagination if disabled or feature is not enabled
-    if (!this.isFeatureEnabled('pagination') || this.options.pagination === false) {
+    if (this.options.pagination === false) {
       this.paginationContainer.innerHTML = '';
       return;
     }
@@ -1427,6 +1569,11 @@ class ExceLikeTable {
     this.applySorting();
     this.render();
     this.autoSaveSettings();
+    
+    // Save state including sort state
+    if (this.saveStateDebounced) {
+      this.saveStateDebounced();
+    }
   }
 
   handleFilter(columnKey, filters) {
@@ -1434,6 +1581,11 @@ class ExceLikeTable {
     this.state.currentPage = 1; // Reset to first page
     this.render();
     this.autoSaveSettings();
+    
+    // Save state including filter state
+    if (this.saveStateDebounced) {
+      this.saveStateDebounced();
+    }
   }
 
   handlePageChange(page) {
@@ -1454,11 +1606,8 @@ class ExceLikeTable {
   }
 
   handleColumnResize(columnKey, newWidth) {
-    this.state.columnWidths[columnKey] = newWidth;
-    this.renderHeader();
-    this.renderBody();
-    this.applyCurrentStyling(); // Apply styling after resize
-    this.autoSaveSettings();
+    // 新しい統一メソッドを使用（全体レンダリングを避けて特定列のみ更新）
+    this.updateColumnWidth(columnKey, newWidth);
   }
 
   handleColumnToggle(columnKey, visible) {
@@ -1479,7 +1628,7 @@ class ExceLikeTable {
   }
 
   // Data processing methods
-  applyFilters() {
+  applyFilters(skipSorting = false) {
     let filtered = [...this.state.data];
 
     // Apply all filters
@@ -1488,12 +1637,21 @@ class ExceLikeTable {
       if (filters && filters.length > 0) {
         const column = this.options.columns.find(col => col.key === columnKey);
         if (column) {
+          // Skip value-based filter if column is in range mode
+          const currentMode = this.state.filterModes?.[columnKey] || 'values';
+          if (currentMode === 'range') {
+            return; // Skip this column - range filter will handle it
+          }
           
           if (column.filterType === 'date-hierarchy') {
             // Date hierarchy filter logic
             filtered = filtered.filter(record => {
               const value = record[column.dataIndex];
-              if (!value) return false;
+              
+              // Handle empty values - check if empty value is in the filter list
+              if (!value) {
+                return filters.some(f => !f || f === 'null' || f === 'undefined' || f === '');
+              }
               
               const date = new Date(value);
               const year = date.getFullYear().toString();
@@ -1512,14 +1670,43 @@ class ExceLikeTable {
           } else if (this.isNumericColumn(column)) {
             // Numeric filter logic - compare as numbers
             filtered = filtered.filter(record => {
-              const value = parseFloat(record[column.dataIndex]);
-              return !isNaN(value) && filters.includes(value);
+              const value = record[column.dataIndex];
+              const numValue = parseFloat(value);
+              
+              // Handle empty values - check if empty value is in the filter list
+              if (isNaN(numValue) || value === null || value === undefined || value === '') {
+                return filters.some(f => {
+                  const fNum = parseFloat(f);
+                  return isNaN(fNum) || f === null || f === 'null' || f === 'undefined' || f === '';
+                });
+              }
+              
+              return filters.includes(numValue);
             });
           } else {
             // Default filter logic for text columns
-            filtered = filtered.filter(record => 
-              filters.includes(record[column.dataIndex])
-            );
+            filtered = filtered.filter(record => {
+              const value = record[column.dataIndex];
+              
+              // Normalize empty values for comparison
+              // null, undefined, and '' should all match each other
+              const isEmpty = value === null || value === undefined || value === '';
+              
+              return filters.some(filterValue => {
+                const filterIsEmpty = filterValue === null || filterValue === 'null' || 
+                                     filterValue === undefined || filterValue === 'undefined' || 
+                                     filterValue === '';
+                
+                // If both are empty, they match
+                if (isEmpty && filterIsEmpty) return true;
+                
+                // If one is empty and the other isn't, no match
+                if (isEmpty !== filterIsEmpty) return false;
+                
+                // Both are non-empty, do exact comparison
+                return value === filterValue;
+              });
+            });
           }
         }
       }
@@ -1531,21 +1718,87 @@ class ExceLikeTable {
       if (rangeFilter) {
         const column = this.options.columns.find(col => col.key === columnKey);
         if (column) {
-          filtered = filtered.filter(record => {
-            const value = parseFloat(record[column.dataIndex]);
-            return !isNaN(value) && value >= rangeFilter.min && value <= rangeFilter.max;
-          });
+          // Check current filter mode
+          const currentMode = this.state.filterModes?.[columnKey] || 'values';
+          
+          if (currentMode === 'range') {
+            // Range mode: Filter by min <= value <= max
+            // Default to true if undefined, but respect explicit false
+            const includeBlanks = this.state.rangeIncludeBlanks?.[columnKey] !== undefined
+              ? this.state.rangeIncludeBlanks[columnKey]
+              : true;
+            
+            filtered = filtered.filter(record => {
+              const rawValue = record[column.dataIndex];
+              const value = parseFloat(rawValue);
+              
+              // Check if value is blank
+              const isBlank = rawValue === null || rawValue === undefined || rawValue === '' || isNaN(value);
+              
+              // If blank and checkbox is checked, include it
+              if (isBlank && includeBlanks) return true;
+              
+              // If blank and checkbox is not checked, exclude it
+              if (isBlank && !includeBlanks) return false;
+              
+              // For numeric values, check range
+              return value >= rangeFilter.min && value <= rangeFilter.max;
+            });
+          }
+          // If mode is 'values', range filter is not applied (checkbox filter takes precedence)
+        }
+      }
+    });
+
+    // Apply date range filters
+    Object.keys(this.state.dateRangeFilters || {}).forEach(columnKey => {
+      const dateRangeFilter = this.state.dateRangeFilters[columnKey];
+      if (dateRangeFilter && dateRangeFilter.startDate && dateRangeFilter.endDate) {
+        const column = this.options.columns.find(col => col.key === columnKey);
+        if (column) {
+          // Check current filter mode
+          const currentMode = this.state.filterModes?.[columnKey] || 'values';
+          
+          if (currentMode === 'range') {
+            // Range mode: Filter by startDate <= value <= endDate
+            const startDate = new Date(dateRangeFilter.startDate);
+            const endDate = new Date(dateRangeFilter.endDate);
+            // Default to true if undefined, but respect explicit false
+            const includeBlanks = this.state.dateRangeIncludeBlanks?.[columnKey] !== undefined
+              ? this.state.dateRangeIncludeBlanks[columnKey]
+              : true;
+            
+            filtered = filtered.filter(record => {
+              const value = record[column.dataIndex];
+              
+              // Check if value is blank
+              const isBlank = !value || value === null || value === undefined || value === '';
+              
+              // If blank and checkbox is checked, include it
+              if (isBlank && includeBlanks) return true;
+              
+              // If blank and checkbox is not checked, exclude it
+              if (isBlank && !includeBlanks) return false;
+              
+              const recordDate = new Date(value);
+              return recordDate >= startDate && recordDate <= endDate;
+            });
+          }
+          // If mode is 'values', date range filter is not applied (checkbox filter takes precedence)
         }
       }
     });
 
     this.state.filteredData = filtered;
-    this.applySorting();
-    
+
+    if (!skipSorting) {
+      this.applySorting();
+    }
+
     // 🔄 Emit hook for filter completion
     if (this.pluginSystem) {
-      this.pluginSystem.emitHook('filter:afterApply', { 
-        filteredData: filtered, 
+      this.pluginSystem.emitHook('filter:afterApply', {
+        filteredData: filtered,
         originalData: this.state.data,
         activeFilters: this.state.filters
       });
@@ -1558,28 +1811,32 @@ class ExceLikeTable {
       if (column) {
         this.state.filteredData.sort((a, b) => {
           if (column.sorter) {
-            return this.state.sortState.direction === 'asc' ? 
+            return this.state.sortState.direction === 'asc' ?
               column.sorter(a, b) : column.sorter(b, a);
           } else {
             // Default sorting
             const aVal = a[column.dataIndex];
             const bVal = b[column.dataIndex];
-            
+
             if (aVal < bVal) return this.state.sortState.direction === 'asc' ? -1 : 1;
             if (aVal > bVal) return this.state.sortState.direction === 'asc' ? 1 : -1;
             return 0;
           }
         });
-        
+
         // 🔄 Emit hook for sort completion
         if (this.pluginSystem) {
-          this.pluginSystem.emitHook('sort:afterSort', { 
+          this.pluginSystem.emitHook('sort:afterSort', {
             sortedData: this.state.filteredData,
             column: this.state.sortState.column,
             direction: this.state.sortState.direction
           });
         }
       }
+    } else if (this.state.sortState.column === null && this.state.sortState.direction === null) {
+      // ✅ FIX Bug#8: When sort is cleared (direction = null), restore original order
+      // Re-apply filters to get data in original order (skip sorting to avoid infinite loop)
+      this.applyFilters(true);
     }
   }
 
@@ -1956,7 +2213,8 @@ class ExceLikeTable {
     }
     const success = await this.settingsManager.loadSettings(this);
     if (success) {
-      // No need to reapply filters/sorting since they're not persisted
+      // Reapply filters and sorting after loading settings
+      this.applyFilters();
       this.render();
     }
     return success;
@@ -2002,12 +2260,13 @@ class ExceLikeTable {
   }
 
   showFilterDropdown(column, button) {
-    
     // Store original state for cancel functionality
     const originalFilters = JSON.parse(JSON.stringify(this.state.filters));
     const originalRangeFilters = JSON.parse(JSON.stringify(this.state.rangeFilters));
     const originalDateRangeFilters = JSON.parse(JSON.stringify(this.state.dateRangeFilters));
-    const originalFilteredData = [...this.state.filteredData];
+    const originalFilterModes = JSON.parse(JSON.stringify(this.state.filterModes || {}));
+    const originalRangeIncludeBlanks = JSON.parse(JSON.stringify(this.state.rangeIncludeBlanks || {}));
+    const originalDateRangeIncludeBlanks = JSON.parse(JSON.stringify(this.state.dateRangeIncludeBlanks || {}));
 
     // Create filter dropdown
     const dropdown = document.createElement('div');
@@ -2016,9 +2275,21 @@ class ExceLikeTable {
     dropdown.style.zIndex = '9999';
 
     // Get unique values for the column
-    const uniqueValues = [...new Set(this.state.data.map(item => item[column.dataIndex]))];
-    const currentFilters = this.state.filters[column.key] || [];
+    // Normalize empty values (null, undefined, '') to a single representation
+    const uniqueValues = [...new Set(this.state.data.map(item => {
+      const value = item[column.dataIndex];
+      // Normalize all empty values to null for consistent handling
+      if (value === null || value === undefined || value === '') {
+        return null;
+      }
+      return value;
+    }))];
 
+    // Store current mode for UI initialization (DO NOT apply filters yet)
+    // Filters will only be applied when user clicks OK button
+    const currentMode = this.state.filterModes?.[column.key];
+
+    const currentFilters = this.state.filters[column.key] || [];
 
     let dropdownContent = '';
 
@@ -2108,8 +2379,23 @@ class ExceLikeTable {
     dropdown.style.left = `${left}px`;
     dropdown.style.top = `${top}px`;
 
+    // ✅ FIX Bug#7: Explicitly set date input values from state after DOM insertion
+    // For date inputs, HTML attributes don't automatically sync to DOM properties when hidden/inactive
+    // We need to explicitly set the .value property after the DOM is fully rendered
+    if (column.filterType === 'date-hierarchy' && this.state.dateRangeFilters?.[column.key]) {
+      const dateRangeFilter = this.state.dateRangeFilters[column.key];
+      setTimeout(() => {
+        const minInput = dropdown.querySelector('.date-range-min');
+        const maxInput = dropdown.querySelector('.date-range-max');
+        if (minInput && maxInput) {
+          minInput.value = dateRangeFilter.startDate || '';
+          maxInput.value = dateRangeFilter.endDate || '';
+        }
+      }, 0);
+    }
+
     // Add event listeners
-    this.attachFilterEvents(dropdown, column, originalFilters, originalRangeFilters, originalDateRangeFilters, originalFilteredData);
+    this.attachFilterEvents(dropdown, column, originalFilters, originalRangeFilters, originalDateRangeFilters, originalFilterModes, originalRangeIncludeBlanks, originalDateRangeIncludeBlanks);
     
     // Add click outside detection
     const clickOutsideHandler = (e) => {
@@ -2132,10 +2418,17 @@ class ExceLikeTable {
   createTextFilter(uniqueValues, currentFilters, column) {
     const isAllSelected = currentFilters.length === 0;
     
-    // Sort values in ascending order
+    // Sort values - empty values at top, then ascending order
     const sortedValues = [...uniqueValues].sort((a, b) => {
-      if (a === null || a === undefined || a === '') return 1;
-      if (b === null || b === undefined || b === '') return -1;
+      const aIsEmpty = a === null || a === undefined || a === '';
+      const bIsEmpty = b === null || b === undefined || b === '';
+      
+      // Empty values always come first
+      if (aIsEmpty && !bIsEmpty) return -1;
+      if (!aIsEmpty && bIsEmpty) return 1;
+      if (aIsEmpty && bIsEmpty) return 0;
+      
+      // Both non-empty, sort alphabetically
       return String(a).localeCompare(String(b));
     });
     
@@ -2155,7 +2448,7 @@ class ExceLikeTable {
             <div class="filter-option">
               <label class="filter-option-label">
                 <input type="checkbox" class="filter-checkbox" data-value="${value}" ${isAllSelected || currentFilters.includes(value) ? 'checked' : ''}>
-                <span class="filter-option-text">${value || '(Empty)'} <span class="filter-option-count">(${this.countDataItems(column, value)})</span></span>
+                <span class="filter-option-text">${value === null || value === undefined || value === '' ? '(空白)' : value} <span class="filter-option-count">(${this.countDataItems(column, value)})</span></span>
               </label>
             </div>
           `).join('')}
@@ -2299,24 +2592,40 @@ class ExceLikeTable {
   }
 
   createRangeFilter(column, uniqueValues) {
-    const numericValues = uniqueValues.filter(v => !isNaN(v)).map(Number);
+    const numericValues = uniqueValues.filter(v => v !== null && v !== undefined && v !== '' && !isNaN(v)).map(Number);
     const min = Math.min(...numericValues);
     const max = Math.max(...numericValues);
-    
+
     // Detect decimal places from data
     const decimalPlaces = TableUtils.getDecimalPlaces(uniqueValues.filter(v => !isNaN(v)).map(Number));
-    
+
     const currentRange = this.state.rangeFilters[column.key] || { min, max };
     const currentFilters = this.state.filters[column.key] || [];
-    
-    // Sort unique values in ascending order
-    const sortedValues = [...uniqueValues].sort((a, b) => Number(a) - Number(b));
-    
+
+    // Determine current filter mode
+    const currentMode = this.state.filterModes?.[column.key] || 'values';
+
+    // Sort values - empty/null values at top, then ascending numeric order
+    const sortedValues = [...uniqueValues].sort((a, b) => {
+      const aNum = parseFloat(a);
+      const bNum = parseFloat(b);
+      const aIsEmpty = isNaN(aNum) || a === null || a === undefined || a === '';
+      const bIsEmpty = isNaN(bNum) || b === null || b === undefined || b === '';
+
+      // Empty values always come first
+      if (aIsEmpty && !bIsEmpty) return -1;
+      if (!aIsEmpty && bIsEmpty) return 1;
+      if (aIsEmpty && bIsEmpty) return 0;
+
+      // Both are numbers, sort numerically
+      return aNum - bNum;
+    });
+
     // Determine "Select All" checkbox state
     const isAllSelected = currentFilters.length === 0;
     const isNoneSelected = currentFilters.length === 0 && this.state.filters[column.key] && this.state.filters[column.key].length === 0 && this.hasActiveFilter(column.key);
     const isPartiallySelected = currentFilters.length > 0 && currentFilters.length < sortedValues.length;
-    
+
     let selectAllState = '';
     let selectAllChecked = '';
     if (isAllSelected && !this.hasActiveFilter(column.key)) {
@@ -2324,48 +2633,87 @@ class ExceLikeTable {
     } else if (isPartiallySelected) {
       selectAllState = 'indeterminate';
     }
-    
+
     return `
-      <div class="filter-dropdown-range">
-        <div class="range-filter">
-          <div class="range-inputs">
-            <div class="range-input-group">
-              <label class="range-label">Min</label>
-              <input type="number" class="range-input range-min" value="${TableUtils.formatNumberValue(currentRange.min, decimalPlaces)}" min="${min}" max="${max}" data-min="${min}" data-max="${max}" data-decimal-places="${decimalPlaces}">
-            </div>
-            <div class="range-input-group">
-              <label class="range-label">Max</label>
-              <input type="number" class="range-input range-max" value="${TableUtils.formatNumberValue(currentRange.max, decimalPlaces)}" min="${min}" max="${max}" data-min="${min}" data-max="${max}" data-decimal-places="${decimalPlaces}">
-            </div>
-          </div>
-          <div class="range-slider-container">
-            <div class="range-slider" data-min="${min}" data-max="${max}">
-              <div class="range-track"></div>
-              <div class="range-thumb range-thumb-min" data-type="min"></div>
-              <div class="range-thumb range-thumb-max" data-type="max"></div>
+      <div class="filter-mode-tabs">
+        <button class="filter-mode-tab ${currentMode === 'range' ? 'active' : ''}" data-mode="range">範囲で絞り込む</button>
+        <button class="filter-mode-tab ${currentMode === 'values' ? 'active' : ''}" data-mode="values">値を選択</button>
+      </div>
+
+      <div class="filter-mode-content">
+        <!-- 範囲モードコンテンツ -->
+        <div class="filter-mode-panel ${currentMode === 'range' ? 'active' : ''}" data-panel="range">
+          <div class="filter-dropdown-range">
+            <div class="range-filter">
+              <div class="range-inputs">
+                <div class="range-input-group">
+                  <label class="range-label">Min</label>
+                  <input type="number" class="range-input range-min" value="${TableUtils.formatNumberValue(currentRange.min, decimalPlaces)}" min="${min}" max="${max}" data-min="${min}" data-max="${max}" data-decimal-places="${decimalPlaces}">
+                </div>
+                <div class="range-input-group">
+                  <label class="range-label">Max</label>
+                  <input type="number" class="range-input range-max" value="${TableUtils.formatNumberValue(currentRange.max, decimalPlaces)}" min="${min}" max="${max}" data-min="${min}" data-max="${max}" data-decimal-places="${decimalPlaces}">
+                </div>
+              </div>
+              <div class="number-range-slider-container">
+                <div class="number-range-slider" data-min="${min}" data-max="${max}" data-current-min="${currentRange.min}" data-current-max="${currentRange.max}" data-decimal-places="${decimalPlaces}">
+                  <div class="number-range-track"></div>
+                  <div class="number-range-thumb number-range-thumb-min" data-type="min"></div>
+                  <div class="number-range-thumb number-range-thumb-max" data-type="max"></div>
+                </div>
+              </div>
+              <div class="range-blank-option">
+                <label class="filter-option-label">
+                  <input type="checkbox" class="range-include-blank-checkbox" ${(this.state.rangeIncludeBlanks && this.state.rangeIncludeBlanks[column.key] !== undefined) ? (this.state.rangeIncludeBlanks[column.key] ? 'checked' : '') : 'checked'}>
+                  <span class="filter-option-text">空白を含む</span>
+                </label>
+              </div>
+              <div class="range-description">
+                ${TableUtils.formatNumberValue(currentRange.min, decimalPlaces)} 以上 ${TableUtils.formatNumberValue(currentRange.max, decimalPlaces)} 以下の値を表示
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <div class="filter-dropdown-search">
-        <input type="text" class="filter-search-input" placeholder="検索...">
-      </div>
-      <div class="filter-dropdown-content">
-        <div class="filter-option select-all">
-          <label class="filter-option-label">
-            <input type="checkbox" class="filter-checkbox" data-value="__all__" ${selectAllChecked} data-state="${selectAllState}">
-            <span class="filter-option-text">(すべて選択) <span class="filter-option-count">(${this.countTotalDataItems(column)})</span></span>
-          </label>
-        </div>
-        <div class="filter-options-list">
-          ${sortedValues.map(value => `
-            <div class="filter-option">
+
+        <!-- 値選択モードコンテンツ -->
+        <div class="filter-mode-panel ${currentMode === 'values' ? 'active' : ''}" data-panel="values">
+          <div class="filter-dropdown-search">
+            <input type="text" class="filter-search-input" placeholder="検索...">
+          </div>
+          <div class="filter-dropdown-content">
+            <div class="filter-option select-all">
               <label class="filter-option-label">
-                <input type="checkbox" class="filter-checkbox" data-value="${value}" ${(currentFilters.length === 0 && !this.hasActiveFilter(column.key)) || currentFilters.includes(Number(value)) ? 'checked' : ''}>
-                <span class="filter-option-text">${value} <span class="filter-option-count">(${this.countDataItems(column, value)})</span></span>
+                <input type="checkbox" class="filter-checkbox" data-value="__all__" ${selectAllChecked} data-state="${selectAllState}">
+                <span class="filter-option-text">(すべて選択) <span class="filter-option-count">(${this.countTotalDataItems(column)})</span></span>
               </label>
             </div>
-          `).join('')}
+            <div class="filter-options-list">
+              ${sortedValues.map(value => {
+                const isEmptyValue = value === null || value === undefined || value === '' || (typeof value === 'string' && value.toLowerCase() === 'null');
+                let isChecked = false;
+
+                if (currentFilters.length === 0 && !this.hasActiveFilter(column.key)) {
+                  // No filters active, all checked
+                  isChecked = true;
+                } else if (isEmptyValue) {
+                  // For empty values, check if null or 'null' is in the filter
+                  isChecked = currentFilters.some(f => f === null || f === 'null' || f === '' || f === undefined);
+                } else {
+                  // For numeric values, check if the number is in the filter
+                  isChecked = currentFilters.includes(Number(value));
+                }
+
+                return `
+                <div class="filter-option">
+                  <label class="filter-option-label">
+                    <input type="checkbox" class="filter-checkbox" data-value="${value === null ? 'null' : value}" ${isChecked ? 'checked' : ''}>
+                    <span class="filter-option-text">${isEmptyValue ? '(空白)' : value} <span class="filter-option-count">(${this.countDataItems(column, value)}</span></span>
+                  </label>
+                </div>
+              `;
+              }).join('')}
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -2373,9 +2721,14 @@ class ExceLikeTable {
 
   createDateHierarchyFilter(values, currentFilters, column) {
     
+    // Separate empty values from valid dates
+    const emptyValues = values.filter(v => !v || v === null || v === undefined || v === '');
+    const validValues = values.filter(v => v && v !== null && v !== undefined && v !== '');
+    
     // Group dates by year/month/day
-    const dateGroups = this.groupDatesByHierarchy(values);
+    const dateGroups = this.groupDatesByHierarchy(validValues);
     const isAllSelected = currentFilters.length === 0;
+    const hasEmptyValues = emptyValues.length > 0;
     
     
     // Calculate date range for slider
@@ -2383,31 +2736,62 @@ class ExceLikeTable {
     const minDate = dateValues.length > 0 ? new Date(Math.min(...dateValues.map(d => new Date(d).getTime()))).toISOString().split('T')[0] : '';
     const maxDate = dateValues.length > 0 ? new Date(Math.max(...dateValues.map(d => new Date(d).getTime()))).toISOString().split('T')[0] : '';
     
-    const currentDateRange = this.state.dateRangeFilters[column?.key] || { startDate: minDate, endDate: maxDate };
-    
+    // ✅ Get current date range filter OR use data min/max as defaults
+    const currentDateRange = this.state.dateRangeFilters?.[column?.key] || { startDate: minDate, endDate: maxDate };
+
+    // ✅ Use current filter values if they exist, otherwise fall back to defaults
+    // Important: Check for undefined/null, not falsy, to handle empty strings correctly
+    const displayStartDate = (currentDateRange.startDate !== undefined && currentDateRange.startDate !== null)
+      ? currentDateRange.startDate
+      : minDate;
+    const displayEndDate = (currentDateRange.endDate !== undefined && currentDateRange.endDate !== null)
+      ? currentDateRange.endDate
+      : maxDate;
+
+    // Get current filter mode for date column (default to 'values' for dates)
+    const currentMode = this.state.filterModes[column.key] || 'values';
+
     return `
-      <div class="filter-dropdown-range">
-        <div class="date-range-filter">
-          <div class="date-range-inputs">
-            <div class="date-range-input-group">
-              <label class="date-range-label">開始日</label>
-              <input type="date" class="date-range-input date-range-min" value="${currentDateRange.startDate || minDate}" min="${minDate}" max="${maxDate}">
-            </div>
-            <div class="date-range-input-group">
-              <label class="date-range-label">終了日</label>
-              <input type="date" class="date-range-input date-range-max" value="${currentDateRange.endDate || maxDate}" min="${minDate}" max="${maxDate}">
-            </div>
-          </div>
-          <div class="date-range-slider-container">
-            <div class="date-range-slider" data-min="${minDate}" data-max="${maxDate}">
-              <div class="date-range-track"></div>
-              <div class="date-range-thumb date-range-thumb-min" data-type="min"></div>
-              <div class="date-range-thumb date-range-thumb-max" data-type="max"></div>
+      <div class="filter-mode-tabs">
+        <button class="filter-mode-tab ${currentMode === 'range' ? 'active' : ''}" data-mode="range">範囲で絞り込む</button>
+        <button class="filter-mode-tab ${currentMode === 'values' ? 'active' : ''}" data-mode="values">値を選択</button>
+      </div>
+
+      <div class="filter-mode-content">
+        <!-- 範囲モードコンテンツ -->
+        <div class="filter-mode-panel ${currentMode === 'range' ? 'active' : ''}" data-panel="range">
+          <div class="filter-dropdown-range">
+            <div class="date-range-filter">
+              <div class="date-range-inputs">
+                <div class="date-range-input-group">
+                  <label class="date-range-label">開始日</label>
+                  <input type="date" class="date-range-input date-range-min" value="${displayStartDate}" min="${minDate}" max="${maxDate}">
+                </div>
+                <div class="date-range-input-group">
+                  <label class="date-range-label">終了日</label>
+                  <input type="date" class="date-range-input date-range-max" value="${displayEndDate}" min="${minDate}" max="${maxDate}">
+                </div>
+              </div>
+              <div class="date-range-slider-container">
+                <div class="date-range-slider" data-min="${minDate}" data-max="${maxDate}">
+                  <div class="date-range-track"></div>
+                  <div class="date-range-thumb date-range-thumb-min" data-type="min"></div>
+                  <div class="date-range-thumb date-range-thumb-max" data-type="max"></div>
+                </div>
+              </div>
+              <div class="range-blank-option">
+                <label class="filter-option-label">
+                  <input type="checkbox" class="date-range-include-blank-checkbox" ${(this.state.dateRangeIncludeBlanks && this.state.dateRangeIncludeBlanks[column.key] !== undefined) ? (this.state.dateRangeIncludeBlanks[column.key] ? 'checked' : '') : 'checked'}>
+                  <span class="filter-option-text">空白を含む</span>
+                </label>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      <div class="filter-dropdown-search">
+
+        <!-- 値選択モードコンテンツ -->
+        <div class="filter-mode-panel ${currentMode === 'values' ? 'active' : ''}" data-panel="values">
+          <div class="filter-dropdown-search">
         <input type="text" class="filter-search-input" placeholder="検索...">
       </div>
       <div class="date-expand-controls">
@@ -2428,6 +2812,14 @@ class ExceLikeTable {
           </label>
         </div>
         <div class="date-filter-content">
+          ${hasEmptyValues ? `
+            <div class="filter-option">
+              <label class="filter-option-label">
+                <input type="checkbox" class="filter-checkbox" data-value="" ${isAllSelected || currentFilters.some(f => !f || f === 'null' || f === 'undefined' || f === '') ? 'checked' : ''}>
+                <span class="filter-option-text">(空白) <span class="filter-option-count">(${emptyValues.length})</span></span>
+              </label>
+            </div>
+          ` : ''}
           ${Object.keys(dateGroups).map(year => `
             <div class="date-filter-group">
               <div class="date-filter-group-header">
@@ -2464,53 +2856,336 @@ class ExceLikeTable {
           `).join('')}
         </div>
       </div>
+        </div>
+      </div>
     `;
   }
 
-  attachFilterEvents(dropdown, column, originalFilters, originalRangeFilters, originalDateRangeFilters, originalFilteredData) {
+  attachFilterEvents(dropdown, column, originalFilters, originalRangeFilters, originalDateRangeFilters, originalFilterModes, originalRangeIncludeBlanks, originalDateRangeIncludeBlanks) {
+    // Tab switching for numeric filters
+    const modeTabs = dropdown.querySelectorAll('.filter-mode-tab');
+    if (modeTabs.length > 0) {
+      modeTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          const mode = tab.dataset.mode;
+
+          // Update tab active state
+          modeTabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+
+          // Update panel active state
+          const panels = dropdown.querySelectorAll('.filter-mode-panel');
+          panels.forEach(panel => {
+            if (panel.dataset.panel === mode) {
+              panel.classList.add('active');
+            } else {
+              panel.classList.remove('active');
+            }
+          });
+
+          // Save mode to state (preview mode - not applied yet)
+          this.state.filterModes[column.key] = mode;
+
+          // ✅ FIX Bug#7: When switching to range tab, explicitly set date input values from state
+          // This ensures the DOM .value property is correct even after tab switching
+          if (mode === 'range' && column.filterType === 'date-hierarchy' && this.state.dateRangeFilters?.[column.key]) {
+            const minInput = dropdown.querySelector('.date-range-min');
+            const maxInput = dropdown.querySelector('.date-range-max');
+            if (minInput && maxInput) {
+              minInput.value = this.state.dateRangeFilters[column.key].startDate || minInput.value;
+              maxInput.value = this.state.dateRangeFilters[column.key].endDate || maxInput.value;
+            }
+          }
+
+          // Clear conflicting filters when switching modes (for consistency)
+          if (mode === 'range') {
+            // Switching to range mode - clear value-based filters
+            delete this.state.filters[column.key];
+            
+            // Initialize blank checkbox state to true (include blanks by default)
+            if (column.filterType === 'date-hierarchy') {
+              // Date range
+              // ✅ FIX Bug#7: Only read from inputs if NO existing filter
+              // If we have an existing dateRangeFilter, keep it (inputs already have correct values)
+              if (!this.state.dateRangeFilters[column.key]) {
+                const dateRangeMin = dropdown.querySelector('.date-range-min');
+                const dateRangeMax = dropdown.querySelector('.date-range-max');
+                if (dateRangeMin && dateRangeMax) {
+                  this.state.dateRangeFilters[column.key] = {
+                    startDate: dateRangeMin.value,
+                    endDate: dateRangeMax.value
+                  };
+                }
+              }
+              // If existing filter exists, keep it - don't overwrite from potentially incorrect input values
+              // Initialize blank checkbox if not already set
+              if (!this.state.dateRangeIncludeBlanks) {
+                this.state.dateRangeIncludeBlanks = {};
+              }
+              if (this.state.dateRangeIncludeBlanks[column.key] === undefined) {
+                this.state.dateRangeIncludeBlanks[column.key] = true;
+              }
+            } else {
+              // Numeric range
+              if (!this.state.rangeIncludeBlanks) {
+                this.state.rangeIncludeBlanks = {};
+              }
+              if (this.state.rangeIncludeBlanks[column.key] === undefined) {
+                this.state.rangeIncludeBlanks[column.key] = true;
+              }
+            }
+          } else if (mode === 'values') {
+            // Switching to values mode - clear range filters
+            delete this.state.rangeFilters[column.key];
+            delete this.state.dateRangeFilters[column.key];
+          }
+
+          // ⚠️ REMOVED: Do NOT apply filters here - wait for user to click OK
+          // User is just switching tabs to preview different modes
+        });
+      });
+    }
+
+    // Add event listeners for number range slider
+    const rangeMinInput = dropdown.querySelector('.range-min');
+    const rangeMaxInput = dropdown.querySelector('.range-max');
+    const numberSlider = dropdown.querySelector('.number-range-slider');
+    const rangeIncludeBlankCheckbox = dropdown.querySelector('.range-include-blank-checkbox');
+
+    if (rangeMinInput && rangeMaxInput && numberSlider) {
+      const track = numberSlider.querySelector('.number-range-track');
+      const minThumb = numberSlider.querySelector('.number-range-thumb-min');
+      const maxThumb = numberSlider.querySelector('.number-range-thumb-max');
+      
+      const min = parseFloat(numberSlider.dataset.min);
+      const max = parseFloat(numberSlider.dataset.max);
+      const range = max - min;
+      const decimalPlaces = parseInt(numberSlider.dataset.decimalPlaces) || 0;
+
+      const updateSlider = () => {
+        const minVal = parseFloat(rangeMinInput.value);
+        const maxVal = parseFloat(rangeMaxInput.value);
+        
+        const minPercent = ((minVal - min) / range) * 100;
+        const maxPercent = ((maxVal - min) / range) * 100;
+        
+        minThumb.style.left = `${minPercent}%`;
+        maxThumb.style.left = `${maxPercent}%`;
+        
+        track.style.left = `${minPercent}%`;
+        track.style.width = `${maxPercent - minPercent}%`;
+        
+        // Update description
+        const descriptionEl = dropdown.querySelector('.range-description');
+        if (descriptionEl) {
+          descriptionEl.textContent = `${TableUtils.formatNumberValue(minVal, decimalPlaces)} 以上 ${TableUtils.formatNumberValue(maxVal, decimalPlaces)} 以下の値を表示`;
+        }
+      };
+
+      // Initial update
+      updateSlider();
+
+      // Input change events
+      rangeMinInput.addEventListener('input', () => {
+        let value = parseFloat(rangeMinInput.value);
+        const maxValue = parseFloat(rangeMaxInput.value);
+        if (value > maxValue) {
+          rangeMinInput.value = maxValue;
+        }
+        updateSlider();
+        applyRealtimeFilter();
+      });
+
+      rangeMaxInput.addEventListener('input', () => {
+        let value = parseFloat(rangeMaxInput.value);
+        const minValue = parseFloat(rangeMinInput.value);
+        if (value < minValue) {
+          rangeMaxInput.value = minValue;
+        }
+        updateSlider();
+        applyRealtimeFilter();
+      });
+
+      // Thumb drag events
+      let isDragging = false;
+      let currentThumb = null;
+
+      const startDrag = (e, thumb) => {
+        isDragging = true;
+        currentThumb = thumb;
+        e.preventDefault();
+      };
+
+      const drag = (e) => {
+        if (!isDragging || !currentThumb) return;
+        
+        const rect = numberSlider.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+        const x = clientX - rect.left;
+        const percent = Math.max(0, Math.min(100, (x / rect.width) * 100));
+        const value = min + (percent / 100) * range;
+        
+        // Round to appropriate decimal places
+        const roundedValue = decimalPlaces > 0 
+          ? Math.round(value * Math.pow(10, decimalPlaces)) / Math.pow(10, decimalPlaces)
+          : Math.round(value);
+        
+        if (currentThumb.dataset.type === 'min') {
+          const maxVal = parseFloat(rangeMaxInput.value);
+          const newMinVal = roundedValue <= maxVal ? roundedValue : maxVal;
+          rangeMinInput.value = TableUtils.formatNumberValue(newMinVal, decimalPlaces);
+        } else {
+          const minVal = parseFloat(rangeMinInput.value);
+          const newMaxVal = roundedValue >= minVal ? roundedValue : minVal;
+          rangeMaxInput.value = TableUtils.formatNumberValue(newMaxVal, decimalPlaces);
+        }
+        
+        updateSlider();
+        applyRealtimeFilter();
+      };
+
+      const stopDrag = () => {
+        isDragging = false;
+        currentThumb = null;
+      };
+
+      // Mouse events
+      minThumb.addEventListener('mousedown', (e) => startDrag(e, minThumb));
+      maxThumb.addEventListener('mousedown', (e) => startDrag(e, maxThumb));
+      document.addEventListener('mousemove', drag);
+      document.addEventListener('mouseup', stopDrag);
+      
+      // Touch events
+      minThumb.addEventListener('touchstart', (e) => startDrag(e, minThumb), { passive: false });
+      maxThumb.addEventListener('touchstart', (e) => startDrag(e, maxThumb), { passive: false });
+      document.addEventListener('touchmove', drag, { passive: false });
+      document.addEventListener('touchend', stopDrag);
+    }
+
+    // Checkbox for including blank values
+    if (rangeIncludeBlankCheckbox) {
+      rangeIncludeBlankCheckbox.addEventListener('change', () => {
+        if (!this.state.rangeIncludeBlanks) {
+          this.state.rangeIncludeBlanks = {};
+        }
+        this.state.rangeIncludeBlanks[column.key] = rangeIncludeBlankCheckbox.checked;
+        applyRealtimeFilter();
+      });
+    }
+
+    // Add event listeners for date range inputs
+    const dateRangeMinInput = dropdown.querySelector('.date-range-min');
+    const dateRangeMaxInput = dropdown.querySelector('.date-range-max');
+    const dateRangeIncludeBlankCheckbox = dropdown.querySelector('.date-range-include-blank-checkbox');
+
+    if (dateRangeMinInput && dateRangeMaxInput) {
+      dateRangeMinInput.addEventListener('input', () => {
+        applyRealtimeFilter();
+      });
+
+      dateRangeMaxInput.addEventListener('input', () => {
+        applyRealtimeFilter();
+      });
+    }
+
+    // Checkbox for including blank values in date range
+    if (dateRangeIncludeBlankCheckbox) {
+      dateRangeIncludeBlankCheckbox.addEventListener('change', () => {
+        if (!this.state.dateRangeIncludeBlanks) {
+          this.state.dateRangeIncludeBlanks = {};
+        }
+        this.state.dateRangeIncludeBlanks[column.key] = dateRangeIncludeBlankCheckbox.checked;
+        applyRealtimeFilter();
+      });
+    }
+
     // Real-time filtering function
     const applyRealtimeFilter = () => {
       if (this.isNumericColumn(column)) {
-        // Handle numeric filter - use checkboxes as primary filter method
-        const selectedValues = Array.from(dropdown.querySelectorAll('.filter-checkbox:checked'))
-          .map(cb => cb.dataset.value)
-          .filter(val => val !== '__all__')
-          .map(val => parseFloat(val))
-          .filter(val => !isNaN(val));
+        const currentMode = this.state.filterModes[column.key] || 'values';
 
-        // Clear range filter to avoid conflicts
-        delete this.state.rangeFilters[column.key];
+        if (currentMode === 'range') {
+          // Range mode: Use min/max inputs
+          const minInput = dropdown.querySelector('.range-min');
+          const maxInput = dropdown.querySelector('.range-max');
 
-        // If all values are selected, treat as no filter
-        const allCheckboxes = dropdown.querySelectorAll('.filter-checkbox:not([data-value="__all__"])');
-        if (selectedValues.length === allCheckboxes.length) {
-          this.handleFilter(column.key, []);
+          if (minInput && maxInput) {
+            const min = parseFloat(minInput.value);
+            const max = parseFloat(maxInput.value);
+
+            // ✅ Store range filter (preview state - NOT applied yet)
+            this.state.rangeFilters[column.key] = { min, max };
+
+            // ✅ Clear conflicting value-based filter
+            delete this.state.filters[column.key];
+
+            // ⚠️ REMOVED: Real-time application
+            // Filters will be applied only when user clicks OK button
+            // This allows users to preview and adjust before confirming
+          }
         } else {
-          // Use numeric values directly for filtering
-          this.handleFilter(column.key, selectedValues);
+          // Values mode: Use checkboxes
+          const selectedValues = Array.from(dropdown.querySelectorAll('.filter-checkbox:checked'))
+            .map(cb => cb.dataset.value)
+            .filter(val => val !== '__all__')
+            .map(val => {
+              // Handle empty values (null, 'null', undefined, '')
+              if (val === 'null' || val === 'undefined' || val === '' || val === null || val === undefined) {
+                return null;
+              }
+              return parseFloat(val);
+            });
+
+          // Clear range filter to avoid conflicts
+          delete this.state.rangeFilters[column.key];
+
+          // If all values are selected, treat as no filter
+          const allCheckboxes = dropdown.querySelectorAll('.filter-checkbox:not([data-value="__all__"])');
+          if (selectedValues.length === allCheckboxes.length) {
+            this.handleFilter(column.key, []);
+          } else {
+            // Use numeric values directly for filtering
+            this.handleFilter(column.key, selectedValues);
+          }
         }
       } else if (column.filterType === 'date-hierarchy') {
-        // Handle date hierarchy filter
-        const selectedValues = Array.from(dropdown.querySelectorAll('.filter-checkbox:checked, .date-filter-checkbox:checked'))
-          .map(cb => cb.dataset.value)
-          .filter(val => val !== '__all__');
+        // Get current mode for date filter
+        const currentMode = this.state.filterModes[column.key] || 'values';
 
-        // Store date range filter
-        const minInput = dropdown.querySelector('.date-range-min');
-        const maxInput = dropdown.querySelector('.date-range-max');
-        if (minInput && maxInput) {
-          this.state.dateRangeFilters[column.key] = {
-            startDate: minInput.value,
-            endDate: maxInput.value
-          };
-        }
+        if (currentMode === 'range') {
+          // Range mode: Use date range inputs
+          const minInput = dropdown.querySelector('.date-range-min');
+          const maxInput = dropdown.querySelector('.date-range-max');
 
-        // If all values are selected, treat as no filter
-        const allCheckboxes = dropdown.querySelectorAll('.filter-checkbox:not([data-value="__all__"]), .date-filter-checkbox');
-        if (selectedValues.length === allCheckboxes.length) {
-          this.handleFilter(column.key, []);
+          if (minInput && maxInput) {
+            // ✅ Store date range filter (preview state - NOT applied yet)
+            this.state.dateRangeFilters[column.key] = {
+              startDate: minInput.value,
+              endDate: maxInput.value
+            };
+
+            // ✅ Clear conflicting value-based filter
+            delete this.state.filters[column.key];
+
+            // ⚠️ REMOVED: Real-time application
+            // Filters will be applied only when user clicks OK button
+          }
         } else {
-          this.handleFilter(column.key, selectedValues);
+          // Values mode: Use checkboxes
+          const selectedValues = Array.from(dropdown.querySelectorAll('.filter-checkbox:checked, .date-filter-checkbox:checked'))
+            .map(cb => cb.dataset.value)
+            .filter(val => val !== '__all__');
+
+          // Clear date range filter to avoid conflicts
+          delete this.state.dateRangeFilters[column.key];
+
+          // If all values are selected, treat as no filter
+          const allCheckboxes = dropdown.querySelectorAll('.filter-checkbox:not([data-value="__all__"]), .date-filter-checkbox');
+          if (selectedValues.length === allCheckboxes.length) {
+            this.handleFilter(column.key, []);
+          } else {
+            this.handleFilter(column.key, selectedValues);
+          }
         }
       } else {
         // Handle regular text filter
@@ -2533,14 +3208,17 @@ class ExceLikeTable {
 
     // Cancel button - restore original state
     dropdown.querySelector('.filter-btn-cancel').addEventListener('click', () => {
-      
+      // ✅ Restore ALL filter state to original values
       this.state.filters = originalFilters;
       this.state.rangeFilters = originalRangeFilters;
       this.state.dateRangeFilters = originalDateRangeFilters;
-      this.state.filteredData = originalFilteredData;
+      this.state.filterModes = originalFilterModes;
+      this.state.rangeIncludeBlanks = originalRangeIncludeBlanks;
+      this.state.dateRangeIncludeBlanks = originalDateRangeIncludeBlanks;
       this.state.currentPage = 1;
       
-      
+      // ✅ Re-apply filters with restored state (don't just restore filteredData)
+      this.applyFilters();
       this.renderBody();
       this.renderPagination();
       
@@ -2554,76 +3232,36 @@ class ExceLikeTable {
     const clearBtn = dropdown.querySelector('.filter-btn-clear-column');
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {
+        // Clear all filter types for this column
         this.state.filters[column.key] = [];
-        this.state.rangeFilters[column.key] = null;
+        delete this.state.rangeFilters[column.key];
+        delete this.state.dateRangeFilters[column.key];
+        if (this.state.rangeIncludeBlanks) delete this.state.rangeIncludeBlanks[column.key];
+        if (this.state.dateRangeIncludeBlanks) delete this.state.dateRangeIncludeBlanks[column.key];
+        if (this.state.filterModes) delete this.state.filterModes[column.key];
+        
         this.render();
         this.closeFilter();
         this.autoSaveSettings();
       });
     }
 
-    // OK button
+    // OK button - Apply filters when user confirms
     dropdown.querySelector('.filter-btn-confirm').addEventListener('click', () => {
-      if (this.isNumericColumn(column)) {
-        // Handle numeric filter - use checkboxes as primary filter method
-        const selectedValues = Array.from(dropdown.querySelectorAll('.filter-checkbox:checked'))
-          .map(cb => cb.dataset.value)
-          .filter(val => val !== '__all__')
-          .map(val => parseFloat(val))
-          .filter(val => !isNaN(val));
-
-        // Clear range filter to avoid conflicts
-        delete this.state.rangeFilters[column.key];
-
-        // If all values are selected, treat as no filter
-        const allCheckboxes = dropdown.querySelectorAll('.filter-checkbox:not([data-value="__all__"])');
-        if (selectedValues.length === allCheckboxes.length) {
-          this.handleFilter(column.key, []);
-        } else {
-          // Use numeric values directly for filtering
-          this.handleFilter(column.key, selectedValues);
-        }
-      } else if (column.filterType === 'date-hierarchy') {
-        // Handle date hierarchy filter
-        const selectedValues = Array.from(dropdown.querySelectorAll('.filter-checkbox:checked, .date-filter-checkbox:checked'))
-          .map(cb => cb.dataset.value)
-          .filter(val => val !== '__all__');
-
-        // Store date range filter
-        const minInput = dropdown.querySelector('.date-range-min');
-        const maxInput = dropdown.querySelector('.date-range-max');
-        if (minInput && maxInput) {
-          this.state.dateRangeFilters[column.key] = {
-            startDate: minInput.value,
-            endDate: maxInput.value
-          };
-        }
-
-        // If all values are selected, treat as no filter
-        const allCheckboxes = dropdown.querySelectorAll('.filter-checkbox:not([data-value="__all__"]), .date-filter-checkbox');
-        if (selectedValues.length === allCheckboxes.length) {
-          this.handleFilter(column.key, []);
-        } else {
-          this.handleFilter(column.key, selectedValues);
-        }
-      } else {
-        // Handle regular text filter
-        const selectedValues = Array.from(dropdown.querySelectorAll('.filter-checkbox:checked'))
-          .map(cb => cb.dataset.value)
-          .filter(val => val !== '__all__');
-
-        // If all values are selected, treat as no filter
-        const allCheckboxes = dropdown.querySelectorAll('.filter-checkbox:not([data-value="__all__"])');
-        if (selectedValues.length === allCheckboxes.length) {
-          this.handleFilter(column.key, []);
-        } else {
-          this.handleFilter(column.key, selectedValues);
-        }
+      // ✅ NOW we apply the filters that were prepared in state
+      // This is the ONLY place where filters are actually applied to the table
+      
+      this.applyFilters();
+      this.renderBody();
+      this.renderPagination();
+      
+      // ✅ Save to LocalStorage only after successful application
+      if (this.saveStateDebounced) {
+        this.saveStateDebounced();
       }
       
       // Update filter button state after final filter application
       this.updateFilterButtonState(column.key);
-      
       this.closeFilter();
     });
 
@@ -3456,7 +4094,9 @@ class ExceLikeTable {
     const minInput = dropdown.querySelector('.date-range-min');
     const maxInput = dropdown.querySelector('.date-range-max');
 
-    if (!slider || !track || !minThumb || !maxThumb || !minInput || !maxInput) return;
+    if (!slider || !track || !minThumb || !maxThumb || !minInput || !maxInput) {
+      return;
+    }
 
     const minDate = new Date(slider.dataset.min).getTime();
     const maxDate = new Date(slider.dataset.max).getTime();
@@ -3476,9 +4116,19 @@ class ExceLikeTable {
       track.style.width = `${maxPercent - minPercent}%`;
     };
 
-    // Set slider range based on currently selected checkboxes
-    this.updateDateSliderFromCheckboxes(dropdown, column);
-    
+    // ✅ FIX Bug#7: Only update slider from checkboxes if no existing filter
+    // If we have an existing dateRangeFilter, the input values are already set correctly
+    // and we should NOT overwrite them with checkbox-based calculations
+    const hasExistingFilter = this.state.dateRangeFilters?.[column.key];
+    if (!hasExistingFilter) {
+      // Set slider range based on currently selected checkboxes
+      this.updateDateSliderFromCheckboxes(dropdown, column);
+    } else {
+      // Restore input values from state if they were overwritten
+      minInput.value = hasExistingFilter.startDate;
+      maxInput.value = hasExistingFilter.endDate;
+    }
+
     // Initial update
     updateSlider();
 
@@ -4202,6 +4852,26 @@ class ExceLikeTable {
     
     // 管理画面を表示
     this.conditionalFormatting.showManagementScreen();
+  }
+
+  /**
+   * Auto-initialize conditional formatting plugin during table initialization
+   * @private
+   */
+  initializeConditionalFormatting() {
+    // Check if conditional formatting plugin is available
+    if (typeof window.ConditionalFormatting !== 'undefined' && !this.conditionalFormatting) {
+      try {
+        console.log('Auto-initializing conditional formatting plugin...');
+        this.conditionalFormatting = new window.ConditionalFormatting(this, {
+          autoLoad: true,
+          autoApply: true
+        });
+        console.log('Conditional formatting plugin initialized successfully');
+      } catch (error) {
+        console.warn('Failed to auto-initialize conditional formatting:', error);
+      }
+    }
   }
 
   /**

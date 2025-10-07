@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conditional Formatting Debug Test</title>
+  <link rel="stylesheet" href="src/ExceLikeTable.css">
+  <link rel="stylesheet" href="src/plugins/conditional-formatting/conditional-formatting.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .debug-info {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f0f0f0;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    .status {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .status.info {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Conditional Formatting Debug Test</h1>
+    
+    <div id="status-messages"></div>
+    
+    <div id="tableContainer"></div>
+    
+    <div class="debug-info" id="debug-info">
+      <h3>Debug Information:</h3>
+      <pre id="debug-content"></pre>
+    </div>
+  </div>
+
+  <!-- Load all dependencies in order -->
+  <script src="src/dom-utils.js"></script>
+  <script src="src/performance-utils.js"></script>
+  <script src="src/virtual-scroll.js"></script>
+  <script src="src/accessibility.js"></script>
+  <script src="src/i18n.js"></script>
+  <script src="src/theme-system.js"></script>
+  <script src="src/export-module.js"></script>
+  <script src="src/plugin-system.js"></script>
+  <script src="src/webworker-support.js"></script>
+  
+  <!-- Load plugins -->
+  <script src="src/plugins/column-resizer-plugin.js"></script>
+  <script src="src/plugins/row-selection-plugin.js"></script>
+  
+  <!-- Conditional Formatting Plugin -->
+  <script src="src/plugins/conditional-formatting/constants.js"></script>
+  <script src="src/plugins/conditional-formatting/utils.js"></script>
+  <script src="src/plugins/conditional-formatting/performance-optimizations.js"></script>
+  <script src="src/plugins/conditional-formatting/rule.js"></script>
+  <script src="src/plugins/conditional-formatting/evaluator.js"></script>
+  <script src="src/plugins/conditional-formatting/applier.js"></script>
+  <script src="src/plugins/conditional-formatting/manager.js"></script>
+  <script src="src/plugins/conditional-formatting/ui.js"></script>
+  <script src="src/plugins/conditional-formatting/conditional-formatting.js"></script>
+  
+  <!-- Load main table last -->
+  <script src="src/ExceLikeTable.js"></script>
+
+  <script>
+    const statusMessages = document.getElementById('status-messages');
+    const debugContent = document.getElementById('debug-content');
+    
+    function addStatus(message, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `status ${type}`;
+      div.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+      statusMessages.appendChild(div);
+    }
+    
+    function updateDebug(content) {
+      debugContent.textContent = typeof content === 'object' ? 
+        JSON.stringify(content, null, 2) : content;
+    }
+    
+    // Create sample data
+    const sampleData = [
+      ['Product', 'Sales', 'Cost', 'Profit', 'Margin %'],
+      ['Product A', 1000, 600, 400, 40],
+      ['Product B', 800, 500, 300, 37.5],
+      ['Product C', 1200, 900, 300, 25],
+      ['Product D', 500, 450, 50, 10],
+      ['Product E', 1500, 1000, 500, 33.3],
+      ['Product F', 300, 350, -50, -16.7],
+      ['Product G', 2000, 1200, 800, 40],
+      ['Product H', 750, 600, 150, 20]
+    ];
+    
+    try {
+      addStatus('Initializing table...', 'info');
+      
+      // Initialize table
+      const table = new ExceLikeTable('tableContainer', {
+        data: sampleData,
+        plugins: ['ConditionalFormattingPlugin'],
+        columnHeaders: ['Product', 'Sales', 'Cost', 'Profit', 'Margin %'],
+        columnTypes: ['string', 'number', 'number', 'number', 'number'],
+        height: '400px',
+        selectable: true,
+        editable: true
+      });
+      
+      addStatus('Table initialized successfully', 'success');
+      
+      // Wait for table to be ready
+      setTimeout(() => {
+        try {
+          addStatus('Getting conditional formatting manager...', 'info');
+          
+          // Get the conditional formatting manager
+          const cfPlugin = table.getPlugin('ConditionalFormattingPlugin');
+          if (!cfPlugin) {
+            throw new Error('Conditional Formatting Plugin not found');
+          }
+          
+          const cfManager = cfPlugin.getManager();
+          if (!cfManager) {
+            throw new Error('Conditional Formatting Manager not found');
+          }
+          
+          addStatus('Manager obtained successfully', 'success');
+          
+          // Add some test rules
+          addStatus('Adding test rules...', 'info');
+          
+          // Rule 1: Highlight negative profits in red
+          const rule1 = cfManager.addRule({
+            name: 'Negative Profit',
+            type: 'cell_value',
+            column: 3, // Profit column
+            operator: '<',
+            value: 0,
+            format: {
+              backgroundColor: '#ffcccc',
+              color: '#cc0000',
+              fontWeight: true
+            }
+          });
+          
+          // Rule 2: Highlight high margin products in green
+          const rule2 = cfManager.addRule({
+            name: 'High Margin',
+            type: 'cell_value',
+            column: 4, // Margin % column
+            operator: '>',
+            value: 35,
+            format: {
+              backgroundColor: '#ccffcc',
+              color: '#006600'
+            }
+          });
+          
+          // Rule 3: Highlight sales > 1000 in blue
+          const rule3 = cfManager.addRule({
+            name: 'High Sales',
+            type: 'cell_value',
+            column: 1, // Sales column
+            operator: '>',
+            value: 1000,
+            format: {
+              backgroundColor: '#cce5ff',
+              color: '#0066cc'
+            }
+          });
+          
+          addStatus(`Added ${cfManager.getRules().length} rules`, 'success');
+          
+          // Apply rules
+          addStatus('Applying rules...', 'info');
+          cfManager.applyAll();
+          addStatus('Rules applied', 'success');
+          
+          // Check for formatted cells
+          setTimeout(() => {
+            const formattedCells = document.querySelectorAll('.cf-formatted');
+            addStatus(`Found ${formattedCells.length} formatted cells`, 
+              formattedCells.length > 0 ? 'success' : 'error');
+            
+            // Check specific cells
+            const cells = table.element.querySelectorAll('td');
+            let debugInfo = {
+              totalCells: cells.length,
+              formattedCells: formattedCells.length,
+              rules: cfManager.getRules().map(r => ({
+                id: r.id,
+                name: r.name,
+                enabled: r.enabled,
+                column: r.column,
+                operator: r.operator,
+                value: r.value
+              })),
+              cellsWithInlineStyles: 0,
+              examples: []
+            };
+            
+            cells.forEach((cell, index) => {
+              if (cell.style.backgroundColor || cell.style.color) {
+                debugInfo.cellsWithInlineStyles++;
+                if (debugInfo.examples.length < 5) {
+                  debugInfo.examples.push({
+                    cellIndex: index,
+                    content: cell.textContent,
+                    backgroundColor: cell.style.backgroundColor,
+                    color: cell.style.color,
+                    classList: Array.from(cell.classList),
+                    dataAttributes: Object.keys(cell.dataset)
+                  });
+                }
+              }
+            });
+            
+            updateDebug(debugInfo);
+            
+            if (debugInfo.cellsWithInlineStyles > 0) {
+              addStatus(`Found ${debugInfo.cellsWithInlineStyles} cells with inline styles`, 'success');
+            } else {
+              addStatus('No cells with inline styles found', 'error');
+            }
+            
+          }, 500);
+          
+        } catch (error) {
+          addStatus(`Error: ${error.message}`, 'error');
+          console.error('Debug error:', error);
+        }
+      }, 1000);
+      
+    } catch (error) {
+      addStatus(`Initialization error: ${error.message}`, 'error');
+      console.error('Init error:', error);
+    }
+  </script>
+</body>
+</html>

@@ -31,7 +31,24 @@
       "mcp__playwright__browser_evaluate",
       "mcp__playwright__browser_drag",
       "mcp__playwright__browser_snapshot",
-      "mcp__playwright__browser_fill_form"
+      "mcp__playwright__browser_fill_form",
+      "mcp__sequential-thinking__sequentialthinking",
+      "mcp__playwright__browser_select_option",
+      "mcp__playwright__browser_type",
+      "mcp__playwright__browser_take_screenshot",
+      "mcp__serena__create_text_file",
+      "mcp__playwright__browser_console_messages",
+      "mcp__playwright__browser_press_key",
+      "WebSearch",
+      "WebFetch(domain:www.ag-grid.com)",
+      "mcp__serena__insert_after_symbol",
+      "mcp__playwright__browser_close",
+      "mcp__serena__insert_before_symbol",
+      "Bash(npm start)",
+      "Bash(npx http-server:*)",
+      "Bash(npm audit:*)",
+      "Bash(npm test:*)",
+      "Bash(npm install:*)"
     ],
     "deny": []
   }

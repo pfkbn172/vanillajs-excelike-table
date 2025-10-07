@@ -3,6 +3,8 @@
  * Handles data export to various formats (CSV, Excel, JSON)
  */
 
+import SecurityUtils from './security-utils.js';
+
 const ExportModule = {
   /**
    * Initialize export module
@@ -513,15 +515,18 @@ const ExportModule = {
    */
   escapeCSVField(field, delimiter, quote) {
     if (!field) return '';
-    
+
     const fieldStr = String(field);
-    
+
+    // Prevent CSV formula injection (Excel/LibreOffice execute =, +, -, @, \t, \r)
+    const escapedFormula = SecurityUtils.escapeCSVFormula(fieldStr);
+
     // If field contains delimiter, quote, or newline, wrap in quotes
-    if (fieldStr.includes(delimiter) || fieldStr.includes(quote) || fieldStr.includes('\n') || fieldStr.includes('\r')) {
-      return quote + fieldStr.replace(new RegExp(quote, 'g'), quote + quote) + quote;
+    if (escapedFormula.includes(delimiter) || escapedFormula.includes(quote) || escapedFormula.includes('\n') || escapedFormula.includes('\r')) {
+      return quote + escapedFormula.replace(new RegExp(quote, 'g'), quote + quote) + quote;
     }
-    
-    return fieldStr;
+
+    return escapedFormula;
   },
 
   /**

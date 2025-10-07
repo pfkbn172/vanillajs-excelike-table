@@ -92,11 +92,27 @@ const ColumnResizerPlugin = {
    */
   addStyles() {
     const css = `
-      /* Ensure headers can contain resizers */
-      th.table-header,
-      th {
-        position: relative !important;
-        overflow: visible !important;
+      /* Ensure headers can contain resizers - but preserve sticky positioning for pinned columns */
+      th.table-header:not(.pinned-column),
+      th:not(.pinned-column) {
+        position: relative;
+        overflow: visible;
+      }
+      
+      /* Pinned columns need special handling for resize functionality */
+      th.table-header.pinned-column,
+      th.pinned-column {
+        overflow: visible;
+      }
+      
+      /* Special resizer positioning for pinned columns */
+      th.pinned-column .table-column-resizer {
+        position: absolute;
+        top: 0;
+        right: -5px;
+        width: 10px;
+        height: 100%;
+        z-index: calc(var(--z-pinned-header) + 1);
       }
       
       /* Ensure header row has proper positioning */
@@ -199,7 +215,9 @@ const ColumnResizerPlugin = {
       }
       
       // Ensure cell has position relative for absolute positioning of resizer
-      if (!cell.style.position || cell.style.position === 'static') {
+      // BUT: Skip pinned columns to preserve their sticky positioning
+      if (!cell.classList.contains('pinned-column') && 
+          (!cell.style.position || cell.style.position === 'static')) {
         cell.style.position = 'relative';
       }
       
