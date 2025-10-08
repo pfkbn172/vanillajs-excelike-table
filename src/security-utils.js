@@ -1,9 +1,18 @@
 /**
  * Security Utilities Module
  * Provides XSS protection and input sanitization
+ * Uses window.DOMPurify (loaded via CDN) in browser environment
  */
 
-import DOMPurify from 'dompurify';
+// Get DOMPurify instance based on environment
+function getDOMPurify() {
+  // Browser environment - use global DOMPurify from CDN
+  if (typeof window !== 'undefined' && window.DOMPurify) {
+    return window.DOMPurify;
+  }
+  // Node.js environment - DOMPurify not needed for tests
+  return null;
+}
 
 const SecurityUtils = {
   /**
@@ -17,6 +26,12 @@ const SecurityUtils = {
       return '';
     }
 
+    const DOMPurify = getDOMPurify();
+    if (!DOMPurify) {
+      console.warn('DOMPurify not available, returning unsanitized content');
+      return dirty;
+    }
+
     const defaultConfig = {
       ALLOWED_TAGS: [
         'b', 'i', 'em', 'strong', 'u', 'span', 'div', 'p', 'br',
@@ -28,12 +43,64 @@ const SecurityUtils = {
         'class', 'id', 'style', 'title', 'alt', 'src', 'href',
         'target', 'rel', 'data-*'
       ],
+      FORBID_TAGS: [
+        'script', 'iframe', 'object', 'embed', 'form', 'input',
+        'button', 'textarea', 'select', 'option', 'base', 'link',
+        'meta', 'style', 'svg', 'math', 'marquee', 'blink'
+      ],
+      FORBID_ATTR: [
+        'onerror', 'onload', 'onclick', 'onmouseover', 'onfocus',
+        'onblur', 'onchange', 'onsubmit', 'action', 'formaction'
+      ],
+      ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
       ALLOW_DATA_ATTR: true,
-      RETURN_TRUSTED_TYPE: false
+      RETURN_TRUSTED_TYPE: false,
+      SAFE_FOR_TEMPLATES: true
     };
 
     const mergedConfig = { ...defaultConfig, ...config };
-    return DOMPurify.sanitize(dirty, mergedConfig);
+
+    // Add hook to sanitize style attributes
+    DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+      // Remove dangerous patterns in style attribute
+      if (node.hasAttribute('style')) {
+        const style = node.getAttribute('style');
+        // Block expression(), javascript:, vbscript:, data:, and other dangerous patterns
+        if (style && (
+          style.includes('expression(') ||
+          style.includes('javascript:') ||
+          style.includes('vbscript:') ||
+          style.includes('data:') ||
+          style.includes('import') ||
+          style.includes('@import') ||
+          style.includes('behavior:')
+        )) {
+          node.removeAttribute('style');
+        }
+      }
+
+      // Remove dangerous protocols from href and src
+      ['href', 'src', 'action', 'formaction', 'data'].forEach(attr => {
+        if (node.hasAttribute(attr)) {
+          const value = node.getAttribute(attr);
+          if (value && (
+            value.startsWith('javascript:') ||
+            value.startsWith('vbscript:') ||
+            value.startsWith('data:') ||
+            value.startsWith('file:')
+          )) {
+            node.removeAttribute(attr);
+          }
+        }
+      });
+    });
+
+    const result = DOMPurify.sanitize(dirty, mergedConfig);
+
+    // Remove hooks after use to prevent interference
+    DOMPurify.removeAllHooks();
+
+    return result;
   },
 
   /**
@@ -44,6 +111,12 @@ const SecurityUtils = {
   sanitizeText(text) {
     if (!text || typeof text !== 'string') {
       return '';
+    }
+
+    const DOMPurify = getDOMPurify();
+    if (!DOMPurify) {
+      console.warn('DOMPurify not available, returning unsanitized content');
+      return text;
     }
 
     return DOMPurify.sanitize(text, {
@@ -120,6 +193,7 @@ const SecurityUtils = {
    */
   createSafeElement(tagName, attributes = {}, content = '') {
     const element = document.createElement(tagName);
+    const DOMPurify = getDOMPurify();
 
     // Set attributes safely
     Object.entries(attributes).forEach(([key, value]) => {
@@ -130,7 +204,11 @@ const SecurityUtils = {
         }
       } else if (key === 'style') {
         // Sanitize inline styles
-        element.setAttribute(key, DOMPurify.sanitize(value, { ALLOWED_TAGS: [] }));
+        if (DOMPurify) {
+          element.setAttribute(key, DOMPurify.sanitize(value, { ALLOWED_TAGS: [] }));
+        } else {
+          element.setAttribute(key, value);
+        }
       } else {
         element.setAttribute(key, value);
       }

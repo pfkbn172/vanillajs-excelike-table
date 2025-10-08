@@ -12,6 +12,7 @@
 import DOMUtils from './dom-utils.js';
 import SecurityUtils from './security-utils.js';
 import PerformanceUtils from './performance-utils.js';
+import I18nModule from './i18n.js';
 
 // Configuration constants
 const TABLE_CONFIG = {
@@ -675,6 +676,13 @@ class ExceLikeTable {
       );
     }
 
+    // Initialize i18n
+    this.i18n = Object.create(I18nModule);
+    this.i18n.init({
+      locale: options.locale || 'en',
+      messages: options.i18nMessages || {}
+    });
+
     // Internal state
     // Deep copy initial data to prevent external mutations
     const initialData = this._deepCopyData(this.options.data || []);
@@ -1295,25 +1303,25 @@ class ExceLikeTable {
     let menuItems = [];
 
     // Clear filters option (filtering always enabled)
-    menuItems.push('<div class="table-menu-item" data-action="clear-all-filters">フィルタ全解除</div>');
+    menuItems.push(`<div class="table-menu-item" data-action="clear-all-filters"><i class="bi bi-funnel-fill"></i> ${this.i18n.t('menu.clearFilters')}</div>`);
 
     // Column settings
-    menuItems.push('<div class="table-menu-item" data-action="column-settings">表示列設定</div>');
-    
+    menuItems.push(`<div class="table-menu-item" data-action="column-settings"><i class="bi bi-layout-three-columns"></i> ${this.i18n.t('menu.columnSettings')}</div>`);
+
     // Conditional formatting
-    menuItems.push('<div class="table-menu-item" data-action="conditional-formatting">条件付き書式</div>');
+    menuItems.push(`<div class="table-menu-item" data-action="conditional-formatting"><i class="bi bi-palette-fill"></i> ${this.i18n.t('menu.conditionalFormat')}</div>`);
 
     // Font size submenu
     menuItems.push(`
       <div class="table-menu-item table-menu-item-submenu" data-action="font-size">
-        文字サイズ
+        <i class="bi bi-fonts"></i> ${this.i18n.t('menu.fontSize')}
         <span class="submenu-arrow">▶</span>
         <div class="table-submenu-dropdown">
-          <div class="table-menu-item ${this.state.fontSize === 'smallest' ? 'table-menu-item-current' : ''}" data-action="font-size" data-size="smallest">最小 ${this.state.fontSize === 'smallest' ? '✓' : ''}</div>
-          <div class="table-menu-item ${this.state.fontSize === 'small' ? 'table-menu-item-current' : ''}" data-action="font-size" data-size="small">小 ${this.state.fontSize === 'small' ? '✓' : ''}</div>
-          <div class="table-menu-item ${this.state.fontSize === 'medium' ? 'table-menu-item-current' : ''}" data-action="font-size" data-size="medium">中 ${this.state.fontSize === 'medium' ? '✓' : ''}</div>
-          <div class="table-menu-item ${this.state.fontSize === 'large' ? 'table-menu-item-current' : ''}" data-action="font-size" data-size="large">大 ${this.state.fontSize === 'large' ? '✓' : ''}</div>
-          <div class="table-menu-item ${this.state.fontSize === 'largest' ? 'table-menu-item-current' : ''}" data-action="font-size" data-size="largest">最大 ${this.state.fontSize === 'largest' ? '✓' : ''}</div>
+          <div class="table-menu-item ${this.state.fontSize === 'smallest' ? 'table-menu-item-current' : ''}" data-action="font-size" data-size="smallest">${this.i18n.t('fontSize.smallest')} ${this.state.fontSize === 'smallest' ? '✓' : ''}</div>
+          <div class="table-menu-item ${this.state.fontSize === 'small' ? 'table-menu-item-current' : ''}" data-action="font-size" data-size="small">${this.i18n.t('fontSize.small')} ${this.state.fontSize === 'small' ? '✓' : ''}</div>
+          <div class="table-menu-item ${this.state.fontSize === 'medium' ? 'table-menu-item-current' : ''}" data-action="font-size" data-size="medium">${this.i18n.t('fontSize.medium')} ${this.state.fontSize === 'medium' ? '✓' : ''}</div>
+          <div class="table-menu-item ${this.state.fontSize === 'large' ? 'table-menu-item-current' : ''}" data-action="font-size" data-size="large">${this.i18n.t('fontSize.large')} ${this.state.fontSize === 'large' ? '✓' : ''}</div>
+          <div class="table-menu-item ${this.state.fontSize === 'largest' ? 'table-menu-item-current' : ''}" data-action="font-size" data-size="largest">${this.i18n.t('fontSize.largest')} ${this.state.fontSize === 'largest' ? '✓' : ''}</div>
         </div>
       </div>
     `);
@@ -1321,18 +1329,45 @@ class ExceLikeTable {
     // Cell padding submenu
     menuItems.push(`
       <div class="table-menu-item table-menu-item-submenu" data-action="cell-padding">
-        セル内パディング
+        <i class="bi bi-border-all"></i> ${this.i18n.t('menu.cellPadding')}
         <span class="submenu-arrow">▶</span>
         <div class="table-submenu-dropdown">
-          <div class="table-menu-item ${this.state.cellPadding === 'wide' ? 'table-menu-item-current' : ''}" data-action="cell-padding" data-padding="wide">広め ${this.state.cellPadding === 'wide' ? '✓' : ''}</div>
-          <div class="table-menu-item ${this.state.cellPadding === 'standard' ? 'table-menu-item-current' : ''}" data-action="cell-padding" data-padding="standard">標準 ${this.state.cellPadding === 'standard' ? '✓' : ''}</div>
-          <div class="table-menu-item ${this.state.cellPadding === 'narrow' ? 'table-menu-item-current' : ''}" data-action="cell-padding" data-padding="narrow">狭め ${this.state.cellPadding === 'narrow' ? '✓' : ''}</div>
+          <div class="table-menu-item ${this.state.cellPadding === 'wide' ? 'table-menu-item-current' : ''}" data-action="cell-padding" data-padding="wide">${this.i18n.t('cellPadding.wide')} ${this.state.cellPadding === 'wide' ? '✓' : ''}</div>
+          <div class="table-menu-item ${this.state.cellPadding === 'standard' ? 'table-menu-item-current' : ''}" data-action="cell-padding" data-padding="standard">${this.i18n.t('cellPadding.standard')} ${this.state.cellPadding === 'standard' ? '✓' : ''}</div>
+          <div class="table-menu-item ${this.state.cellPadding === 'narrow' ? 'table-menu-item-current' : ''}" data-action="cell-padding" data-padding="narrow">${this.i18n.t('cellPadding.narrow')} ${this.state.cellPadding === 'narrow' ? '✓' : ''}</div>
         </div>
       </div>
     `);
 
+    // Language selection submenu (only if i18n is initialized)
+    if (this.i18n && typeof this.i18n.getAvailableLocales === 'function') {
+      const currentLocale = this.i18n.getLocale();
+    const availableLocales = this.i18n.getAvailableLocales();
+    const localeNames = {
+      'en': 'English',
+      'ja': '日本語',
+      'es': 'Español',
+      'fr': 'Français',
+      'de': 'Deutsch'
+    };
+
+    menuItems.push(`
+      <div class="table-menu-item table-menu-item-submenu" data-action="language">
+        <i class="bi bi-globe"></i> ${this.i18n.t('menu.language')}
+        <span class="submenu-arrow">▶</span>
+        <div class="table-submenu-dropdown">
+          ${availableLocales.map(locale => `
+            <div class="table-menu-item ${currentLocale === locale ? 'table-menu-item-current' : ''}" data-action="language" data-locale="${locale}">
+              ${localeNames[locale] || locale} ${currentLocale === locale ? '✓' : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `);
+    }
+
     // LocalStorage clear option (always available since plugins may store data)
-    menuItems.push('<div class="table-menu-item" data-action="clear-localstorage">LocalStorageクリア</div>');
+    menuItems.push(`<div class="table-menu-item" data-action="clear-localstorage"><i class="bi bi-trash3-fill"></i> ${this.i18n.t('menu.clearStorage')}</div>`);
 
     this.menuContainer.innerHTML = `
       <div class="table-menu-wrapper">
@@ -1499,15 +1534,15 @@ class ExceLikeTable {
       const totalText = this.options.pagination.showTotal(total, [start, end]);
       paginationHTML += `<div class="pagination-info">${totalText}</div>`;
     } else {
-      paginationHTML += `<div class="pagination-info">${start}-${end} of ${total} items</div>`;
+      paginationHTML += `<div class="pagination-info">${this.i18n.t('pagination.total', { start, end, total })}</div>`;
     }
 
     // Controls
     paginationHTML += `
       <div class="pagination-controls">
-        <button ${this.state.currentPage <= 1 ? 'disabled' : ''} data-page="${this.state.currentPage - 1}">Previous</button>
-        <span class="page-info">Page ${this.state.currentPage} of ${totalPages}</span>
-        <button ${this.state.currentPage >= totalPages ? 'disabled' : ''} data-page="${this.state.currentPage + 1}">Next</button>
+        <button ${this.state.currentPage <= 1 ? 'disabled' : ''} data-page="${this.state.currentPage - 1}">${this.i18n.t('pagination.previous')}</button>
+        <span class="page-info">${this.i18n.t('pagination.page', { page: this.state.currentPage })} / ${totalPages}</span>
+        <button ${this.state.currentPage >= totalPages ? 'disabled' : ''} data-page="${this.state.currentPage + 1}">${this.i18n.t('pagination.next')}</button>
     `;
 
     // Page size selector
@@ -1515,10 +1550,10 @@ class ExceLikeTable {
       paginationHTML += `
         <div class="page-size-selector">
           <select class="page-size-select">
-            <option value="5" ${this.state.pageSize === 5 ? 'selected' : ''}>5 / page</option>
-            <option value="10" ${this.state.pageSize === 10 ? 'selected' : ''}>10 / page</option>
-            <option value="20" ${this.state.pageSize === 20 ? 'selected' : ''}>20 / page</option>
-            <option value="50" ${this.state.pageSize === 50 ? 'selected' : ''}>50 / page</option>
+            <option value="5" ${this.state.pageSize === 5 ? 'selected' : ''}>5 ${this.i18n.t('pagination.itemsPerPage')}</option>
+            <option value="10" ${this.state.pageSize === 10 ? 'selected' : ''}>10 ${this.i18n.t('pagination.itemsPerPage')}</option>
+            <option value="20" ${this.state.pageSize === 20 ? 'selected' : ''}>20 ${this.i18n.t('pagination.itemsPerPage')}</option>
+            <option value="50" ${this.state.pageSize === 50 ? 'selected' : ''}>50 ${this.i18n.t('pagination.itemsPerPage')}</option>
           </select>
         </div>
       `;
@@ -2023,6 +2058,17 @@ class ExceLikeTable {
       if (e.target.matches('[data-action="cell-padding"][data-padding]')) {
         const padding = e.target.dataset.padding;
         this.setCellPadding(padding);
+        // Close menu
+        const dropdown = e.target.closest('.table-menu-dropdown');
+        dropdown.style.display = 'none';
+      }
+    });
+
+    // Language change
+    this.tableContainer.addEventListener('click', (e) => {
+      if (e.target.matches('[data-action="language"][data-locale]')) {
+        const locale = e.target.dataset.locale;
+        this.setLanguage(locale);
         // Close menu
         const dropdown = e.target.closest('.table-menu-dropdown');
         dropdown.style.display = 'none';
@@ -4548,6 +4594,15 @@ class ExceLikeTable {
     this.renderMenu(); // Re-render menu to update current selection
     this.applyCurrentStyling(); // Apply updated styling
     this.autoSaveSettings();
+  }
+
+  setLanguage(locale) {
+    const success = this.i18n.setLocale(locale);
+    if (success) {
+      this.renderMenu(); // Re-render menu to update current selection
+      this.renderPagination(); // Re-render pagination to update text
+      this.autoSaveSettings();
+    }
   }
 
   applyFontSize() {

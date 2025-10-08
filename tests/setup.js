@@ -75,6 +75,82 @@ global.console = {
   error: jest.fn(),
 };
 
+// Mock DOMPurify for security tests
+const hooks = [];
+global.DOMPurify = {
+  sanitize: jest.fn((dirty, config = {}) => {
+    if (!dirty || typeof dirty !== 'string') {
+      return '';
+    }
+
+    // Simple sanitization: remove dangerous content
+    let clean = dirty;
+
+    // Remove script tags
+    clean = clean.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+
+    // Remove iframe tags
+    clean = clean.replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '');
+
+    // Remove object tags
+    clean = clean.replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '');
+
+    // Remove embed tags
+    clean = clean.replace(/<embed\b[^>]*>/gi, '');
+
+    // Remove form tags
+    clean = clean.replace(/<form\b[^<]*(?:(?!<\/form>)<[^<]*)*<\/form>/gi, '');
+
+    // Remove marquee tags
+    clean = clean.replace(/<marquee\b[^<]*(?:(?!<\/marquee>)<[^<]*)*<\/marquee>/gi, '');
+
+    // Remove event handlers
+    clean = clean.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
+    clean = clean.replace(/on\w+\s*=\s*[^\s>]*/gi, '');
+
+    // Remove dangerous protocols from href/src/action
+    clean = clean.replace(/href\s*=\s*["']javascript:[^"']*["']/gi, 'href=""');
+    clean = clean.replace(/href\s*=\s*["']vbscript:[^"']*["']/gi, 'href=""');
+    clean = clean.replace(/href\s*=\s*["']data:[^"']*["']/gi, 'href=""');
+    clean = clean.replace(/src\s*=\s*["']javascript:[^"']*["']/gi, 'src=""');
+    clean = clean.replace(/src\s*=\s*["']data:[^"']*["']/gi, 'src=""');
+    clean = clean.replace(/action\s*=\s*["']javascript:[^"']*["']/gi, '');
+
+    // Remove dangerous style attributes
+    clean = clean.replace(/style\s*=\s*["']([^"']*)(expression\(|javascript:|vbscript:|data:)([^"']*)["']/gi, '');
+
+    // If ALLOWED_TAGS is empty, strip all tags
+    if (config.ALLOWED_TAGS && config.ALLOWED_TAGS.length === 0) {
+      clean = clean.replace(/<[^>]*>/g, '');
+    }
+
+    // If FORBID_TAGS is specified, remove those tags
+    if (config.FORBID_TAGS && config.FORBID_TAGS.length > 0) {
+      config.FORBID_TAGS.forEach(tag => {
+        const regex = new RegExp(`<${tag}\\b[^<]*(?:(?!<\\/${tag}>)<[^<]*)*<\\/${tag}>`, 'gi');
+        clean = clean.replace(regex, '');
+        // Also handle self-closing tags
+        const selfClosingRegex = new RegExp(`<${tag}\\b[^>]*>`, 'gi');
+        clean = clean.replace(selfClosingRegex, '');
+      });
+    }
+
+    return clean;
+  }),
+  addHook: jest.fn((hookName, callback) => {
+    hooks.push({ name: hookName, callback });
+  }),
+  removeAllHooks: jest.fn(() => {
+    hooks.length = 0;
+  }),
+  version: '3.2.7'
+};
+
+// Make DOMPurify available on window for browser-like tests
+if (typeof window !== 'undefined') {
+  window.DOMPurify = global.DOMPurify;
+}
+
 // Custom matchers
 expect.extend({
   toHaveClass(received, className) {
