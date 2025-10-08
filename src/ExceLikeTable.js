@@ -2593,8 +2593,9 @@ class ExceLikeTable {
 
   createRangeFilter(column, uniqueValues) {
     const numericValues = uniqueValues.filter(v => v !== null && v !== undefined && v !== '' && !isNaN(v)).map(Number);
-    const min = Math.min(...numericValues);
-    const max = Math.max(...numericValues);
+    // Prevent Infinity/-Infinity when array is empty
+    const min = numericValues.length > 0 ? Math.min(...numericValues) : 0;
+    const max = numericValues.length > 0 ? Math.max(...numericValues) : 0;
 
     // Detect decimal places from data
     const decimalPlaces = TableUtils.getDecimalPlaces(uniqueValues.filter(v => !isNaN(v)).map(Number));
@@ -3020,7 +3021,8 @@ class ExceLikeTable {
         if (!isDragging || !currentThumb) return;
         
         const rect = numberSlider.getBoundingClientRect();
-        const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+        // Safe touch event handling with optional chaining
+        const clientX = e.clientX || (e.touches?.[0]?.clientX ?? 0);
         const x = clientX - rect.left;
         const percent = Math.max(0, Math.min(100, (x / rect.width) * 100));
         const value = min + (percent / 100) * range;
@@ -3919,8 +3921,8 @@ class ExceLikeTable {
       if (!isDragging || !currentThumb) return;
       
       const rect = slider.getBoundingClientRect();
-      // Handle both mouse and touch events
-      const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+      // Handle both mouse and touch events with safe optional chaining
+      const clientX = e.clientX || (e.touches?.[0]?.clientX ?? 0);
       const x = clientX - rect.left;
       const percent = Math.max(0, Math.min(100, (x / rect.width) * 100));
       const value = min + (percent / 100) * range;
@@ -4160,8 +4162,8 @@ class ExceLikeTable {
       if (!isDragging || !currentThumb) return;
       
       const rect = slider.getBoundingClientRect();
-      // Handle both mouse and touch events
-      const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
+      // Handle both mouse and touch events with safe optional chaining
+      const clientX = e.clientX || (e.touches?.[0]?.clientX ?? 0);
       const x = clientX - rect.left;
       const percent = Math.max(0, Math.min(100, (x / rect.width) * 100));
       const timestamp = minDate + (percent / 100) * range;

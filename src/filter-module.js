@@ -323,9 +323,10 @@ const FilterModule = {
     const numericValues = uniqueValues
       .map(v => parseFloat(v))
       .filter(v => !isNaN(v));
-    
-    const dataMin = Math.min(...numericValues);
-    const dataMax = Math.max(...numericValues);
+
+    // Prevent Infinity/-Infinity when array is empty
+    const dataMin = numericValues.length > 0 ? Math.min(...numericValues) : 0;
+    const dataMax = numericValues.length > 0 ? Math.max(...numericValues) : 0;
 
     // Min input
     const minWrapper = document.createElement('div');

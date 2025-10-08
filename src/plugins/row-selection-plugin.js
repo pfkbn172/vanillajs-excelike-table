@@ -453,8 +453,9 @@ const RowSelectionPlugin = {
   updateSelectAllState() {
     const selectAllCheckbox = this.table.container.querySelector('.table-select-all-checkbox');
     if (!selectAllCheckbox) return;
-    
-    const totalRows = this.table.getFilteredData().length;
+
+    // Safe null check for getFilteredData
+    const totalRows = this.table.getFilteredData()?.length || 0;
     const selectedCount = this.getSelectedRowCount();
     
     if (selectedCount === 0) {
