@@ -2361,11 +2361,11 @@ class ExceLikeTable {
         ${dropdownContent}
         <div class="filter-dropdown-footer">
           <button class="filter-btn-clear-column">
-            🔄 この列のフィルタをクリア
+            🔄 ${this.i18n.t('filter.clearColumn')}
           </button>
           <div class="filter-footer-actions">
-            <button class="filter-btn-cancel">キャンセル</button>
-            <button class="filter-btn-confirm">OK</button>
+            <button class="filter-btn-cancel">${this.i18n.t('filter.cancel')}</button>
+            <button class="filter-btn-confirm">${this.i18n.t('filter.ok')}</button>
           </div>
         </div>
       </div>
@@ -2485,13 +2485,13 @@ class ExceLikeTable {
     
     return `
       <div class="filter-dropdown-search">
-        <input type="text" class="filter-search-input" placeholder="検索...">
-      </div>
+        <input type="text" class="filter-search-input" placeholder="${this.i18n.t('filter.placeholder')}">
+        </div>
       <div class="filter-dropdown-content">
         <div class="filter-option select-all">
           <label class="filter-option-label">
             <input type="checkbox" class="filter-checkbox" data-value="__all__" ${isAllSelected ? 'checked' : ''}>
-            <span class="filter-option-text">(すべて選択) <span class="filter-option-count">(${this.countTotalDataItems(column)})</span></span>
+            <span class="filter-option-text">${this.i18n.t('filter.all')} <span class="filter-option-count">(${this.countTotalDataItems(column)})</span></span>
           </label>
         </div>
         <div class="filter-options-list">
@@ -2730,13 +2730,13 @@ class ExceLikeTable {
         <!-- 値選択モードコンテンツ -->
         <div class="filter-mode-panel ${currentMode === 'values' ? 'active' : ''}" data-panel="values">
           <div class="filter-dropdown-search">
-            <input type="text" class="filter-search-input" placeholder="検索...">
-          </div>
+            <input type="text" class="filter-search-input" placeholder="${this.i18n.t('filter.placeholder')}">
+        </div>
           <div class="filter-dropdown-content">
             <div class="filter-option select-all">
               <label class="filter-option-label">
                 <input type="checkbox" class="filter-checkbox" data-value="__all__" ${selectAllChecked} data-state="${selectAllState}">
-                <span class="filter-option-text">(すべて選択) <span class="filter-option-count">(${this.countTotalDataItems(column)})</span></span>
+                <span class="filter-option-text">${this.i18n.t('filter.all')} <span class="filter-option-count">(${this.countTotalDataItems(column)})</span></span>
               </label>
             </div>
             <div class="filter-options-list">
@@ -2844,8 +2844,8 @@ class ExceLikeTable {
         <!-- 値選択モードコンテンツ -->
         <div class="filter-mode-panel ${currentMode === 'values' ? 'active' : ''}" data-panel="values">
           <div class="filter-dropdown-search">
-        <input type="text" class="filter-search-input" placeholder="検索...">
-      </div>
+        <input type="text" class="filter-search-input" placeholder="${this.i18n.t('filter.placeholder')}">
+        </div>
       <div class="date-expand-controls">
         <div class="expand-control-header">
           <span class="expand-control-label">展開表示:</span>
@@ -2860,7 +2860,7 @@ class ExceLikeTable {
         <div class="filter-option select-all">
           <label class="filter-option-label">
             <input type="checkbox" class="filter-checkbox" data-value="__all__" ${isAllSelected ? 'checked' : ''}>
-            <span class="filter-option-text">(すべて選択) <span class="filter-option-count">(${this.countTotalDataItems(column)})</span></span>
+            <span class="filter-option-text">${this.i18n.t('filter.all')} <span class="filter-option-count">(${this.countTotalDataItems(column)})</span></span>
           </label>
         </div>
         <div class="date-filter-content">
@@ -3812,7 +3812,7 @@ class ExceLikeTable {
           <div class="column-item select-all-item">
             <label class="column-label">
               <input type="checkbox" class="column-checkbox-all" id="select-all-columns">
-              <span class="column-text">(すべて選択)</span>
+              <span class="column-text">${this.i18n.t('filter.all')}</span>
             </label>
           </div>
           ${this.options.columns.map(col => `
@@ -3830,7 +3830,7 @@ class ExceLikeTable {
         </div>
       </div>
       <div class="column-settings-footer">
-        <button class="cancel-btn">キャンセル</button>
+        <button class="cancel-btn">${this.i18n.t('filter.cancel')}</button>
         <button class="confirm-btn">OK</button>
       </div>
     `;

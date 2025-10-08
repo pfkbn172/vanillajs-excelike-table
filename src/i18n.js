@@ -70,6 +70,9 @@ const I18nModule = {
       'filter.max': 'Max',
       'filter.from': 'From',
       'filter.to': 'To',
+      'filter.clearColumn': 'Clear this column filter',
+      'filter.cancel': 'Cancel',
+      'filter.ok': 'OK',
 
       // Pagination
       'pagination.label': 'Table pagination',
@@ -89,6 +92,27 @@ const I18nModule = {
       'action.delete': 'Delete',
       'action.view': 'View',
       'action.copy': 'Copy',
+
+      // Menu
+      'menu.clearFilters': 'Clear All Filters',
+      'menu.columnSettings': 'Column Settings',
+      'menu.conditionalFormat': 'Conditional Formatting',
+      'menu.fontSize': 'Font Size',
+      'menu.cellPadding': 'Cell Padding',
+      'menu.language': 'Language',
+      'menu.clearStorage': 'Clear LocalStorage',
+
+      // Font size options
+      'fontSize.smallest': 'Smallest',
+      'fontSize.small': 'Small',
+      'fontSize.medium': 'Medium',
+      'fontSize.large': 'Large',
+      'fontSize.largest': 'Largest',
+
+      // Cell padding options
+      'cellPadding.wide': 'Wide',
+      'cellPadding.standard': 'Standard',
+      'cellPadding.narrow': 'Narrow',
 
       // Settings
       'settings.fontSize': 'Font Size',
@@ -167,6 +191,9 @@ const I18nModule = {
       'filter.max': '最大',
       'filter.from': '開始',
       'filter.to': '終了',
+      'filter.clearColumn': 'この列のフィルタをクリア',
+      'filter.cancel': 'キャンセル',
+      'filter.ok': 'OK',
 
       // Pagination
       'pagination.label': 'テーブルページネーション',
@@ -180,6 +207,27 @@ const I18nModule = {
       'pagination.announced': '{total}ページ中{page}ページ',
       'pagination.itemsPerPage': '件/ページ',
       'pagination.total': '{total}件中{start}-{end}件',
+
+      // Menu
+      'menu.clearFilters': 'フィルタ全解除',
+      'menu.columnSettings': '表示列設定',
+      'menu.conditionalFormat': '条件付き書式',
+      'menu.fontSize': '文字サイズ',
+      'menu.cellPadding': 'セル内パディング',
+      'menu.language': '言語',
+      'menu.clearStorage': 'LocalStorageクリア',
+
+      // Font size options
+      'fontSize.smallest': '最小',
+      'fontSize.small': '小',
+      'fontSize.medium': '中',
+      'fontSize.large': '大',
+      'fontSize.largest': '最大',
+
+      // Cell padding options
+      'cellPadding.wide': '広め',
+      'cellPadding.standard': '標準',
+      'cellPadding.narrow': '狭め',
 
       // Actions
       'action.edit': '編集',
@@ -227,9 +275,35 @@ const I18nModule = {
       'table.loading': 'Cargando...',
       'table.empty': 'Sin datos',
       'filter.placeholder': 'Buscar...',
+      'filter.clearColumn': 'Borrar filtro de esta columna',
+      'filter.cancel': 'Cancelar',
+      'filter.ok': 'OK',
       'pagination.previous': 'Anterior',
       'pagination.next': 'Siguiente',
-      // ... more Spanish translations
+      'pagination.page': 'Página {page}',
+      'pagination.itemsPerPage': 'elementos/página',
+      'pagination.total': '{start}-{end} de {total} elementos',
+
+      // Menu
+      'menu.clearFilters': 'Borrar todos los filtros',
+      'menu.columnSettings': 'Configuración de columnas',
+      'menu.conditionalFormat': 'Formato condicional',
+      'menu.fontSize': 'Tamaño de fuente',
+      'menu.cellPadding': 'Relleno de celda',
+      'menu.language': 'Idioma',
+      'menu.clearStorage': 'Borrar LocalStorage',
+
+      // Font size options
+      'fontSize.smallest': 'Muy pequeño',
+      'fontSize.small': 'Pequeño',
+      'fontSize.medium': 'Mediano',
+      'fontSize.large': 'Grande',
+      'fontSize.largest': 'Muy grande',
+
+      // Cell padding options
+      'cellPadding.wide': 'Amplio',
+      'cellPadding.standard': 'Estándar',
+      'cellPadding.narrow': 'Estrecho'
     });
 
     this.addMessages('fr', {
@@ -237,9 +311,35 @@ const I18nModule = {
       'table.loading': 'Chargement...',
       'table.empty': 'Aucune donnée',
       'filter.placeholder': 'Rechercher...',
+      'filter.clearColumn': 'Effacer le filtre de cette colonne',
+      'filter.cancel': 'Annuler',
+      'filter.ok': 'OK',
       'pagination.previous': 'Précédent',
       'pagination.next': 'Suivant',
-      // ... more French translations
+      'pagination.page': 'Page {page}',
+      'pagination.itemsPerPage': 'éléments/page',
+      'pagination.total': '{start}-{end} sur {total} éléments',
+
+      // Menu
+      'menu.clearFilters': 'Effacer tous les filtres',
+      'menu.columnSettings': 'Paramètres des colonnes',
+      'menu.conditionalFormat': 'Mise en forme conditionnelle',
+      'menu.fontSize': 'Taille de police',
+      'menu.cellPadding': 'Espacement des cellules',
+      'menu.language': 'Langue',
+      'menu.clearStorage': 'Effacer LocalStorage',
+
+      // Font size options
+      'fontSize.smallest': 'Très petit',
+      'fontSize.small': 'Petit',
+      'fontSize.medium': 'Moyen',
+      'fontSize.large': 'Grand',
+      'fontSize.largest': 'Très grand',
+
+      // Cell padding options
+      'cellPadding.wide': 'Large',
+      'cellPadding.standard': 'Standard',
+      'cellPadding.narrow': 'Étroit'
     });
 
     this.addMessages('de', {
@@ -247,9 +347,35 @@ const I18nModule = {
       'table.loading': 'Laden...',
       'table.empty': 'Keine Daten',
       'filter.placeholder': 'Suchen...',
+      'filter.clearColumn': 'Filter dieser Spalte löschen',
+      'filter.cancel': 'Abbrechen',
+      'filter.ok': 'OK',
       'pagination.previous': 'Zurück',
       'pagination.next': 'Weiter',
-      // ... more German translations
+      'pagination.page': 'Seite {page}',
+      'pagination.itemsPerPage': 'Elemente/Seite',
+      'pagination.total': '{start}-{end} von {total} Elementen',
+
+      // Menu
+      'menu.clearFilters': 'Alle Filter löschen',
+      'menu.columnSettings': 'Spalteneinstellungen',
+      'menu.conditionalFormat': 'Bedingte Formatierung',
+      'menu.fontSize': 'Schriftgröße',
+      'menu.cellPadding': 'Zellenabstand',
+      'menu.language': 'Sprache',
+      'menu.clearStorage': 'LocalStorage löschen',
+
+      // Font size options
+      'fontSize.smallest': 'Sehr klein',
+      'fontSize.small': 'Klein',
+      'fontSize.medium': 'Mittel',
+      'fontSize.large': 'Groß',
+      'fontSize.largest': 'Sehr groß',
+
+      // Cell padding options
+      'cellPadding.wide': 'Breit',
+      'cellPadding.standard': 'Standard',
+      'cellPadding.narrow': 'Schmal'
     });
   },
 
