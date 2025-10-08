@@ -21,6 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🐛 Bug Fixes
 
 - **FIXED: const Reassignment Bug** - Changed `totalItems` from const to let in virtual-scroll.js
+- **FIXED: Empty Array Math Operations** (MEDIUM) - Prevent Infinity/-Infinity in filter-module.js and ExceLikeTable.js
+- **FIXED: Touch Event Null Safety** (MEDIUM) - Optional chaining for touch devices (3 locations)
+- **FIXED: Row Selection Null Check** (MEDIUM) - Safe getFilteredData in row-selection-plugin.js
+
+### 🧪 Testing
+
+- **FIXED: Jest Configuration** - Renamed jest.config.js → jest.config.cjs for ES modules compatibility
+- Test infrastructure now functional and ready for implementation
 
 ### 📚 Documentation
 
