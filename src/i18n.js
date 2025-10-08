@@ -562,3 +562,5 @@ if (typeof module !== 'undefined' && module.exports) {
 if (typeof window !== 'undefined') {
   window.I18nModule = I18nModule;
 }
+
+export default I18nModule;
