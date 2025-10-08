@@ -2,7 +2,8 @@
  * Performance Utils Unit Tests
  */
 
-const PerformanceUtils = require('../../src/performance-utils');
+import PerformanceUtils from '../../src/performance-utils.js';
+import { describe, test, expect, beforeEach, afterEach, jest } from '@jest/globals';
 
 describe('PerformanceUtils', () => {
   beforeEach(() => {

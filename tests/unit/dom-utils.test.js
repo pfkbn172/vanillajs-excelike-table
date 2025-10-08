@@ -2,8 +2,9 @@
  * DOM Utils Unit Tests
  */
 
-// Import modules - adjust path as needed for your test environment
-const DOMUtils = require('../../src/dom-utils');
+// Import modules - ES modules syntax
+import DOMUtils from '../../src/dom-utils.js';
+import { describe, test, expect, beforeEach } from '@jest/globals';
 
 describe('DOMUtils', () => {
   beforeEach(() => {

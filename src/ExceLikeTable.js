@@ -8,7 +8,10 @@
  * All features enabled by default - no configuration needed!
  */
 
-
+// Import utility modules
+import DOMUtils from './dom-utils.js';
+import SecurityUtils from './security-utils.js';
+import PerformanceUtils from './performance-utils.js';
 
 // Configuration constants
 const TABLE_CONFIG = {
@@ -673,9 +676,11 @@ class ExceLikeTable {
     }
 
     // Internal state
+    // Deep copy initial data to prevent external mutations
+    const initialData = this._deepCopyData(this.options.data || []);
     this.state = {
-      data: [...this.options.data],
-      filteredData: [...this.options.data],
+      data: initialData,
+      filteredData: [...initialData],
       filters: {},
       filterModes: {}, // 'range' or 'values' for each numeric column
       sortState: { column: null, direction: null },
@@ -4444,15 +4449,61 @@ class ExceLikeTable {
     return sortedGroups;
   }
 
+  // Private helper: Deep copy with type preservation
+  _deepCopyData(obj, seen = new WeakMap()) {
+    // Handle primitives
+    if (obj === null || typeof obj !== 'object') return obj;
+
+    // Handle circular references
+    if (seen.has(obj)) return seen.get(obj);
+
+    // Handle Date
+    if (obj instanceof Date) return new Date(obj.getTime());
+
+    // Handle Array
+    if (Array.isArray(obj)) {
+      const arr = [];
+      seen.set(obj, arr);
+      obj.forEach((item, index) => {
+        arr[index] = this._deepCopyData(item, seen);
+      });
+      return arr;
+    }
+
+    // Handle Object
+    const copy = {};
+    seen.set(obj, copy);
+    Object.keys(obj).forEach(key => {
+      copy[key] = this._deepCopyData(obj[key], seen);
+    });
+    return copy;
+  }
+
   // Public API methods
+  getData() {
+    // Return a deep copy to prevent external mutations
+    // Use structured clone for better type preservation
+    try {
+      // Try structured clone first (preserves Dates, Maps, Sets, etc.)
+      if (typeof structuredClone !== 'undefined') {
+        return structuredClone(this.state.data);
+      }
+    } catch (e) {
+      // Fallback to manual deep copy for circular references or unsupported types
+    }
+
+    return this._deepCopyData(this.state.data);
+  }
+
   setData(data) {
-    this.state.data = [...data];
+    // Deep copy input data to prevent external mutations affecting internal state
+    this.state.data = this._deepCopyData(data || []);
     this.state.currentPage = 1;
     this.render();
-    
+
     // 🔄 Emit hook for data update
     if (this.pluginSystem) {
-      this.pluginSystem.emitHook('data:afterLoad', { 
+      this.pluginSystem.emitHook('data:afterLoad', {
         newData: data,
         type: 'setData'
       });
@@ -5059,12 +5110,17 @@ class ExceLikeTable {
   }
 }
 
-// Export for different module systems
+// ES modules export
+export default ExceLikeTable;
+export { ColumnHelpers };
+
+// CommonJS export for compatibility
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = ExceLikeTable;
   module.exports.ColumnHelpers = ColumnHelpers;
 }
 
+// Browser global
 if (typeof window !== 'undefined') {
   window.ExceLikeTable = ExceLikeTable;
   window.ColumnHelpers = ColumnHelpers;

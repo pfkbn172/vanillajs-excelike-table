@@ -173,7 +173,10 @@ const DOMUtils = {
   }
 };
 
-// Export for use in ExceLikeTable
+// ES modules export
+export default DOMUtils;
+
+// CommonJS export for compatibility
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = DOMUtils;
 }

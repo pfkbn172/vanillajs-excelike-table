@@ -205,7 +205,10 @@ const PerformanceUtils = {
   }
 };
 
-// Export for use in ExceLikeTable
+// ES modules export
+export default PerformanceUtils;
+
+// CommonJS export for compatibility
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = PerformanceUtils;
 }

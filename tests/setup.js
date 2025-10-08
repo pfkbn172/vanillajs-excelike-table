@@ -2,6 +2,15 @@
  * Jest test setup file
  */
 
+// Import Jest globals for ES modules
+import { jest, expect, beforeEach, afterEach } from '@jest/globals';
+
+// Make jest and expect available globally
+global.jest = jest;
+global.expect = expect;
+global.beforeEach = beforeEach;
+global.afterEach = afterEach;
+
 // Import required polyfills for jsdom
 import 'whatwg-fetch';
 

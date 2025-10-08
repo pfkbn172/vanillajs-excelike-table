@@ -59,8 +59,18 @@ const SecurityUtils = {
    * @returns {string} - Escaped value
    */
   escapeCSVFormula(value) {
-    if (!value || typeof value !== 'string') {
+    // Handle null and undefined
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    if (typeof value !== 'string') {
       return value;
+    }
+
+    // Empty string
+    if (value === '') {
+      return '';
     }
 
     const firstChar = value.charAt(0);
@@ -169,6 +179,35 @@ const SecurityUtils = {
     ];
 
     return xssPatterns.some(pattern => pattern.test(input));
+  },
+
+  /**
+   * Validate URL safety
+   * @param {string} url - URL to validate
+   * @returns {boolean} - True if URL is safe
+   */
+  isValidURL(url) {
+    if (!url || typeof url !== 'string') return false;
+
+    // Block dangerous protocols
+    const dangerousProtocols = /^(javascript|data|vbscript|file):/i;
+    if (dangerousProtocols.test(url)) return false;
+
+    // Only allow http, https, mailto, tel
+    const allowedProtocols = /^(https?|mailto|tel):/i;
+    return allowedProtocols.test(url) || url.startsWith('/') || url.startsWith('#');
+  },
+
+  /**
+   * Sanitize URL
+   * @param {string} url - URL to sanitize
+   * @returns {string} - Safe URL or about:blank
+   */
+  sanitizeURL(url) {
+    if (this.isValidURL(url)) {
+      return url;
+    }
+    return 'about:blank';
   }
 };
 

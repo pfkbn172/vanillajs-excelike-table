@@ -49,7 +49,9 @@
       "Bash(npm audit:*)",
       "Bash(npm test:*)",
       "Bash(npm install:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "mcp__serena__list_memories",
+      "Bash(git add:*)"
     ],
     "deny": []
   }
