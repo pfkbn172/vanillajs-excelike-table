@@ -51,7 +51,9 @@
       "Bash(npm install:*)",
       "Bash(git commit:*)",
       "mcp__serena__list_memories",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "mcp__playwright__browser_handle_dialog",
+      "mcp__playwright__browser_hover"
     ],
     "deny": []
   }
