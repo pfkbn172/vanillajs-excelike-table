@@ -664,6 +664,12 @@ const PluginSystem = {
    */
   async loadPluginFromURL(url, name) {
     try {
+      // SSRF Protection: Validate URL before fetching
+      if (!this.validatePluginURL(url)) {
+        console.error(`Invalid or unsafe plugin URL: "${url}"`);
+        return false;
+      }
+
       const response = await fetch(url);
       const pluginCode = await response.text();
       
@@ -676,6 +682,53 @@ const PluginSystem = {
       return false;
     } catch (error) {
       console.error(`Failed to load plugin from URL "${url}":`, error);
+      return false;
+    }
+  },
+
+  /**
+   * Validate plugin URL to prevent SSRF attacks
+   * @param {string} url - URL to validate
+   * @returns {boolean} True if URL is safe
+   */
+  validatePluginURL(url) {
+    try {
+      const parsedURL = new URL(url);
+
+      // Block private/internal IP ranges (SSRF prevention)
+      const blockedPatterns = [
+        /^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)/,  // Private IPv4
+        /^(127\.|169\.254\.)/,                                // Loopback and link-local
+        /^(localhost|0\.0\.0\.0)/i,                          // Localhost variants
+        /^(::1|fe80::|fc00::|fd00::)/i,                      // IPv6 loopback and private
+        /^(metadata\.google\.internal)/i                     // Cloud metadata services
+      ];
+
+      // Check hostname against blocked patterns
+      const hostname = parsedURL.hostname;
+      for (const pattern of blockedPatterns) {
+        if (pattern.test(hostname)) {
+          return false;
+        }
+      }
+
+      // Only allow HTTP/HTTPS protocols
+      if (!['http:', 'https:'].includes(parsedURL.protocol)) {
+        return false;
+      }
+
+      // Additional check: block non-standard ports for HTTP/HTTPS
+      const port = parsedURL.port;
+      if (port && !['80', '443', ''].includes(port)) {
+        // Allow common alternative ports but log warning
+        if (!['8080', '8443', '3000'].includes(port)) {
+          console.warn(`Plugin URL uses non-standard port: ${port}`);
+        }
+      }
+
+      return true;
+    } catch (error) {
+      // Invalid URL format
       return false;
     }
   },

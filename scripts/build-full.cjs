@@ -199,7 +199,7 @@ if (!isDev) {
 
   minify(combinedCode, {
     compress: {
-      drop_console: false,
+      drop_console: true,  // Remove console.* calls in production builds
       drop_debugger: true,
       passes: 2
     },
