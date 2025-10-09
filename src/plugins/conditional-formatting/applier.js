@@ -20,10 +20,9 @@ class ConditionalFormattingApplier {
     }
     
     try {
-      // NOTE: この方法は非推奨 - 新しいロジックでは applyCellFormat を直接使用
       if (rule.applyTo === 'row') {
-        // 行全体に適用（ただし、個別セル制御では使用しない）
-        this.applyToRow(cellElement, rule);
+        // 行全体に基本書式を適用（特殊フォーマット保持）
+        this.applyRowLevelBasicFormat(cellElement, rule);
       } else {
         // セルのみに適用
         this.applyCellFormat(cellElement, rule);
@@ -47,44 +46,6 @@ class ConditionalFormattingApplier {
     cellElement.classList.add(this.cssClassName);
     cellElement.setAttribute(this.attributeName, rule.id);
     cellElement.setAttribute('data-cf-apply-to', 'cell');
-  }
-  
-  /**
-   * 行全体に書式を適用
-   * @param {HTMLElement} cellElement 条件にマッチしたセル要素
-   * @param {ConditionalFormattingRule} rule 適用するルール
-   */
-  applyToRow(cellElement, rule) {
-    // 行要素を取得
-    const rowElement = cellElement.closest('tr') || 
-                      cellElement.closest('.table-row') || 
-                      cellElement.parentElement;
-    
-    if (!rowElement) {
-      // Row element not found - return silently
-      return;
-    }
-    
-    // 行内の全セルを取得
-    const cells = rowElement.querySelectorAll('td') ||
-                  rowElement.querySelectorAll('.table-cell') ||
-                  rowElement.children;
-    
-    if (cells.length === 0) {
-      // No cells found in row - return silently
-      return;
-    }
-    
-    // 行内の全セルに書式を適用（直接上書き）
-    Array.from(cells).forEach(cell => {
-      this._applyFormat(cell, rule.format);
-      
-      // メタデータを設定
-      cell.classList.add(this.cssClassName);
-      cell.classList.add('cf-row-formatted');
-      cell.setAttribute(this.attributeName, rule.id);
-      cell.setAttribute('data-cf-apply-to', 'row');
-    });
   }
   
   /**

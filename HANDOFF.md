@@ -101,19 +101,21 @@ ExcelライクなテーブルUIライブラリ。仮想スクロール、フィ�
 
 #### 3. 条件付き書式プラグインの完成（8-12時間）
 
-**未完了機能**:
-- [ ] `applyRowLevelBasicFormat()`メソッド実装
+**完了機能**:
+- [x] `applyRowLevelBasicFormat()`メソッド実装
   - 基本スタイル（背景色、文字色、フォント）のみ適用
   - 特殊フォーマット（アイコン、バー等）を保持
-- [ ] ImprovedFormatApplierへの行フォーマット機能追加
+  - `applyToRow()`メソッドを置き換え
+- [x] ConditionalFormattingApplierに統合完了
+
+**未完了機能**:
 - [ ] エッジケースのテスト
   - 複数ルールの優先順位
   - 行フォーマット + セルフォーマット組み合わせ
 
 **既知の問題**:
-1. ImprovedFormatApplier未対応 - 行全体フォーマット機能なし
-2. 特殊フォーマット保持 - メソッド未実装
-3. IconSet編集問題 - まれにデフォルト選択が残る
+1. IconSet編集問題 - まれにデフォルト選択が残る
+2. エッジケースの網羅的テスト未実施
 
 **関連ファイル**:
 - `src/plugins/conditional-formatting/format-applier.js`
