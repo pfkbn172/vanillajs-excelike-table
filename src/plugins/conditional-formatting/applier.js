@@ -203,6 +203,102 @@ class ConditionalFormattingApplier {
   }
   
   /**
+   * 行全体に基本書式のみを適用（特殊フォーマットを保持）
+   * @param {HTMLElement} cellElement 条件にマッチしたセル要素
+   * @param {ConditionalFormattingRule} rule 適用するルール
+   */
+  applyRowLevelBasicFormat(cellElement, rule) {
+    // 行要素を取得
+    const rowElement = cellElement.closest('tr') ||
+                      cellElement.closest('.table-row') ||
+                      cellElement.parentElement;
+
+    if (!rowElement) {
+      return;
+    }
+
+    // 行内の全セルを取得
+    const cells = rowElement.querySelectorAll('td') ||
+                  rowElement.querySelectorAll('.table-cell') ||
+                  rowElement.children;
+
+    if (cells.length === 0) {
+      return;
+    }
+
+    // 行内の全セルに基本書式のみを適用
+    Array.from(cells).forEach(cell => {
+      // 特殊フォーマット要素の存在をチェック
+      const hasSpecialFormat = this._hasSpecialFormatElements(cell);
+
+      if (hasSpecialFormat) {
+        // 特殊フォーマットが存在する場合は基本スタイルのみ適用
+        this._applyBasicFormatOnly(cell, rule.format);
+      } else {
+        // 特殊フォーマットがない場合は通常の書式適用
+        this._applyFormat(cell, rule.format);
+      }
+
+      // メタデータを設定
+      cell.classList.add(this.cssClassName);
+      cell.classList.add('cf-row-formatted');
+      cell.setAttribute(this.attributeName, rule.id);
+      cell.setAttribute('data-cf-apply-to', 'row');
+    });
+  }
+
+  /**
+   * セルに特殊フォーマット要素が含まれているかチェック
+   * @param {HTMLElement} cellElement セル要素
+   * @returns {boolean} 特殊フォーマット要素の有無
+   */
+  _hasSpecialFormatElements(cellElement) {
+    // アイコンセット、カラーバー、カラースケールなどの特殊要素をチェック
+    const specialSelectors = [
+      '.cf-icon-set',
+      '.cf-color-bar',
+      '.cf-color-scale',
+      '.cf-data-bar',
+      '[data-cf-special-format]'
+    ];
+
+    return specialSelectors.some(selector =>
+      cellElement.querySelector(selector) !== null
+    );
+  }
+
+  /**
+   * 基本スタイル（背景色、文字色、フォント）のみを適用
+   * @param {HTMLElement} element 対象要素
+   * @param {Object} format 書式設定
+   */
+  _applyBasicFormatOnly(element, format) {
+    const style = element.style;
+
+    // 背景色（重要度を下げて特殊フォーマットの表示を妨げないようにする）
+    if (format.backgroundColor) {
+      style.setProperty('background-color', format.backgroundColor);
+    }
+
+    // 文字色
+    const textColor = format.color || '#000000';
+    style.setProperty('color', textColor, 'important');
+
+    // フォントスタイル
+    if (format.fontWeight) {
+      style.setProperty('font-weight', 'bold', 'important');
+    }
+
+    if (format.fontStyle) {
+      style.setProperty('font-style', 'italic', 'important');
+    }
+
+    if (format.textDecoration) {
+      style.setProperty('text-decoration', 'underline', 'important');
+    }
+  }
+
+  /**
    * セルが条件付き書式適用済みかチェック
    * @param {HTMLElement} cellElement セル要素
    * @returns {boolean} 適用済みかどうか
