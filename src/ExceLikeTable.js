@@ -1005,15 +1005,37 @@ class ExceLikeTable {
     try {
       const saved = localStorage.getItem(this.storageKey);
       if (!saved) return false;
-      
-      const state = JSON.parse(saved);
+
+      // Validate data before parsing
+      if (typeof saved !== 'string' || saved.trim() === '') {
+        throw new Error('Invalid localStorage data');
+      }
+
+      // Parse with prototype pollution protection
+      const state = JSON.parse(saved, (key, value) => {
+        // Block __proto__, constructor, prototype keys
+        if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+          return undefined;
+        }
+        return value;
+      });
+
+      // Validate state structure
+      if (!state || typeof state !== 'object') {
+        throw new Error('Invalid state structure');
+      }
+
       if (state.version === '1.0.0' || state.version === '1.1.0') {
         this.applyLoadedState(state);
         return true;
       }
     } catch (error) {
       // 破損データは削除
-      localStorage.removeItem(this.storageKey);
+      try {
+        localStorage.removeItem(this.storageKey);
+      } catch (cleanupError) {
+        // Ignore cleanup errors
+      }
     }
     return false;
   }

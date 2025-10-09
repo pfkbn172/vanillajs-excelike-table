@@ -281,28 +281,45 @@
    */
   save() {
     try {
+      // LocalStorage availability check
+      if (typeof localStorage === 'undefined') {
+        throw new Error('LocalStorage is not available');
+      }
+
       const data = {
         version: '1.0',
         timestamp: Date.now(),
         nextPriority: this.nextPriority,
         rules: this.rules.map(rule => rule.toJSON())
       };
-      
+
       const serialized = JSON.stringify(data);
-      
+
       // データサイズチェック（LocalStorageの制限対策）
       if (serialized.length > 5 * 1024 * 1024) { // 5MB制限
         throw new Error('保存データが大きすぎます');
       }
-      
+
+      // Test localStorage write capability before actual save
+      try {
+        localStorage.setItem(this.storageKey + '_test', 'test');
+        localStorage.removeItem(this.storageKey + '_test');
+      } catch (testError) {
+        throw new Error('LocalStorage write failed: ' + testError.message);
+      }
+
       localStorage.setItem(this.storageKey, serialized);
-      
-      return this.errorHandler.success({ 
+
+      return this.errorHandler.success({
         rulesCount: this.rules.length,
-        dataSize: serialized.length 
+        dataSize: serialized.length
       });
-      
+
     } catch (error) {
+      // Handle QuotaExceededError specifically
+      if (error.name === 'QuotaExceededError') {
+        error.message = 'LocalStorage quota exceeded. Please clear some data.';
+      }
       return this.errorHandler.handle('save', error);
     }
   }
@@ -313,36 +330,65 @@
    */
   load() {
     try {
+      // LocalStorage availability check
+      if (typeof localStorage === 'undefined') {
+        throw new Error('LocalStorage is not available');
+      }
+
       const data = localStorage.getItem(this.storageKey);
       if (!data) {
         return this.errorHandler.success({ isInitial: true, rulesLoaded: 0 });
       }
-      
-      const parsed = JSON.parse(data);
-      
+
+      // Validate data before parsing
+      if (typeof data !== 'string' || data.trim() === '') {
+        throw new Error('Invalid localStorage data');
+      }
+
+      // Parse with prototype pollution protection
+      const parsed = JSON.parse(data, (key, value) => {
+        // Block __proto__, constructor, prototype keys
+        if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+          return undefined;
+        }
+        return value;
+      });
+
+      // Validate parsed data structure
+      if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.rules)) {
+        throw new Error('Invalid data structure');
+      }
+
       // バージョンチェック
       if (parsed.version !== '1.0') {
         // Version mismatch handling - auto-convert to 1.0
       }
-      
+
       // ルールを復元
-      this.rules = parsed.rules.map(ruleData => 
+      this.rules = parsed.rules.map(ruleData =>
         ConditionalFormattingRule.fromJSON(ruleData)
       );
-      
+
       // 優先度の整合性チェック
       this.validateAndFixPriorities();
-      
-      return this.errorHandler.success({ 
+
+      return this.errorHandler.success({
         rulesLoaded: this.rules.length,
-        version: parsed.version 
+        version: parsed.version
       });
-      
+
     } catch (error) {
       // ロード失敗時は初期状態にリセット
       this.rules = [];
       this.nextPriority = 1;
-      
+
+      // Corrupted data cleanup
+      try {
+        localStorage.removeItem(this.storageKey);
+      } catch (cleanupError) {
+        // Ignore cleanup errors
+      }
+
       return this.errorHandler.handle('load', error);
     }
   }
