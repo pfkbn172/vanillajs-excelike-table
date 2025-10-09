@@ -2499,7 +2499,7 @@ class ExceLikeTable {
             <div class="filter-option">
               <label class="filter-option-label">
                 <input type="checkbox" class="filter-checkbox" data-value="${value}" ${isAllSelected || currentFilters.includes(value) ? 'checked' : ''}>
-                <span class="filter-option-text">${value === null || value === undefined || value === '' ? '(空白)' : value} <span class="filter-option-count">(${this.countDataItems(column, value)})</span></span>
+                <span class="filter-option-text">${value === null || value === undefined || value === '' ? this.i18n.t('filter.empty') : value} <span class="filter-option-count">(${this.countDataItems(column, value)})</span></span>
               </label>
             </div>
           `).join('')}
@@ -2688,8 +2688,8 @@ class ExceLikeTable {
 
     return `
       <div class="filter-mode-tabs">
-        <button class="filter-mode-tab ${currentMode === 'range' ? 'active' : ''}" data-mode="range">範囲で絞り込む</button>
-        <button class="filter-mode-tab ${currentMode === 'values' ? 'active' : ''}" data-mode="values">値を選択</button>
+        <button class="filter-mode-tab ${currentMode === 'range' ? 'active' : ''}" data-mode="range">${this.i18n.t('filter.filterByRange')}</button>
+        <button class="filter-mode-tab ${currentMode === 'values' ? 'active' : ''}" data-mode="values">${this.i18n.t('filter.selectValues')}</button>
       </div>
 
       <div class="filter-mode-content">
@@ -2717,11 +2717,11 @@ class ExceLikeTable {
               <div class="range-blank-option">
                 <label class="filter-option-label">
                   <input type="checkbox" class="range-include-blank-checkbox" ${(this.state.rangeIncludeBlanks && this.state.rangeIncludeBlanks[column.key] !== undefined) ? (this.state.rangeIncludeBlanks[column.key] ? 'checked' : '') : 'checked'}>
-                  <span class="filter-option-text">空白を含む</span>
+                  <span class="filter-option-text">${this.i18n.t('filter.includeBlank')}</span>
                 </label>
               </div>
               <div class="range-description">
-                ${TableUtils.formatNumberValue(currentRange.min, decimalPlaces)} 以上 ${TableUtils.formatNumberValue(currentRange.max, decimalPlaces)} 以下の値を表示
+                ${this.i18n.t('filter.rangeDescription', {min: TableUtils.formatNumberValue(currentRange.min, decimalPlaces), max: TableUtils.formatNumberValue(currentRange.max, decimalPlaces)})}
               </div>
             </div>
           </div>
@@ -2759,7 +2759,7 @@ class ExceLikeTable {
                 <div class="filter-option">
                   <label class="filter-option-label">
                     <input type="checkbox" class="filter-checkbox" data-value="${value === null ? 'null' : value}" ${isChecked ? 'checked' : ''}>
-                    <span class="filter-option-text">${isEmptyValue ? '(空白)' : value} <span class="filter-option-count">(${this.countDataItems(column, value)}</span></span>
+                    <span class="filter-option-text">${isEmptyValue ? this.i18n.t('filter.empty') : value} <span class="filter-option-count">(${this.countDataItems(column, value)}</span></span>
                   </label>
                 </div>
               `;
@@ -2805,8 +2805,8 @@ class ExceLikeTable {
 
     return `
       <div class="filter-mode-tabs">
-        <button class="filter-mode-tab ${currentMode === 'range' ? 'active' : ''}" data-mode="range">範囲で絞り込む</button>
-        <button class="filter-mode-tab ${currentMode === 'values' ? 'active' : ''}" data-mode="values">値を選択</button>
+        <button class="filter-mode-tab ${currentMode === 'range' ? 'active' : ''}" data-mode="range">${this.i18n.t('filter.filterByRange')}</button>
+        <button class="filter-mode-tab ${currentMode === 'values' ? 'active' : ''}" data-mode="values">${this.i18n.t('filter.selectValues')}</button>
       </div>
 
       <div class="filter-mode-content">
@@ -2816,11 +2816,11 @@ class ExceLikeTable {
             <div class="date-range-filter">
               <div class="date-range-inputs">
                 <div class="date-range-input-group">
-                  <label class="date-range-label">開始日</label>
+                  <label class="date-range-label">${this.i18n.t('filter.startDate')}</label>
                   <input type="date" class="date-range-input date-range-min" value="${displayStartDate}" min="${minDate}" max="${maxDate}">
                 </div>
                 <div class="date-range-input-group">
-                  <label class="date-range-label">終了日</label>
+                  <label class="date-range-label">${this.i18n.t('filter.endDate')}</label>
                   <input type="date" class="date-range-input date-range-max" value="${displayEndDate}" min="${minDate}" max="${maxDate}">
                 </div>
               </div>
@@ -2834,7 +2834,7 @@ class ExceLikeTable {
               <div class="range-blank-option">
                 <label class="filter-option-label">
                   <input type="checkbox" class="date-range-include-blank-checkbox" ${(this.state.dateRangeIncludeBlanks && this.state.dateRangeIncludeBlanks[column.key] !== undefined) ? (this.state.dateRangeIncludeBlanks[column.key] ? 'checked' : '') : 'checked'}>
-                  <span class="filter-option-text">空白を含む</span>
+                  <span class="filter-option-text">${this.i18n.t('filter.includeBlank')}</span>
                 </label>
               </div>
             </div>
@@ -2848,11 +2848,11 @@ class ExceLikeTable {
         </div>
       <div class="date-expand-controls">
         <div class="expand-control-header">
-          <span class="expand-control-label">展開表示:</span>
+          <span class="expand-control-label">${this.i18n.t('filter.expandLabel')}</span>
           <div class="expand-control-buttons">
-            <button class="expand-control-btn active" data-level="year">年</button>
-            <button class="expand-control-btn" data-level="month">月</button>
-            <button class="expand-control-btn" data-level="day">日</button>
+            <button class="expand-control-btn active" data-level="year">${this.i18n.t('filter.year')}</button>
+            <button class="expand-control-btn" data-level="month">${this.i18n.t('filter.month')}</button>
+            <button class="expand-control-btn" data-level="day">${this.i18n.t('filter.day')}</button>
           </div>
         </div>
       </div>
@@ -2868,7 +2868,7 @@ class ExceLikeTable {
             <div class="filter-option">
               <label class="filter-option-label">
                 <input type="checkbox" class="filter-checkbox" data-value="" ${isAllSelected || currentFilters.some(f => !f || f === 'null' || f === 'undefined' || f === '') ? 'checked' : ''}>
-                <span class="filter-option-text">(空白) <span class="filter-option-count">(${emptyValues.length})</span></span>
+                <span class="filter-option-text">${this.i18n.t('filter.empty')} <span class="filter-option-count">(${emptyValues.length})</span></span>
               </label>
             </div>
           ` : ''}
@@ -2896,7 +2896,7 @@ class ExceLikeTable {
                         <div class="date-filter-item date-filter-day">
                           <label class="date-filter-label">
                             <input type="checkbox" class="date-filter-checkbox" data-value="${dateValue}" ${isAllSelected || currentFilters.includes(dateValue) ? 'checked' : ''}>
-                            <span class="date-filter-text">${new Date(dateValue).getDate()}日 <span class="filter-option-count">(${this.countDataItems(column, dateValue)})</span></span>
+                            <span class="date-filter-text">${new Date(dateValue).getDate()}${this.i18n.t('filter.dayUnit')} <span class="filter-option-count">(${this.countDataItems(column, dateValue)})</span></span>
                           </label>
                         </div>
                       `).join('')}
@@ -3030,7 +3030,7 @@ class ExceLikeTable {
         // Update description
         const descriptionEl = dropdown.querySelector('.range-description');
         if (descriptionEl) {
-          descriptionEl.textContent = `${TableUtils.formatNumberValue(minVal, decimalPlaces)} 以上 ${TableUtils.formatNumberValue(maxVal, decimalPlaces)} 以下の値を表示`;
+          descriptionEl.textContent = this.i18n.t('filter.rangeDescription', {min: TableUtils.formatNumberValue(minVal, decimalPlaces), max: TableUtils.formatNumberValue(maxVal, decimalPlaces)});
         }
       };
 
@@ -3804,7 +3804,7 @@ class ExceLikeTable {
 
     let modalContent = `
       <div class="column-settings-header">
-        <h3>列設定</h3>
+        <h3>${this.i18n.t('settings.columnSettings')}</h3>
         <button class="close-btn">×</button>
       </div>
       <div class="column-settings-content">
@@ -4883,9 +4883,9 @@ class ExceLikeTable {
     `;
 
     modalContent.innerHTML = `
-      <h3 style="margin: 0 0 16px 0; color: #333;">LocalStorage クリア確認</h3>
+      <h3 style="margin: 0 0 16px 0; color: #333;">${this.i18n.t('settings.clearStorageTitle')}</h3>
       <p style="margin: 0 0 20px 0; line-height: 1.5; color: #666;">
-        ExceLikeTable関連のLocalStorage情報を削除し、設定をデフォルトに戻します。よろしいですか？
+        ${this.i18n.t('settings.clearStorageMessage')}
       </p>
       <div style="display: flex; gap: 12px; justify-content: flex-end;">
         <button class="modal-cancel-btn" style="
@@ -4894,7 +4894,7 @@ class ExceLikeTable {
           background: white;
           border-radius: 4px;
           cursor: pointer;
-        ">キャンセル</button>
+        ">${this.i18n.t('settings.clearStorageCancel')}</button>
         <button class="modal-confirm-btn" style="
           padding: 8px 16px;
           border: none;
@@ -4902,7 +4902,7 @@ class ExceLikeTable {
           color: white;
           border-radius: 4px;
           cursor: pointer;
-        ">削除する</button>
+        ">${this.i18n.t('settings.clearStorageConfirm')}</button>
       </div>
     `;
 
@@ -4949,7 +4949,7 @@ class ExceLikeTable {
     
     // 条件付き書式プラグインが読み込まれているかチェック
     if (typeof window.ConditionalFormatting === 'undefined') {
-      alert('条件付き書式プラグインが読み込まれていません。\nプラグインファイルを読み込んでください。');
+      alert(this.i18n.t('settings.pluginNotLoaded'));
       return;
     }
     
@@ -5032,7 +5032,7 @@ class ExceLikeTable {
       this.state.sortedData = [...this.state.data];
 
       // Show success message and auto-reload
-      this.showTemporaryMessage('設定をクリアしました。ページが自動で再読み込みされます。', 'success');
+      this.showTemporaryMessage(this.i18n.t('settings.cleared'), 'success');
       
       // Auto-reload page after 0.5 seconds to ensure clean state
       setTimeout(() => {
@@ -5043,7 +5043,7 @@ class ExceLikeTable {
       
       // Emergency fallback - at least show an error message
       try {
-        this.showTemporaryMessage('設定クリア中にエラーが発生しました', 'error');
+        this.showTemporaryMessage(this.i18n.t('settings.clearError'), 'error');
       } catch (msgError) {
         console.error('Could not show error message:', msgError);
       }

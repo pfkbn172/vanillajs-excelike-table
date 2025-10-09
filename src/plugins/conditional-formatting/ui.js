@@ -34,8 +34,9 @@
   } = CF_UTILS;
   
   class ConditionalFormattingUI {
-  constructor(conditionalFormatting) {
+  constructor(conditionalFormatting, i18n) {
     this.cf = conditionalFormatting;
+    this.i18n = i18n;
     this.currentEditingRule = null;
     this.isProcessingPriorityChange = false; // ダブルクリック防止フラグ
     
@@ -43,7 +44,7 @@
     this.errorHandler = new ErrorHandler({
       logToConsole: true,
       throwErrors: false,
-      onError: (errorInfo) => this.showToast(MESSAGES.ERROR_SAVE, 'error')
+      onError: (errorInfo) => this.showToast(this.i18n.t('cf.errorSave'), 'error')
     });
   }
   
@@ -60,14 +61,14 @@
       
       modal.innerHTML = `
         <div class="modal-header">
-          <h3>条件付き書式ルール</h3>
+          <h3>${this.i18n.t('cf.title')}</h3>
           <button class="modal-close-btn" type="button">×</button>
         </div>
         <div class="modal-body">
           <div class="cf-rules-toolbar">
-            <button class="cf-btn cf-btn-primary cf-new-rule-btn" type="button">+ 新規ルール</button>
+            <button class="cf-btn cf-btn-primary cf-new-rule-btn" type="button">+ ${this.i18n.t('cf.newRule')}</button>
             <div class="cf-rules-stats">
-              <span class="cf-stats-text">ルール数: <span id="cf-stats-total">0</span></span>
+              <span class="cf-stats-text">${this.i18n.t('cf.rulesCount', {count: '<span id="cf-stats-total">0</span>'})}</span>
             </div>
           </div>
           <div class="cf-rules-list" id="cf-rules-list" style="background-color: white;">
@@ -75,8 +76,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary modal-close-btn" type="button">閉じる</button>
-          <button class="btn btn-primary cf-apply-btn" type="button">すべて適用</button>
+          <button class="btn btn-secondary modal-close-btn" type="button">${this.i18n.t('cf.close')}</button>
+          <button class="btn btn-primary cf-apply-btn" type="button">${this.i18n.t('cf.applyAll')}</button>
         </div>
       `;
       
@@ -110,7 +111,7 @@
       // 全適用ボタン
       modal.querySelector('.cf-apply-btn').addEventListener('click', () => {
         this.cf.applyRules();
-        this.showToast(MESSAGES.RULES_APPLIED);
+        this.showToast(this.i18n.t('cf.rulesApplied'));
       });
       
       // Escapeキーで閉じる
@@ -143,8 +144,8 @@
       if (rules.length === 0) {
         listContainer.innerHTML = `
           <div class="cf-empty-state">
-            <p>No conditional formatting rules yet.</p>
-            <p>Click "New Rule" to get started.</p>
+            <p>${this.i18n.t('cf.noRules')}</p>
+            <p>${this.i18n.t('cf.clickNewRule')}</p>
           </div>
         `;
         return;
@@ -156,11 +157,11 @@
             <div class="cf-rule-info">
               <div class="cf-rule-name">${StringUtils.escapeHtml(rule.name)}</div>
               <div class="cf-rule-description">
-                ${this.getRuleDescription(rule)} (優先度: ${rule.priority})
+                ${this.getRuleDescription(rule)} (${this.i18n.t('cf.priority', {priority: rule.priority})})
               </div>
             </div>
             <div class="cf-rule-preview">
-              <div class="cf-preview-cell" style="${this.getPreviewStyle(rule.format)}">サンプル</div>
+              <div class="cf-preview-cell" style="${this.getPreviewStyle(rule.format)}">${this.i18n.t('cf.sample')}</div>
             </div>
             <div class="cf-rule-actions">
               <button class="cf-btn-icon cf-edit-btn" title="Edit" data-action="edit" data-rule-id="${rule.id}">✏️</button>
@@ -281,7 +282,7 @@
   _generateDialogHTML(defaults, isEdit) {
     return `
       <div class="modal-header">
-        <h3>${isEdit ? 'ルール編集' : '新規ルール作成'}</h3>
+        <h3>${isEdit ? this.i18n.t('cf.editRule') : this.i18n.t('cf.createRule')}</h3>
         <button class="modal-close-btn" type="button">×</button>
       </div>
       <div class="modal-body">
@@ -291,8 +292,8 @@
         </form>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary modal-close-btn" type="button">キャンセル</button>
-        <button class="btn btn-primary cf-save-btn" type="button">${isEdit ? '更新' : '作成'}</button>
+        <button class="btn btn-secondary modal-close-btn" type="button">${this.i18n.t('cf.cancel')}</button>
+        <button class="btn btn-primary cf-save-btn" type="button">${isEdit ? this.i18n.t('cf.update') : this.i18n.t('cf.create')}</button>
       </div>
     `;
   }
@@ -303,43 +304,43 @@
   _generateBasicFields(defaults) {
     return `
       <div class="cf-form-row">
-        <label class="cf-form-label">ルール名:</label>
-        <input type="text" class="cf-form-input" id="cf-rule-name" value="${StringUtils.escapeHtml(defaults.name)}" placeholder="ルール名を入力" required>
+        <label class="cf-form-label">${this.i18n.t('cf.ruleName')}:</label>
+        <input type="text" class="cf-form-input" id="cf-rule-name" value="${StringUtils.escapeHtml(defaults.name)}" placeholder="${this.i18n.t('cf.ruleNamePlaceholder')}" required>
       </div>
       <div class="cf-form-row">
-        <label class="cf-form-label">列:</label>
+        <label class="cf-form-label">${this.i18n.t('cf.column')}:</label>
         <select class="cf-form-select" id="cf-rule-column" required>
-          <option value="">列を選択...</option>
+          <option value="">${this.i18n.t('cf.selectColumn')}</option>
           ${this.getColumnOptions(defaults.column)}
         </select>
       </div>
       <div class="cf-form-row">
-        <label class="cf-form-label">演算子:</label>
+        <label class="cf-form-label">${this.i18n.t('cf.operator')}:</label>
         <select class="cf-form-select" id="cf-rule-operator" required>
-          <option value="${OPERATORS.EQUALS}" ${defaults.operator === OPERATORS.EQUALS ? 'selected' : ''}>等しい (=)</option>
-          <option value="${OPERATORS.GREATER_EQUAL}" ${defaults.operator === OPERATORS.GREATER_EQUAL ? 'selected' : ''}>以上 (≥)</option>
-          <option value="${OPERATORS.LESS_EQUAL}" ${defaults.operator === OPERATORS.LESS_EQUAL ? 'selected' : ''}>以下 (≤)</option>
-          <option value="${OPERATORS.CONTAINS}" ${defaults.operator === OPERATORS.CONTAINS ? 'selected' : ''}>含む</option>
-          <option value="${OPERATORS.NOT_CONTAINS}" ${defaults.operator === OPERATORS.NOT_CONTAINS ? 'selected' : ''}>含まない</option>
+          <option value="${OPERATORS.EQUALS}" ${defaults.operator === OPERATORS.EQUALS ? 'selected' : ''}>${this.i18n.t('cf.op.equals')}</option>
+          <option value="${OPERATORS.GREATER_EQUAL}" ${defaults.operator === OPERATORS.GREATER_EQUAL ? 'selected' : ''}>${this.i18n.t('cf.op.greaterEqual')}</option>
+          <option value="${OPERATORS.LESS_EQUAL}" ${defaults.operator === OPERATORS.LESS_EQUAL ? 'selected' : ''}>${this.i18n.t('cf.op.lessEqual')}</option>
+          <option value="${OPERATORS.CONTAINS}" ${defaults.operator === OPERATORS.CONTAINS ? 'selected' : ''}>${this.i18n.t('cf.op.contains')}</option>
+          <option value="${OPERATORS.NOT_CONTAINS}" ${defaults.operator === OPERATORS.NOT_CONTAINS ? 'selected' : ''}>${this.i18n.t('cf.op.notContains')}</option>
         </select>
       </div>
       <div class="cf-form-row">
-        <label class="cf-form-label">値:</label>
-        <input type="text" class="cf-form-input" id="cf-rule-value" value="${StringUtils.escapeHtml(defaults.value)}" placeholder="比較値を入力" required>
+        <label class="cf-form-label">${this.i18n.t('cf.value')}:</label>
+        <input type="text" class="cf-form-input" id="cf-rule-value" value="${StringUtils.escapeHtml(defaults.value)}" placeholder="${this.i18n.t('cf.valuePlaceholder')}" required>
       </div>
       <div class="cf-form-row">
-        <label class="cf-form-label">データ型:</label>
+        <label class="cf-form-label">${this.i18n.t('cf.dataType')}:</label>
         <select class="cf-form-select" id="cf-rule-datatype" required>
-          <option value="${DATA_TYPES.TEXT}" ${defaults.dataType === DATA_TYPES.TEXT ? 'selected' : ''}>テキスト</option>
-          <option value="${DATA_TYPES.NUMBER}" ${defaults.dataType === DATA_TYPES.NUMBER ? 'selected' : ''}>数値</option>
-          <option value="${DATA_TYPES.DATE}" ${defaults.dataType === DATA_TYPES.DATE ? 'selected' : ''}>日付</option>
+          <option value="${DATA_TYPES.TEXT}" ${defaults.dataType === DATA_TYPES.TEXT ? 'selected' : ''}>${this.i18n.t('cf.dataType.text')}</option>
+          <option value="${DATA_TYPES.NUMBER}" ${defaults.dataType === DATA_TYPES.NUMBER ? 'selected' : ''}>${this.i18n.t('cf.dataType.number')}</option>
+          <option value="${DATA_TYPES.DATE}" ${defaults.dataType === DATA_TYPES.DATE ? 'selected' : ''}>${this.i18n.t('cf.dataType.date')}</option>
         </select>
       </div>
       <div class="cf-form-row">
-        <label class="cf-form-label">適用先:</label>
+        <label class="cf-form-label">${this.i18n.t('cf.applyTo')}:</label>
         <select class="cf-form-select" id="cf-rule-applyto" required>
-          <option value="${APPLY_TO.CELL}" ${defaults.applyTo === APPLY_TO.CELL ? 'selected' : ''}>セルのみ</option>
-          <option value="${APPLY_TO.ROW}" ${defaults.applyTo === APPLY_TO.ROW ? 'selected' : ''}>行全体</option>
+          <option value="${APPLY_TO.CELL}" ${defaults.applyTo === APPLY_TO.CELL ? 'selected' : ''}>${this.i18n.t('cf.applyTo.cell')}</option>
+          <option value="${APPLY_TO.ROW}" ${defaults.applyTo === APPLY_TO.ROW ? 'selected' : ''}>${this.i18n.t('cf.applyTo.row')}</option>
         </select>
       </div>
     `;
@@ -351,45 +352,45 @@
   _generateFormatFields(defaults) {
     return `
       <div class="cf-form-section">
-        <h4>書式</h4>
+        <h4>${this.i18n.t('cf.format')}</h4>
         <div class="cf-form-row">
-          <label class="cf-form-label">背景色:</label>
+          <label class="cf-form-label">${this.i18n.t('cf.backgroundColor')}:</label>
           <div class="cf-color-input-group">
             <input type="color" class="cf-color-input" id="cf-bg-color" value="${defaults.backgroundColor || COLORS.DEFAULT_BACKGROUND_COLOR}">
             <input type="text" class="cf-form-input cf-color-text" id="cf-bg-color-text" value="${defaults.backgroundColor || ''}" placeholder="${COLORS.DEFAULT_BACKGROUND_COLOR}" style="color: ${defaults.backgroundColor ? COLORS.TEXT_PRIMARY : COLORS.TEXT_DISABLED}">
           </div>
         </div>
         <div class="cf-form-row">
-          <label class="cf-form-label">文字色:</label>
+          <label class="cf-form-label">${this.i18n.t('cf.textColor')}:</label>
           <div class="cf-color-input-group">
             <input type="color" class="cf-color-input" id="cf-text-color" value="${defaults.color || COLORS.DEFAULT_TEXT_COLOR}">
             <input type="text" class="cf-form-input cf-color-text" id="cf-text-color-text" value="${defaults.color || COLORS.DEFAULT_TEXT_COLOR}" placeholder="${COLORS.DEFAULT_TEXT_COLOR}" style="color: ${defaults.color ? COLORS.TEXT_PRIMARY : COLORS.TEXT_DISABLED}">
           </div>
         </div>
         <div class="cf-form-row">
-          <label class="cf-form-label">文字スタイル:</label>
+          <label class="cf-form-label">${this.i18n.t('cf.textStyle')}:</label>
           <div class="cf-checkbox-group">
             <label class="cf-checkbox-label">
               <input type="checkbox" id="cf-font-weight" ${defaults.fontWeight ? 'checked' : ''}>
               <span class="cf-checkbox-custom"></span>
-              太字
+              ${this.i18n.t('cf.bold')}
             </label>
             <label class="cf-checkbox-label">
               <input type="checkbox" id="cf-font-style" ${defaults.fontStyle ? 'checked' : ''}>
               <span class="cf-checkbox-custom"></span>
-              斜体
+              ${this.i18n.t('cf.italic')}
             </label>
             <label class="cf-checkbox-label">
               <input type="checkbox" id="cf-text-decoration" ${defaults.textDecoration ? 'checked' : ''}>
               <span class="cf-checkbox-custom"></span>
-              下線
+              ${this.i18n.t('cf.underline')}
             </label>
           </div>
         </div>
         <div class="cf-form-row">
-          <label class="cf-form-label">プレビュー:</label>
+          <label class="cf-form-label">${this.i18n.t('cf.preview')}:</label>
           <div class="cf-preview-container">
-            <div class="cf-preview-cell" id="cf-preview">サンプルセル</div>
+            <div class="cf-preview-cell" id="cf-preview">${this.i18n.t('cf.previewSample')}</div>
           </div>
         </div>
       </div>
@@ -541,12 +542,12 @@
       if (this.currentEditingRule) {
         // 編集
         this.cf.manager.updateRule(this.currentEditingRule.id, formData);
-        this.showToast(MESSAGES.RULE_UPDATED);
+        this.showToast(this.i18n.t('cf.ruleUpdated'));
       } else {
         // 新規作成
         const rule = new ConditionalFormattingRule(formData);
         this.cf.manager.addRule(rule);
-        this.showToast(MESSAGES.RULE_CREATED);
+        this.showToast(this.i18n.t('cf.ruleCreated'));
       }
       
       // ルールを即座に適用
@@ -566,7 +567,7 @@
         this.showToast(error.message, 'error');
       } else {
         this.errorHandler.handle('saveRule', error);
-        this.showToast(MESSAGES.ERROR_SAVE, 'error');
+        this.showToast(this.i18n.t('cf.errorSave'), 'error');
       }
     }
   }
@@ -611,7 +612,9 @@
    */
   getRuleDescription(rule) {
     const operator = OPERATOR_SYMBOLS[rule.condition.operator] || rule.condition.operator;
-    const applyToText = rule.applyTo === APPLY_TO.ROW ? ' (entire row)' : ' (cell only)';
+    const applyToText = rule.applyTo === APPLY_TO.ROW ? 
+      ` (${this.i18n.t('cf.applyTo.row').toLowerCase()})` : 
+      ` (${this.i18n.t('cf.applyTo.cell').toLowerCase()})`;
     return `${rule.condition.column} ${operator} "${rule.condition.value}"${applyToText}`;
   }
   
@@ -649,11 +652,11 @@
       const rule = this.cf.manager.getRule(ruleId);
       if (!rule) return;
       
-      const confirmMessage = StringUtils.formatMessage(MESSAGES.CONFIRM_DELETE, rule.name);
+      const confirmMessage = this.i18n.t('cf.confirmDelete', {name: rule.name});
       if (confirm(confirmMessage)) {
         this.cf.manager.removeRule(ruleId);
         this.updateRulesList();
-        this.showToast(MESSAGES.RULE_DELETED);
+        this.showToast(this.i18n.t('cf.ruleDeleted'));
       }
     } catch (error) {
       this.errorHandler.handle('confirmDeleteRule', error);
@@ -683,7 +686,7 @@
         // ルールを自動再適用
         this.cf.applyRules();
         
-        this.showToast(MESSAGES.PRIORITY_UPDATED);
+        this.showToast(this.i18n.t('cf.priorityUpdated'));
       }
     } catch (error) {
       this.errorHandler.handle('changePriority', error);

@@ -52,7 +52,7 @@
     this.manager = new ConditionalFormattingManager({ storageKey: this.options.storageKey });
     this.evaluator = new ConditionalFormattingEvaluator();
     this.applier = new ConditionalFormattingApplier();
-    this.ui = new ConditionalFormattingUI(this);
+    this.ui = new ConditionalFormattingUI(this, this.table.i18n);
     
     this.isInitialized = false;
     
