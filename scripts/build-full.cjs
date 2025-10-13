@@ -58,7 +58,7 @@ const cssFiles = [
 ];
 
 /**
- * Clean module content - remove Node.js specific code
+ * Clean module content - remove Node.js specific code and ES module exports
  */
 function cleanModuleContent(content) {
   // Remove Node.js require blocks (multi-line)
@@ -75,6 +75,17 @@ function cleanModuleContent(content) {
 
   // Remove standalone module.exports statements
   content = content.replace(/module\.exports\s*=\s*[^;]+;?\s*/g, '');
+
+  // Remove all export statements (export default, export const, etc.)
+  content = content.replace(/^export\s+default\s+.+;?\s*$/gm, '');
+  content = content.replace(/^export\s+\{[^}]+\};?\s*$/gm, '');
+  content = content.replace(/^export\s+const\s+.+$/gm, function(match) {
+    // Convert "export const X = ..." to "const X = ..."
+    return match.replace(/^export\s+/, '');
+  });
+
+  // Remove import statements
+  content = content.replace(/^import\s+.+from\s+.+;?\s*$/gm, '');
 
   return content;
 }
