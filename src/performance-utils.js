@@ -57,19 +57,35 @@ const PerformanceUtils = {
   },
 
   /**
-   * Simple memoization for pure functions
+   * Memoization with LRU (Least Recently Used) cache limit
    * @param {Function} func - Function to memoize
    * @param {Function} keyGenerator - Optional key generator for cache
-   * @returns {Function} - Memoized function
+   * @param {number} maxSize - Maximum cache size (default: 100)
+   * @returns {Function} - Memoized function with bounded cache
    */
-  memoize(func, keyGenerator) {
+  memoize(func, keyGenerator, maxSize = 100) {
     const cache = new Map();
     return function(...args) {
       const key = keyGenerator ? keyGenerator(...args) : JSON.stringify(args);
+
+      // Cache hit
       if (cache.has(key)) {
-        return cache.get(key);
+        const value = cache.get(key);
+        // Move to end (most recently used)
+        cache.delete(key);
+        cache.set(key, value);
+        return value;
       }
+
+      // Calculate result
       const result = func.apply(this, args);
+
+      // Evict oldest entry if cache is full (LRU eviction)
+      if (cache.size >= maxSize) {
+        const firstKey = cache.keys().next().value;
+        cache.delete(firstKey);
+      }
+
       cache.set(key, result);
       return result;
     };

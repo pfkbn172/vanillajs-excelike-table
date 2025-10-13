@@ -1,9 +1,6 @@
 /**
- * DOM Utilities for secure manipulation
- * Prevents XSS attacks by using safe DOM methods
+ * DOM Utilities for DOM manipulation
  */
-
-import SecurityUtils from './security-utils.js';
 
 const DOMUtils = {
   /**
@@ -33,29 +30,18 @@ const DOMUtils = {
   },
 
   /**
-   * Create element with HTML content (sanitized)
+   * Create element with HTML content
    * @param {string} tag - HTML tag name
-   * @param {string} html - HTML content (will be sanitized)
+   * @param {string} html - HTML content
    * @param {Object} attributes - Element attributes
    * @returns {HTMLElement}
    */
   createElementWithHTML(tag, html = '', attributes = {}) {
     const element = this.createElement(tag, '', attributes);
-    // Basic HTML sanitization - in production, use DOMPurify
-    const sanitized = this.sanitizeHTML(html);
     const template = document.createElement('template');
-    template.innerHTML = sanitized;
+    template.innerHTML = html;
     element.appendChild(template.content);
     return element;
-  },
-
-  /**
-   * HTML sanitization using SecurityUtils (DOMPurify)
-   * @param {string} html - HTML to sanitize
-   * @returns {string} - Sanitized HTML
-   */
-  sanitizeHTML(html) {
-    return SecurityUtils.sanitizeHTML(html);
   },
 
   /**
@@ -66,15 +52,9 @@ const DOMUtils = {
    */
   setContent(element, content, isHTML = false) {
     if (!element) return;
-    
+
     if (isHTML) {
-      // Clear existing content
-      element.innerHTML = '';
-      // Use sanitized HTML
-      const sanitized = this.sanitizeHTML(content);
-      const template = document.createElement('template');
-      template.innerHTML = sanitized;
-      element.appendChild(template.content);
+      element.innerHTML = content;
     } else {
       element.textContent = content;
     }

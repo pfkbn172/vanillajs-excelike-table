@@ -1,0 +1,91 @@
+name: PR Quality Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  quality:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better analysis
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+        env:
+          NODE_OPTIONS: --experimental-vm-modules
+
+      - name: Check for console.log statements
+        run: |
+          if grep -r "console\.log" src/ --exclude-dir=node_modules; then
+            echo "::warning::Found console.log statements in source code"
+          fi
+
+      - name: Check for TODO comments
+        run: |
+          TODO_COUNT=$(grep -r "TODO\|FIXME\|XXX" src/ --exclude-dir=node_modules | wc -l || true)
+          echo "Found $TODO_COUNT TODO/FIXME comments"
+          echo "### TODO Comments: $TODO_COUNT" >> $GITHUB_STEP_SUMMARY
+
+      - name: Calculate PR impact
+        run: |
+          FILES_CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | wc -l)
+          LINES_ADDED=$(git diff --stat origin/${{ github.base_ref }}...HEAD | tail -1 | awk '{print $4}')
+          LINES_DELETED=$(git diff --stat origin/${{ github.base_ref }}...HEAD | tail -1 | awk '{print $6}')
+
+          echo "### PR Impact Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Files changed: $FILES_CHANGED" >> $GITHUB_STEP_SUMMARY
+          echo "- Lines added: $LINES_ADDED" >> $GITHUB_STEP_SUMMARY
+          echo "- Lines deleted: $LINES_DELETED" >> $GITHUB_STEP_SUMMARY
+
+  test-coverage-diff:
+    name: Coverage Comparison
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate PR coverage
+        run: npm run test:coverage
+        env:
+          NODE_OPTIONS: --experimental-vm-modules
+
+      - name: Store PR coverage
+        run: |
+          COVERAGE=$(grep -A 3 "All files" coverage/lcov-report/index.html | grep "%" | head -1 | sed 's/<[^>]*>//g' | awk '{print $1}' || echo "0")
+          echo "PR_COVERAGE=$COVERAGE" >> coverage-pr.txt
+          echo "### Coverage Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Current coverage: $COVERAGE%" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload PR coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-coverage
+          path: coverage-pr.txt
+          retention-days: 1

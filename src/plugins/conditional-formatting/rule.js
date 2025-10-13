@@ -18,7 +18,15 @@ class ConditionalFormattingRule {
       value: config.condition?.value || '',
       dataType: config.condition?.dataType || 'text'
     };
-    
+
+    // デバッグログ
+    if (window.__CF_DEBUG__) {
+      console.log('[CF Rule Constructor]', {
+        inputConfig: config.condition,
+        resultCondition: this.condition
+      });
+    }
+
     // 適用範囲設定
     this.applyTo = config.applyTo || 'cell'; // 'cell' または 'row'
     
@@ -57,7 +65,7 @@ class ConditionalFormattingRule {
       errors.push('比較値は必須です');
     }
     
-    if (!['greater-equal', 'less-equal', 'equals', 'contains'].includes(this.condition.operator)) {
+    if (!['equals', 'not-equals', 'greater', 'greater-equal', 'less', 'less-equal', 'contains', 'not-contains'].includes(this.condition.operator)) {
       errors.push('無効な演算子です');
     }
     
@@ -79,7 +87,7 @@ class ConditionalFormattingRule {
    * JSONシリアライゼーション
    */
   toJSON() {
-    return {
+    const result = {
       id: this.id,
       name: this.name,
       enabled: this.enabled,
@@ -90,6 +98,16 @@ class ConditionalFormattingRule {
       format: { ...this.format },
       applyTo: this.applyTo
     };
+
+    // デバッグログ
+    if (window.__CF_DEBUG__) {
+      console.log('[CF Rule toJSON]', {
+        thisCondition: this.condition,
+        resultCondition: result.condition
+      });
+    }
+
+    return result;
   }
   
   /**

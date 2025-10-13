@@ -3,7 +3,6 @@
  * Tests HTML, URL, and input sanitization across various attack vectors
  */
 
-import { jest, expect, beforeEach, describe, test } from '@jest/globals';
 
 // Mock SecurityUtils
 const SecurityUtils = {

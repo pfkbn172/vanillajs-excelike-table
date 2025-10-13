@@ -5,6 +5,479 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2025-10-13
+
+### 🧹 Documentation Cleanup
+
+**Complete removal of DOMPurify references from documentation and examples**
+
+This patch release removes all remaining DOMPurify references from non-source files following the v2.2.0 architectural decision.
+
+### 📝 What Changed
+
+**Updated Documentation:**
+- `HANDOFF.md` - Updated project history and current state
+- `SECURITY.md` - Completely rewritten to reflect application-layer security responsibility
+- `examples/test-dist-render.html` - Removed DOMPurify availability check
+- `examples/npm-installation-test.html` - Updated security section and setup instructions
+- `scripts/build-full.cjs` - Removed DOMPurify bundling code
+
+**Note**: DOMPurify references remain intentionally in:
+- `CHANGELOG.md` - Historical record of removal
+- `SECURITY.md` - Migration guide recommending DOMPurify for user applications
+- Test files - Will be updated separately
+
+### ⚠️ No Breaking Changes
+
+This is a documentation-only release. No code changes, no breaking changes.
+
+### 📦 Bundle Size
+
+Unchanged from v2.2.0: ~100KB (31% reduction from v2.1.1)
+
+---
+
+## [2.2.0] - 2025-10-13
+
+### 🎯 MAJOR CHANGES - Removed Built-in XSS Protection
+
+**Built-in XSS sanitization has been completely removed following industry standards (AG-Grid, TanStack Table, DataTables).**
+
+This release removes DOMPurify dependency and all built-in XSS protection, reducing bundle size by ~45KB and increasing render function flexibility. Security is now the application's responsibility.
+
+### ⚠️ Breaking Changes
+
+**IMPORTANT: XSS protection is no longer built-in**
+
+#### Security Responsibility Shift
+
+**Before (v2.1.1 and earlier):**
+```javascript
+// ❌ Built-in XSS protection (now removed)
+render: (value) => `<span>${value}</span>` // Was automatically sanitized
+```
+
+**After (v2.2.0+):**
+```javascript
+// ✅ Application handles security
+import DOMPurify from 'dompurify';
+
+render: (value) => DOMPurify.sanitize(`<span>${value}</span>`)
+// OR use textContent for plain text
+render: (value) => {
+  const span = document.createElement('span');
+  span.textContent = value; // Safe for user input
+  return span;
+}
+```
+
+### 🛠️ What Changed
+
+**Removed:**
+- ❌ `dompurify` dependency (~45KB)
+- ❌ `SecurityUtils.sanitizeHTML()` method
+- ❌ Automatic HTML sanitization in render functions
+- ❌ Built-in XSS protection in `dom-utils.js` and `virtual-scroll.js`
+
+**Kept:**
+- ✅ `SecurityUtils.escapeCSVFormula()` - CSV injection protection
+- ✅ `SecurityUtils.validateTableSize()` - DoS protection
+- ✅ All table functionality and features
+
+### 🎨 UI Improvements
+
+**Cursor behavior fixed:**
+- Removed misleading `cursor: pointer` from table cells and header titles
+- Cursor now only shows pointer on actually clickable elements (buttons, controls)
+- More intuitive user experience
+
+### 📦 Bundle Size Reduction
+
+- **Before**: ~145KB (with DOMPurify)
+- **After**: ~100KB (without DOMPurify)
+- **Savings**: ~45KB (~31% reduction)
+
+### 🔐 Security Best Practices
+
+**If you need XSS protection, implement it at application level:**
+
+```javascript
+// Option 1: Use DOMPurify in your application
+import DOMPurify from 'dompurify';
+
+columns: [{
+  dataIndex: 'description',
+  render: (value) => DOMPurify.sanitize(value)
+}]
+
+// Option 2: Use textContent for user input
+columns: [{
+  dataIndex: 'name',
+  render: (value) => {
+    const div = document.createElement('div');
+    div.textContent = value; // Automatically escaped
+    return div;
+  }
+}]
+
+// Option 3: Trust your data source
+columns: [{
+  dataIndex: 'status',
+  render: (status) => `<span class="badge-${status}">${status}</span>`
+  // Safe if status comes from controlled source
+}]
+```
+
+### ⬆️ Upgrade Guide
+
+**From 2.1.1:**
+
+1. **Update package:**
+```bash
+npm update vanillajs-excelike-table
+```
+
+2. **Review your render functions:**
+   - If rendering trusted data (from your database/API), no changes needed
+   - If rendering user input, add sanitization or use textContent
+
+3. **Optional: Add DOMPurify if needed:**
+```bash
+npm install dompurify
+```
+
+**Migration Examples:**
+
+```javascript
+// Trusted data - no changes needed
+render: (status) => `<span class="badge">${status}</span>`
+
+// User input - add sanitization
+import DOMPurify from 'dompurify';
+render: (userInput) => DOMPurify.sanitize(userInput)
+
+// User input - use textContent (recommended)
+render: (userName) => {
+  const span = document.createElement('span');
+  span.textContent = userName;
+  return span;
+}
+```
+
+### 📋 Files Changed
+
+- `package.json` - Removed dompurify dependency
+- `src/ExceLikeTable.js` - Removed SecurityUtils.sanitizeHTML() calls
+- `src/security-utils.js` - Removed all XSS protection, kept CSV and DoS protection
+- `src/dom-utils.js` - Removed sanitization methods
+- `src/virtual-scroll.js` - Removed HTML sanitization
+- `src/ExceLikeTable.css` - Fixed cursor styling (removed misleading pointer)
+
+### ✅ Why This Change?
+
+**Industry Standard Approach:**
+- AG-Grid: No built-in XSS protection
+- TanStack Table: No built-in XSS protection
+- DataTables: No built-in XSS protection
+- Handsontable: No built-in XSS protection
+
+**Benefits:**
+- ✅ Smaller bundle size (~45KB reduction)
+- ✅ More flexibility in render functions
+- ✅ Follows established industry patterns
+- ✅ Security responsibility at application layer (where it belongs)
+- ✅ No dependency on DOMPurify version updates
+
+---
+
+## [2.1.1] - 2025-10-12
+
+### 🐛 Bug Fixes
+
+**CRITICAL: Fixed render function HTML rendering in npm package**
+
+- **FIXED: render function HTML escaping** - render functions now automatically render HTML without requiring `renderCellHTML: true`
+- **FIXED: Missing SecurityUtils module** - Added security-utils.js to build module order (scripts/build-full.cjs:23)
+- **Root Cause**: Build script was missing security-utils.js module, and render function HTML logic was not included in npm package dist files
+- **Impact**: Users can now use `render: (value) => \`<b>${value}</b>\`` as documented in README without additional configuration
+
+### 📋 Technical Details
+
+**Problem Analysis:**
+- npm package v2.1.0 had outdated dist files missing the `column.render ||` check
+- SecurityUtils module was not included in bundled files, causing runtime errors
+- render functions returned HTML but it was escaped as text instead of rendered
+
+**Modified Code:**
+```javascript
+// src/ExceLikeTable.js:1547 & virtual-scroll.js:441
+if (column.render || this.options.renderCellHTML) {
+  td.innerHTML = SecurityUtils.sanitizeHTML(content);
+}
+```
+
+**Files Changed:**
+- `scripts/build-full.cjs:23` - Added 'security-utils.js' as first module in moduleOrder array
+- Build regenerated to include correct render function logic
+
+### ⚠️ Breaking Changes
+
+None - this fix makes the library work as documented in README.
+
+### ⬆️ Upgrade Guide
+
+**From 2.1.0 or 2.0.x:**
+
+```bash
+npm update vanillajs-excelike-table
+```
+
+**What this fixes:**
+- ✅ render functions now automatically render HTML with XSS protection
+- ✅ No need to add `renderCellHTML: true` when using render functions
+- ✅ SecurityUtils module properly included in dist files
+- ✅ Behavior matches README documentation (Line 230)
+
+**Migration:**
+- If you added `renderCellHTML: true` as a workaround, you can now remove it (when using render functions)
+- Keep `renderCellHTML: true` only if you have HTML strings directly in your data (not using render functions)
+
+---
+
+## [2.0.9] - 2025-10-12
+
+### 🐛 Bug Fixes
+
+**CRITICAL: Fixed const reassignment bug causing Vite/esbuild build failures**
+
+- **FIXED: itemHeight const reassignment** - Changed from const destructuring to let variable in virtual-scroll.js:23
+- **FIXED: buffer const reassignment** - Changed from const destructuring to let variable in virtual-scroll.js:24
+- **Root Cause**: ES6 destructuring with default values created immutable const bindings
+- **Impact**: Library now builds successfully in Vite projects with strict esbuild validation
+
+### 📋 Technical Details
+
+**Error Messages (Before Fix):**
+```
+[ERROR] Cannot assign to "itemHeight" because it is a constant
+  node_modules/vanillajs-excelike-table/dist/excelike-table.js:1990:8
+
+[ERROR] Cannot assign to "buffer" because it is a constant
+  node_modules/vanillajs-excelike-table/dist/excelike-table.js:2039:8
+```
+
+**Modified Code:**
+```javascript
+// Before (v2.0.8):
+const { container, itemHeight = 50, buffer = 5, ... } = options;
+
+// After (v2.0.9):
+const { container, renderItem, getItemData, onScroll } = options;
+let itemHeight = options.itemHeight !== undefined ? options.itemHeight : 50;
+let buffer = options.buffer !== undefined ? options.buffer : 5;
+```
+
+**Files Changed:**
+- `src/virtual-scroll.js:15-25` - Changed destructuring pattern to allow reassignment
+
+### ⚠️ Why This Happened
+
+The virtual-scroll module's `setItemHeight()` and `setBuffer()` methods attempted to reassign variables that were declared as const through destructuring. While this worked in some build environments, Vite's esbuild with strict validation correctly identified this as invalid JavaScript.
+
+### ⬆️ Upgrade Guide
+
+**From 2.0.8:**
+
+```bash
+npm update vanillajs-excelike-table
+```
+
+No code changes required - this is a transparent bug fix that resolves build errors in strict build environments (Vite, esbuild, modern bundlers).
+
+**Validation:**
+- ✅ Builds successfully in Vite projects
+- ✅ No runtime behavior changes
+- ✅ Backward compatible with all existing code
+- ✅ Virtual scroll setItemHeight() and setBuffer() methods work correctly
+
+---
+
+## [2.0.6] - 2025-10-12
+
+### 🎯 MAJOR IMPROVEMENT - Simplified Architecture
+
+**All features are now built-in! No more plugin loading required.**
+
+This release removes the plugin architecture and makes all features available out of the box with zero configuration.
+
+### ✨ What's New
+
+- **Built-in Conditional Formatting** - No manual plugin loading needed
+- **Simplified Implementation** - Just 2 lines: load CSS + JS
+- **Enhanced Build Process** - ES module syntax automatically removed from UMD bundles
+- **Cleaner Examples** - All examples updated to new simple implementation
+
+### 🔄 Breaking Changes
+
+**IMPORTANT: Manual plugin loading is no longer needed (and no longer works)**
+
+#### Before (v2.0.5 and earlier):
+```html
+<!-- ❌ OLD WAY - Don't do this anymore -->
+<script src="../src/plugins/conditional-formatting/constants.js"></script>
+<script src="../src/plugins/conditional-formatting/utils.js"></script>
+<!-- ...7 more script tags... -->
+<script type="module">
+  import ExceLikeTable from '../src/ExceLikeTable.js';
+</script>
+```
+
+#### After (v2.0.6+):
+```html
+<!-- ✅ NEW WAY - Simple and clean -->
+<script src="dist/excelike-table.browser.js"></script>
+<link rel="stylesheet" href="dist/excelike-table.css">
+<script>
+  const table = new ExceLikeTable('#container', { data, columns });
+</script>
+```
+
+### 🛠️ Technical Changes
+
+**Modified Files:**
+- `scripts/build-full.cjs` - Enhanced to remove ES module export/import syntax
+- `src/ExceLikeTable.js` - Removed intrusive plugin availability check
+- `examples/npm-installation-test.html` - Single clean example (others deleted)
+- `README.md` - Clarified that conditional formatting is built-in
+- Deleted `examples/index.html`, `examples/simple-with-i18n.html`, `examples/boundary-test.html` - Obsolete files
+
+**Build Process Improvements:**
+- ES `export` statements stripped from bundled code
+- ES `import` statements stripped from bundled code
+- UMD bundles now work correctly in browsers
+- All plugin code bundled into dist files
+
+### ✅ Validation
+
+- ✅ All features work without manual plugin loading
+- ✅ Conditional formatting accessible via table menu
+- ✅ ExceLikeTable and ConditionalFormatting available globally
+- ✅ Integration tests pass
+- ✅ Examples updated and tested
+
+### ⬆️ Upgrade Guide
+
+**From 2.0.5:**
+
+1. **Remove all plugin script tags** from your HTML
+2. **Use dist files instead** of src files
+3. **Switch from ES modules to UMD** (or use the ESM dist build)
+
+```bash
+npm update vanillajs-excelike-table
+```
+
+See [Migration Guide](#migration-from-v204-to-v206) below for detailed instructions.
+
+### 📋 Migration from v2.0.4 to v2.0.6
+
+#### Step 1: Remove Plugin Scripts
+
+**Remove these lines:**
+```html
+<script src="../src/plugins/conditional-formatting/constants.js"></script>
+<script src="../src/plugins/conditional-formatting/utils.js"></script>
+<script src="../src/plugins/conditional-formatting/performance-optimizations.js"></script>
+<script src="../src/plugins/conditional-formatting/rule.js"></script>
+<script src="../src/plugins/conditional-formatting/evaluator.js"></script>
+<script src="../src/plugins/conditional-formatting/applier.js"></script>
+<script src="../src/plugins/conditional-formatting/manager.js"></script>
+<script src="../src/plugins/conditional-formatting/ui.js"></script>
+<script src="../src/plugins/conditional-formatting/conditional-formatting.js"></script>
+```
+
+#### Step 2: Use Dist Files
+
+**Replace ES module imports with dist files:**
+
+```html
+<!-- Before -->
+<script type="module">
+  import ExceLikeTable from '../src/ExceLikeTable.js';
+</script>
+
+<!-- After -->
+<script src="../dist/excelike-table.browser.js"></script>
+<script>
+  const table = new ExceLikeTable('#container', { data, columns });
+</script>
+```
+
+#### Step 3: Done!
+
+All features work immediately. No configuration, no plugin loading, no imports.
+
+---
+
+## [2.0.5] - 2025-10-12
+
+### ✨ Enhanced - Conditional Formatting
+
+**New Operators Added:**
+- **Greater (>)**: Compare numeric values (strict inequality)
+- **Less (<)**: Compare numeric values (strict inequality)
+- **Not-Equals (≠)**: Check for non-matching values
+
+**Improved Features:**
+- ✅ 8 total comparison operators (Equals, Not-Equals, Greater, Greater-Equal, Less, Less-Equal, Contains, Not-Contains)
+- ✅ Multi-language operator translations (English, Japanese, Spanish, French, German)
+- ✅ Boundary value handling (Greater excludes boundary, Greater-Equal includes it)
+- ✅ Enhanced delete UX (no confirmation dialog, automatic reapplication)
+- ✅ LocalStorage key prefix standardization (`excelike_cf_rules`)
+
+### 🐛 Bug Fixes
+
+- **FIXED: Operator Validation** - Updated rule validation to support all 8 operators (rule.js:68)
+- **FIXED: Delete Confirmation** - Removed blocking confirm() dialog for better automation testing (ui.js:678-696)
+- **FIXED: Auto-apply After Delete** - Rules automatically reapply after deletion without manual Apply button
+- **FIXED: LocalStorage Clear** - "Clear LocalStorage" now properly removes conditional formatting rules
+
+### 🛠️ Improvements
+
+- **LocalStorage Key Standardization**: Changed from `cf_rules` to `excelike_cf_rules` for consistent prefix-based management
+- **Delete UX**: Instant deletion with automatic rule reapplication
+- **Data Type Support**: Greater/Less operators work with numbers, dates, and strings
+- **i18n Coverage**: All operators translated in 5 languages
+
+### 📋 Technical Details
+
+**Modified Files:**
+- `src/plugins/conditional-formatting/evaluator.js` - Added `_compareGreater()`, `_compareLess()`, `_compareNotEquals()`
+- `src/plugins/conditional-formatting/rule.js:68` - Updated validation array to include all 8 operators
+- `src/plugins/conditional-formatting/constants.js` - Added operator constants and symbols
+- `src/plugins/conditional-formatting/ui.js:678-696` - Removed confirm() dialog, added auto-apply
+- `src/plugins/conditional-formatting/manager.js:29` - Changed storage key to `excelike_cf_rules`
+- `src/plugins/conditional-formatting/conditional-formatting.js:35` - Updated default storage key
+- `src/i18n.js` - Added translations for Greater, Less, Not-Equals in 5 languages
+
+**Validation:**
+- ✅ Browser testing confirmed all operators work correctly
+- ✅ Boundary value behavior verified (Greater > vs Greater-Equal ≥)
+- ✅ LocalStorage persistence validated
+- ✅ Delete functionality tested without user interaction blocking
+
+### ⬆️ Upgrade Guide
+
+**From 2.0.4:**
+
+```bash
+npm update vanillajs-excelike-table
+```
+
+**Migration Note:** Conditional formatting rules will be automatically migrated from `cf_rules` to `excelike_cf_rules` on first use. No manual action required.
+
+---
+
 ## [2.0.4] - 2025-10-08
 
 ### 🔐 Security (CRITICAL)

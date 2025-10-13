@@ -1,130 +1,9 @@
 /**
  * Security Utilities Module
- * Provides XSS protection and input sanitization
- * Uses window.DOMPurify (loaded via CDN) in browser environment
+ * Provides basic security utilities for CSV export and DoS protection
  */
 
-// Get DOMPurify instance based on environment
-function getDOMPurify() {
-  // Browser environment - use global DOMPurify from CDN
-  if (typeof window !== 'undefined' && window.DOMPurify) {
-    return window.DOMPurify;
-  }
-  // Node.js environment - DOMPurify not needed for tests
-  return null;
-}
-
 const SecurityUtils = {
-  /**
-   * Sanitize HTML content to prevent XSS attacks
-   * @param {string} dirty - Unsanitized HTML string
-   * @param {Object} config - DOMPurify configuration
-   * @returns {string} - Sanitized HTML
-   */
-  sanitizeHTML(dirty, config = {}) {
-    if (!dirty || typeof dirty !== 'string') {
-      return '';
-    }
-
-    const DOMPurify = getDOMPurify();
-    if (!DOMPurify) {
-      console.warn('DOMPurify not available, returning unsanitized content');
-      return dirty;
-    }
-
-    const defaultConfig = {
-      ALLOWED_TAGS: [
-        'b', 'i', 'em', 'strong', 'u', 'span', 'div', 'p', 'br',
-        'a', 'img', 'ul', 'ol', 'li', 'table', 'thead', 'tbody',
-        'tr', 'td', 'th', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-        'code', 'pre', 'blockquote', 'hr', 'sup', 'sub'
-      ],
-      ALLOWED_ATTR: [
-        'class', 'id', 'style', 'title', 'alt', 'src', 'href',
-        'target', 'rel', 'data-*'
-      ],
-      FORBID_TAGS: [
-        'script', 'iframe', 'object', 'embed', 'form', 'input',
-        'button', 'textarea', 'select', 'option', 'base', 'link',
-        'meta', 'style', 'svg', 'math', 'marquee', 'blink'
-      ],
-      FORBID_ATTR: [
-        'onerror', 'onload', 'onclick', 'onmouseover', 'onfocus',
-        'onblur', 'onchange', 'onsubmit', 'action', 'formaction'
-      ],
-      ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
-      ALLOW_DATA_ATTR: true,
-      RETURN_TRUSTED_TYPE: false,
-      SAFE_FOR_TEMPLATES: true
-    };
-
-    const mergedConfig = { ...defaultConfig, ...config };
-
-    // Add hook to sanitize style attributes
-    DOMPurify.addHook('afterSanitizeAttributes', (node) => {
-      // Remove dangerous patterns in style attribute
-      if (node.hasAttribute('style')) {
-        const style = node.getAttribute('style');
-        // Block expression(), javascript:, vbscript:, data:, and other dangerous patterns
-        if (style && (
-          style.includes('expression(') ||
-          style.includes('javascript:') ||
-          style.includes('vbscript:') ||
-          style.includes('data:') ||
-          style.includes('import') ||
-          style.includes('@import') ||
-          style.includes('behavior:')
-        )) {
-          node.removeAttribute('style');
-        }
-      }
-
-      // Remove dangerous protocols from href and src
-      ['href', 'src', 'action', 'formaction', 'data'].forEach(attr => {
-        if (node.hasAttribute(attr)) {
-          const value = node.getAttribute(attr);
-          if (value && (
-            value.startsWith('javascript:') ||
-            value.startsWith('vbscript:') ||
-            value.startsWith('data:') ||
-            value.startsWith('file:')
-          )) {
-            node.removeAttribute(attr);
-          }
-        }
-      });
-    });
-
-    const result = DOMPurify.sanitize(dirty, mergedConfig);
-
-    // Remove hooks after use to prevent interference
-    DOMPurify.removeAllHooks();
-
-    return result;
-  },
-
-  /**
-   * Sanitize text content (no HTML allowed)
-   * @param {string} text - Unsanitized text
-   * @returns {string} - Sanitized text
-   */
-  sanitizeText(text) {
-    if (!text || typeof text !== 'string') {
-      return '';
-    }
-
-    const DOMPurify = getDOMPurify();
-    if (!DOMPurify) {
-      console.warn('DOMPurify not available, returning unsanitized content');
-      return text;
-    }
-
-    return DOMPurify.sanitize(text, {
-      ALLOWED_TAGS: [],
-      ALLOWED_ATTR: []
-    });
-  },
-
   /**
    * Escape CSV formulas to prevent injection attacks
    * Excel/LibreOffice execute formulas starting with: = + - @ \t \r
@@ -158,134 +37,97 @@ const SecurityUtils = {
   },
 
   /**
-   * Validate and sanitize URL
-   * @param {string} url - URL to validate
-   * @param {Array} allowedProtocols - Allowed URL protocols
-   * @returns {string|null} - Sanitized URL or null if invalid
+   * DoS Protection: Table size limits
    */
-  sanitizeURL(url, allowedProtocols = ['http', 'https', 'mailto']) {
-    if (!url || typeof url !== 'string') {
-      return null;
-    }
-
-    try {
-      const parsed = new URL(url);
-      const protocol = parsed.protocol.replace(':', '');
-
-      if (!allowedProtocols.includes(protocol)) {
-        console.warn(`SecurityUtils: Blocked URL with protocol ${protocol}`);
-        return null;
-      }
-
-      return parsed.href;
-    } catch (e) {
-      console.warn('SecurityUtils: Invalid URL', url);
-      return null;
-    }
+  TABLE_LIMITS: {
+    MAX_ROWS: 100000,           // 最大行数
+    MAX_COLUMNS: 100,           // 最大列数
+    MAX_CELL_SIZE: 10000,       // セル最大文字数
+    MAX_TOTAL_SIZE: 50 * 1024 * 1024  // 総データサイズ 50MB
   },
 
   /**
-   * Create safe HTML element with sanitized content
-   * @param {string} tagName - Element tag name
-   * @param {Object} attributes - Element attributes
-   * @param {string} content - HTML content to sanitize
-   * @returns {HTMLElement} - Safe element
+   * データサイズ検証（DoS攻撃対策）
+   * @param {Array} data - テーブルデータ
+   * @param {Array} columns - カラム定義
+   * @returns {Object} { valid: boolean, error?: string, stats?: Object }
    */
-  createSafeElement(tagName, attributes = {}, content = '') {
-    const element = document.createElement(tagName);
-    const DOMPurify = getDOMPurify();
+  validateTableSize(data, columns) {
+    if (!data || !Array.isArray(data)) {
+      return { valid: false, error: 'データが配列ではありません' };
+    }
 
-    // Set attributes safely
-    Object.entries(attributes).forEach(([key, value]) => {
-      if (key === 'href' || key === 'src') {
-        const safeURL = this.sanitizeURL(value);
-        if (safeURL) {
-          element.setAttribute(key, safeURL);
+    if (!columns || !Array.isArray(columns)) {
+      return { valid: false, error: 'カラム定義が配列ではありません' };
+    }
+
+    // 行数チェック
+    if (data.length > this.TABLE_LIMITS.MAX_ROWS) {
+      return {
+        valid: false,
+        error: `データ行数が上限を超えています（${data.length.toLocaleString()} > ${this.TABLE_LIMITS.MAX_ROWS.toLocaleString()}）`
+      };
+    }
+
+    // 列数チェック
+    if (columns.length > this.TABLE_LIMITS.MAX_COLUMNS) {
+      return {
+        valid: false,
+        error: `カラム数が上限を超えています（${columns.length} > ${this.TABLE_LIMITS.MAX_COLUMNS}）`
+      };
+    }
+
+    // セルサイズ・総サイズチェック
+    let totalSize = 0;
+    let maxCellSize = 0;
+    let oversizedCellLocation = null;
+
+    for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
+      const row = data[rowIndex];
+
+      for (const col of columns) {
+        const cellValue = String(row[col.dataIndex] || '');
+        const cellSize = cellValue.length;
+
+        // セル単位サイズチェック
+        if (cellSize > this.TABLE_LIMITS.MAX_CELL_SIZE) {
+          return {
+            valid: false,
+            error: `セルサイズが上限を超えています（行${rowIndex + 1}, 列"${col.title || col.dataIndex}": ${cellSize.toLocaleString()}文字 > ${this.TABLE_LIMITS.MAX_CELL_SIZE.toLocaleString()}文字）`
+          };
         }
-      } else if (key === 'style') {
-        // Sanitize inline styles
-        if (DOMPurify) {
-          element.setAttribute(key, DOMPurify.sanitize(value, { ALLOWED_TAGS: [] }));
-        } else {
-          element.setAttribute(key, value);
+
+        if (cellSize > maxCellSize) {
+          maxCellSize = cellSize;
+          oversizedCellLocation = { row: rowIndex + 1, column: col.title || col.dataIndex };
         }
-      } else {
-        element.setAttribute(key, value);
+
+        totalSize += cellSize * 2; // UTF-16 = 2 bytes/char
       }
-    });
-
-    // Set content safely
-    if (content) {
-      element.innerHTML = this.sanitizeHTML(content);
     }
 
-    return element;
-  },
+    // 総サイズチェック
+    const totalSizeMB = totalSize / 1024 / 1024;
+    const limitMB = this.TABLE_LIMITS.MAX_TOTAL_SIZE / 1024 / 1024;
 
-  /**
-   * Validate input length to prevent DoS
-   * @param {string} input - Input to validate
-   * @param {number} maxLength - Maximum allowed length
-   * @returns {boolean} - True if valid
-   */
-  validateLength(input, maxLength = 10000) {
-    if (typeof input !== 'string') {
-      return false;
-    }
-    return input.length <= maxLength;
-  },
-
-  /**
-   * Check if string contains potential XSS patterns
-   * @param {string} input - Input to check
-   * @returns {boolean} - True if suspicious patterns found
-   */
-  containsXSSPattern(input) {
-    if (!input || typeof input !== 'string') {
-      return false;
+    if (totalSize > this.TABLE_LIMITS.MAX_TOTAL_SIZE) {
+      return {
+        valid: false,
+        error: `総データサイズが上限を超えています（${totalSizeMB.toFixed(2)}MB > ${limitMB.toFixed(0)}MB）`
+      };
     }
 
-    const xssPatterns = [
-      /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
-      /javascript:/gi,
-      /on\w+\s*=/gi, // Event handlers like onclick=
-      /<iframe/gi,
-      /<object/gi,
-      /<embed/gi,
-      /eval\(/gi,
-      /expression\(/gi
-    ];
-
-    return xssPatterns.some(pattern => pattern.test(input));
-  },
-
-  /**
-   * Validate URL safety
-   * @param {string} url - URL to validate
-   * @returns {boolean} - True if URL is safe
-   */
-  isValidURL(url) {
-    if (!url || typeof url !== 'string') return false;
-
-    // Block dangerous protocols
-    const dangerousProtocols = /^(javascript|data|vbscript|file):/i;
-    if (dangerousProtocols.test(url)) return false;
-
-    // Only allow http, https, mailto, tel
-    const allowedProtocols = /^(https?|mailto|tel):/i;
-    return allowedProtocols.test(url) || url.startsWith('/') || url.startsWith('#');
-  },
-
-  /**
-   * Sanitize URL
-   * @param {string} url - URL to sanitize
-   * @returns {string} - Safe URL or about:blank
-   */
-  sanitizeURL(url) {
-    if (this.isValidURL(url)) {
-      return url;
-    }
-    return 'about:blank';
+    return {
+      valid: true,
+      stats: {
+        rows: data.length,
+        columns: columns.length,
+        totalCells: data.length * columns.length,
+        totalSizeMB: totalSizeMB.toFixed(2),
+        maxCellSize: maxCellSize,
+        maxCellLocation: oversizedCellLocation
+      }
+    };
   }
 };
 

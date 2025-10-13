@@ -3,7 +3,6 @@
  * Tests for security vulnerabilities identified in previous analysis
  */
 
-import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 import SecurityUtils from '../../../src/security-utils.js';
 
 describe('Security - XSS Prevention', () => {

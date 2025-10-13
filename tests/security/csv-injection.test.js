@@ -3,7 +3,6 @@
  * Tests protection against CSV injection attacks in Excel/LibreOffice
  */
 
-import { jest, expect, beforeEach, describe, test } from '@jest/globals';
 
 // Mock SecurityUtils escapeCSVFormula function
 const escapeCSVFormula = (value) => {

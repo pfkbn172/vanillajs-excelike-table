@@ -26,7 +26,7 @@
       onError: this.options.onError
     });
     
-    this.storageKey = options.storageKey || 'cf_rules';
+    this.storageKey = options.storageKey || 'excelike_cf_rules';
     this.rules = [];
     this.nextPriority = 1;
   }

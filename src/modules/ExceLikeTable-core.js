@@ -277,6 +277,20 @@ class ExceLikeTableCore {
       validated.data = [];
     }
 
+    // DoS Protection: データサイズ検証
+    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.validateTableSize) {
+      const sizeValidation = SecurityUtils.validateTableSize(validated.data, validated.columns);
+
+      if (!sizeValidation.valid) {
+        throw new Error(`DoS Protection: ${sizeValidation.error}`);
+      }
+
+      // 統計情報をコンソールに出力（開発時の参考用）
+      if (sizeValidation.stats && console && console.debug) {
+        console.debug('Table size validation:', sizeValidation.stats);
+      }
+    }
+
     // Validate features
     if (!Array.isArray(validated.features)) {
       validated.features = defaults.features;

@@ -4,7 +4,6 @@
 
 // Import modules - ES modules syntax
 import DOMUtils from '../../src/dom-utils.js';
-import { describe, test, expect, beforeEach } from '@jest/globals';
 
 describe('DOMUtils', () => {
   beforeEach(() => {

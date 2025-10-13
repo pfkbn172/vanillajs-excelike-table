@@ -251,7 +251,11 @@ const PaginationModule = {
   }
 };
 
-// Export for use in ExceLikeTable
+// Export for different environments
+// ES modules export
+export default PaginationModule;
+
+// CommonJS export for compatibility
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = PaginationModule;
 }

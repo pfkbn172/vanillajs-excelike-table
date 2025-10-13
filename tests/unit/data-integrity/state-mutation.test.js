@@ -3,7 +3,6 @@
  * Tests for data immutability and state consistency
  */
 
-import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 
 describe('Data Integrity - State Mutation Protection', () => {
   let container;

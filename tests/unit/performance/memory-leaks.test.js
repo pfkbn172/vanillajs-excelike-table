@@ -3,7 +3,6 @@
  * Tests for memory management and leak prevention
  */
 
-import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 
 describe('Performance - Memory Leaks', () => {
   let container;

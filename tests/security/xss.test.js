@@ -3,7 +3,6 @@
  * Tests SecurityUtils protection against various XSS attack vectors
  */
 
-import { jest, expect, beforeEach, describe, test } from '@jest/globals';
 
 // Mock SecurityUtils module
 const SecurityUtils = {

@@ -14,14 +14,26 @@ class ConditionalFormattingEvaluator {
     if (!rule.enabled) {
       return false;
     }
-    
+
     try {
       const { operator, value, dataType } = rule.condition;
       const convertedCellValue = this._convertValue(cellValue, dataType);
       const convertedRuleValue = this._convertValue(value, dataType);
-      
+
+      // デバッグログ
+      if (window.__CF_DEBUG__) {
+        console.log('[CF Evaluator]', {
+          cellValue,
+          dataType,
+          convertedCellValue,
+          ruleValue: value,
+          convertedRuleValue,
+          operator
+        });
+      }
+
       return this._performComparison(convertedCellValue, convertedRuleValue, operator);
-      
+
     } catch (error) {
       // Condition evaluation error - silently return false
       return false;
@@ -38,22 +50,24 @@ class ConditionalFormattingEvaluator {
     if (value === null || value === undefined) {
       return '';
     }
-    
+
     switch (dataType) {
       case 'number':
-        const num = parseFloat(value);
+        // 数値文字列から通貨記号、カンマ、スペースなどを除去してからパース
+        let numStr = String(value).replace(/[$,¥€£\s]/g, '');
+        const num = parseFloat(numStr);
         return isNaN(num) ? 0 : num;
-        
+
       case 'text':
         return String(value);
-        
+
       case 'date':
         if (value instanceof Date) {
           return value;
         }
         const date = new Date(value);
         return isNaN(date.getTime()) ? new Date(0) : date;
-        
+
       default:
         return String(value);
     }
@@ -70,19 +84,28 @@ class ConditionalFormattingEvaluator {
     switch (operator) {
       case 'equals':
         return this._compareEquals(cellValue, ruleValue);
-        
+
+      case 'not-equals':
+        return this._compareNotEquals(cellValue, ruleValue);
+
+      case 'greater':
+        return this._compareGreater(cellValue, ruleValue);
+
       case 'greater-equal':
         return this._compareGreaterEqual(cellValue, ruleValue);
-        
+
+      case 'less':
+        return this._compareLess(cellValue, ruleValue);
+
       case 'less-equal':
         return this._compareLessEqual(cellValue, ruleValue);
-        
+
       case 'contains':
         return this._compareContains(cellValue, ruleValue);
-        
+
       case 'not-contains':
         return this._compareNotContains(cellValue, ruleValue);
-        
+
       default:
         throw new Error(`未対応の演算子: ${operator}`);
     }
@@ -97,7 +120,30 @@ class ConditionalFormattingEvaluator {
     }
     return cellValue === ruleValue;
   }
-  
+
+  /**
+   * 等しくない比較
+   */
+  _compareNotEquals(cellValue, ruleValue) {
+    if (cellValue instanceof Date && ruleValue instanceof Date) {
+      return cellValue.getTime() !== ruleValue.getTime();
+    }
+    return cellValue !== ruleValue;
+  }
+
+  /**
+   * より大きい比較
+   */
+  _compareGreater(cellValue, ruleValue) {
+    if (typeof cellValue === 'number' && typeof ruleValue === 'number') {
+      return cellValue > ruleValue;
+    }
+    if (cellValue instanceof Date && ruleValue instanceof Date) {
+      return cellValue.getTime() > ruleValue.getTime();
+    }
+    return String(cellValue) > String(ruleValue);
+  }
+
   /**
    * 以上比較
    */
@@ -110,7 +156,20 @@ class ConditionalFormattingEvaluator {
     }
     return String(cellValue) >= String(ruleValue);
   }
-  
+
+  /**
+   * より小さい比較
+   */
+  _compareLess(cellValue, ruleValue) {
+    if (typeof cellValue === 'number' && typeof ruleValue === 'number') {
+      return cellValue < ruleValue;
+    }
+    if (cellValue instanceof Date && ruleValue instanceof Date) {
+      return cellValue.getTime() < ruleValue.getTime();
+    }
+    return String(cellValue) < String(ruleValue);
+  }
+
   /**
    * 以下比較
    */

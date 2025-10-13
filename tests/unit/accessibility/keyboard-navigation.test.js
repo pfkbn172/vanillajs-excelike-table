@@ -3,7 +3,6 @@
  * Tests for keyboard accessibility and navigation patterns
  */
 
-import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 
 describe('Accessibility - Keyboard Navigation', () => {
   let container;

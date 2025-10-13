@@ -3,8 +3,6 @@
  * Handles efficient rendering of large datasets
  */
 
-import SecurityUtils from './security-utils.js';
-
 const VirtualScroll = {
   /**
    * Create virtual scrolling instance
@@ -14,13 +12,15 @@ const VirtualScroll = {
   create(options) {
     const {
       container,
-      itemHeight = 50,
-      buffer = 5,
       renderItem,
       getItemData,
-      onScroll,
-      estimatedItemHeight = itemHeight
+      onScroll
     } = options;
+
+    // Use let for values that need to be reassigned later
+    let itemHeight = options.itemHeight !== undefined ? options.itemHeight : 50;
+    let buffer = options.buffer !== undefined ? options.buffer : 5;
+    const estimatedItemHeight = options.estimatedItemHeight !== undefined ? options.estimatedItemHeight : itemHeight;
 
     let totalItems = options.totalItems || 0;
     let scrollTop = 0;
@@ -334,7 +334,8 @@ const VirtualScroll = {
       headerHeight = 40,
       renderRow,
       onRowClick,
-      onRowDoubleClick
+      onRowDoubleClick,
+      renderCellHTML = false
     } = options;
 
     // Create virtual scroll container
@@ -434,13 +435,18 @@ const VirtualScroll = {
       if (column.render) {
         const rendered = column.render(value, rowData, column);
         if (typeof rendered === 'string') {
-          // Sanitize HTML to prevent XSS
-          cell.innerHTML = SecurityUtils.sanitizeHTML(rendered);
+          // If render function is used, always render as HTML
+          cell.innerHTML = rendered;
         } else if (rendered instanceof HTMLElement) {
           cell.appendChild(rendered);
         }
       } else {
-        cell.textContent = value ?? '';
+        if (renderCellHTML && typeof value === 'string') {
+          // Render HTML when option is enabled
+          cell.innerHTML = value;
+        } else {
+          cell.textContent = value ?? '';
+        }
       }
 
       row.appendChild(cell);

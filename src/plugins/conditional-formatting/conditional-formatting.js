@@ -29,39 +29,42 @@
   class ConditionalFormatting {
   constructor(table, options = {}) {
     this.table = table;
-    
+
     // オプションの統合
     this.options = InitializationHelper.mergeOptions(options, DEFAULT_OPTIONS);
-    this.options.storageKey = options.storageKey || 'cf_rules';
+
+    // テーブルIDベースのストレージキー生成
+    const tableId = table.tableId || 'default';
+    this.options.storageKey = options.storageKey || `excelike_${tableId}_cf_rules`;
     this.options.autoLoad = options.autoLoad !== false;
     this.options.autoApply = options.autoApply !== false;
-    
+
     // エラーハンドリングシステム
     this.errorHandler = new ErrorHandler({
       logToConsole: true,
       throwErrors: this.options.throwErrors || false,
       onError: this.options.onError
     });
-    
+
     // パフォーマンス最適化システム
     this.batchDOM = new (window.CF_PERFORMANCE.BatchDOMOperations)();
     this.cellCache = new (window.CF_PERFORMANCE.OptimizedCellCache)(1000);
     this.evaluationCache = new (window.CF_PERFORMANCE.RuleEvaluationCache)(500);
-    
+
     // コンポーネント
     this.manager = new ConditionalFormattingManager({ storageKey: this.options.storageKey });
     this.evaluator = new ConditionalFormattingEvaluator();
     this.applier = new ConditionalFormattingApplier();
     this.ui = new ConditionalFormattingUI(this, this.table.i18n);
-    
+
     this.isInitialized = false;
-    
+
     // デバウンス関数の準備
     this.debouncedApply = PerformanceUtils.debounce(
-      () => this.applyRules(), 
+      () => this.applyRules(),
       TIMING.MUTATION_DEBOUNCE
     );
-    
+
     this.init();
   }
   
@@ -251,14 +254,21 @@
   
   /**
    * セルの値を抽出
+   * @param {HTMLElement} cellElement - セル要素
+   * @param {string} dataType - データ型 ('text' | 'number' | 'date')
    */
-  extractCellValue(cellElement) {
-    // data-value属性があればそれを優先
+  extractCellValue(cellElement, dataType = 'text') {
+    // text型の場合は表示されているテキストをそのまま使う（通貨記号や書式を含む）
+    if (dataType === 'text') {
+      return cellElement.textContent?.trim() || '';
+    }
+    
+    // number/date型の場合はdata-value属性を優先（生の数値データ）
     if (cellElement.dataset.value !== undefined) {
       return cellElement.dataset.value;
     }
     
-    // テキストコンテンツを取得
+    // フォールバック
     return cellElement.textContent?.trim() || '';
   }
   
@@ -357,7 +367,9 @@
       rules.forEach(rule => {
         // 直接マッチング（セル対象）
         if (rule.applyTo === 'cell' && cellInfo.column === rule.condition.column) {
-          if (this._evaluateRuleWithCache(cellInfo.value, rule)) {
+          // ルールのdataTypeに応じてセル値を抽出
+          const cellValue = this.extractCellValue(cellInfo.element, rule.condition.dataType);
+          if (this._evaluateRuleWithCache(cellValue, rule)) {
             applicableRules.push({ rule, type: 'cell', targetCell: cellInfo });
           }
         }
@@ -365,8 +377,12 @@
         else if (rule.applyTo === 'row') {
           const rowCells = this._getRowCells(cellInfo.element);
           const triggerCell = rowCells.find(cell => cell.column === rule.condition.column);
-          if (triggerCell && this._evaluateRuleWithCache(triggerCell.value, rule)) {
-            applicableRules.push({ rule, type: 'row', targetCell: cellInfo });
+          if (triggerCell) {
+            // ルールのdataTypeに応じてセル値を抽出
+            const cellValue = this.extractCellValue(triggerCell.element, rule.condition.dataType);
+            if (this._evaluateRuleWithCache(cellValue, rule)) {
+              applicableRules.push({ rule, type: 'row', targetCell: cellInfo });
+            }
           }
         }
       });
@@ -381,7 +397,7 @@
     // Phase 2: 決定されたルールを適用
     cellFormatMap.forEach((ruleData, cellKey) => {
       const { rule, targetCell } = ruleData;
-      this.applier.applyCellFormat(targetCell.element, rule);
+      this.applier.applyToCell(targetCell.element, rule);
       totalApplications++;
     });
     

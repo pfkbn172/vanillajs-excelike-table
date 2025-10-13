@@ -32,7 +32,10 @@ window.CF_CONSTANTS.COLORS = {
 // 演算子マッピング
 window.CF_CONSTANTS.OPERATORS = {
   EQUALS: 'equals',
+  NOT_EQUALS: 'not-equals',
+  GREATER: 'greater',
   GREATER_EQUAL: 'greater-equal',
+  LESS: 'less',
   LESS_EQUAL: 'less-equal',
   CONTAINS: 'contains',
   NOT_CONTAINS: 'not-contains'
@@ -41,7 +44,10 @@ window.CF_CONSTANTS.OPERATORS = {
 // 演算子表示マップ
 window.CF_CONSTANTS.OPERATOR_SYMBOLS = {
   [window.CF_CONSTANTS.OPERATORS.EQUALS]: '=',
+  [window.CF_CONSTANTS.OPERATORS.NOT_EQUALS]: '≠',
+  [window.CF_CONSTANTS.OPERATORS.GREATER]: '>',
   [window.CF_CONSTANTS.OPERATORS.GREATER_EQUAL]: '≥',
+  [window.CF_CONSTANTS.OPERATORS.LESS]: '<',
   [window.CF_CONSTANTS.OPERATORS.LESS_EQUAL]: '≤',
   [window.CF_CONSTANTS.OPERATORS.CONTAINS]: 'contains',
   [window.CF_CONSTANTS.OPERATORS.NOT_CONTAINS]: '!contains'

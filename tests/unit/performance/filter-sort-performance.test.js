@@ -3,7 +3,6 @@
  * Tests for filtering and sorting performance with various dataset sizes
  */
 
-import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 
 describe('Performance - Filter and Sort', () => {
   let container;

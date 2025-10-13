@@ -151,6 +151,8 @@
   transform: var(--transform-gpu);
   backface-visibility: var(--backface-hidden);
   will-change: var(--will-change-transform);
+  /* ヘッダータイトル部分は通常カーソル */
+  cursor: default;
 }
 
 /* Non-pinned header styles (z-index + shadow isolation + background) */
@@ -1131,10 +1133,14 @@
   z-index: var(--z-resize-handle);
 }
 
+.resize-handle,
+.table-column-resizer {
+  cursor: ew-resize;
+}
+
 .resize-handle:hover,
 .table-column-resizer:hover {
   border-right-color: #1890ff;
-  cursor: ew-resize;
 }
 
 .table-cell {
@@ -1145,7 +1151,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   position: relative;
-  cursor: pointer;
   /* データセル全体に軽い背景色を設定 */
   background-color: #fff;
 }
@@ -1157,7 +1162,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  cursor: pointer;
 }
 
 /* Tooltip styles */
@@ -1222,7 +1226,6 @@
 
 .table tbody tr:hover {
   background-color: #f5f5f5;
-  cursor: pointer;
 }
 
 /* Pagination */

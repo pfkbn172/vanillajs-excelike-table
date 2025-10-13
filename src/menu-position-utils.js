@@ -279,10 +279,15 @@ const MenuPositionUtils = {
 };
 
 // Export for different environments
+// ES modules export
+export default MenuPositionUtils;
+
+// CommonJS export for compatibility
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = MenuPositionUtils;
 }
 
+// Browser global
 if (typeof window !== 'undefined') {
   window.MenuPositionUtils = MenuPositionUtils;
 }

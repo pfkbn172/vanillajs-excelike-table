@@ -3,7 +3,6 @@
  * Tests for edge cases and boundary values
  */
 
-import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 
 describe('Data Integrity - Boundary Conditions', () => {
   let container;

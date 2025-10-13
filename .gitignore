@@ -1,2 +1,9 @@
 node_modules/
 dist/
+coverage/
+.playwright-mcp/
+playwright-report/
+test-results/
+claudedocs/
+.claude/settings.local.json
+.serena/

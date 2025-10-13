@@ -10,7 +10,6 @@
 
 // Import utility modules
 import DOMUtils from './dom-utils.js';
-import SecurityUtils from './security-utils.js';
 import PerformanceUtils from './performance-utils.js';
 import I18nModule from './i18n.js';
 
@@ -374,7 +373,10 @@ class TableSettingsManager {
       fontSize: table.state.fontSize,
       cellPadding: table.state.cellPadding,
       pageSize: table.state.pageSize,
-      
+
+      // Language settings
+      language: table.i18n.getLocale(),
+
       // Metadata
       version: '1.0.0',
       timestamp: Date.now()
@@ -526,6 +528,11 @@ class TableSettingsManager {
         table.state.pageSize = settings.pageSize;
       }
 
+      // Apply language settings
+      if (settings.language) {
+        table.i18n.setLocale(settings.language);
+      }
+
       return true;
     } catch (error) {
       console.warn('Failed to apply table settings:', error);
@@ -604,6 +611,109 @@ class TableSettingsManager {
 }
 
 /**
+ * Storage Key Generation Utilities
+ */
+const StorageKeyUtils = {
+  /**
+   * Counter for auto-generated IDs
+   */
+  autoIdCounter: 0,
+
+  /**
+   * Generate stable table ID with 3-tier fallback
+   * @param {HTMLElement} container - Container element
+   * @param {Object} options - Options object
+   * @returns {string} Stable table ID
+   */
+  generateTableId(container, options) {
+    // 1. Explicit tableId (recommended)
+    if (options.tableId) {
+      return options.tableId;
+    }
+
+    // 2. Container ID (automatic)
+    if (container.id) {
+      return container.id;
+    }
+
+    // 3. Selector-based hash (fallback)
+    const selector = this.getStableSelector(container);
+    const hash = this.simpleHash(selector);
+
+    // Warning in development
+    if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
+      console.warn(
+        `[ExceLikeTable] tableId not specified. Generated ID from selector: table_${hash}\n` +
+        `Recommendation: Set tableId option or add id attribute to container element.`
+      );
+    }
+
+    return `table_${hash}`;
+  },
+
+  /**
+   * Get stable selector path for element
+   * @param {HTMLElement} element - Element
+   * @returns {string} Selector path
+   */
+  getStableSelector(element) {
+    const path = [];
+    let current = element;
+
+    while (current && current !== document.body && current !== document.documentElement) {
+      let selector = current.tagName.toLowerCase();
+
+      // Include class names for more stability
+      if (current.className && typeof current.className === 'string') {
+        const classes = current.className.split(' ').filter(c => c && !c.startsWith('excelike-'));
+        if (classes.length > 0) {
+          selector += `.${classes.join('.')}`;
+        }
+      }
+
+      // Include data attributes for uniqueness
+      if (current.dataset) {
+        const dataAttrs = Object.keys(current.dataset)
+          .filter(key => !key.startsWith('excelike'))
+          .slice(0, 2); // Limit to first 2 data attributes
+        dataAttrs.forEach(key => {
+          selector += `[data-${key}]`;
+        });
+      }
+
+      path.unshift(selector);
+      current = current.parentElement;
+    }
+
+    return path.join(' > ');
+  },
+
+  /**
+   * Simple hash function for strings
+   * @param {string} str - String to hash
+   * @returns {string} Hash in base36
+   */
+  simpleHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash).toString(36);
+  },
+
+  /**
+   * Generate storage key for feature
+   * @param {string} tableId - Table ID
+   * @param {string} feature - Feature name (settings, state, cf_rules, etc.)
+   * @returns {string} Storage key
+   */
+  getStorageKey(tableId, feature) {
+    return `excelike_${tableId}_${feature}`;
+  }
+};
+
+/**
  * ExceLike Table Component
  * @class ExceLikeTable
  * @description A comprehensive table component with Excel-like features including
@@ -637,13 +747,19 @@ class ExceLikeTable {
       throw new Error('Container element not found');
     }
 
+    // Generate stable table ID using StorageKeyUtils
+    const generatedTableId = StorageKeyUtils.generateTableId(this.container, options);
+
     // Simple options with all features enabled by default
     this.options = {
       // Data
       data: options.data || [],
       columns: options.columns || [],
       rowKey: options.rowKey || 'id',
-      
+
+      // Rendering
+      renderCellHTML: options.renderCellHTML || false,
+
       // Pagination (enabled by default, customizable)
       pagination: options.pagination !== false ? {
         pageSize: 10,
@@ -652,26 +768,30 @@ class ExceLikeTable {
         current: 1,
         ...(typeof options.pagination === 'object' ? options.pagination : {})
       } : false,
-      
+
       // Styling
       bordered: options.bordered !== false,
       size: options.size || 'middle',
       loading: options.loading || false,
-      
+
       // Settings persistence (enabled by default)
-      tableId: options.tableId || 'excelike-table',
+      tableId: generatedTableId,
       persistSettings: options.persistSettings !== false,
       storageAdapter: options.storageAdapter || null,
-      
-      // Any other custom options
-      ...options
+
+      // i18n
+      locale: options.locale,
+      i18nMessages: options.i18nMessages
     };
+
+    // Store tableId as instance property for easy access
+    this.tableId = this.options.tableId;
 
     // Initialize settings manager (always available)
     this.settingsManager = null;
     if (this.options.persistSettings) {
       this.settingsManager = new TableSettingsManager(
-        this.options.tableId,
+        this.tableId,
         this.options.storageAdapter
       );
     }
@@ -878,19 +998,32 @@ class ExceLikeTable {
    * 指定列のDOM要素に幅を適用
    */
   applyColumnWidthToDOM(columnKey, width) {
-    const columnIndex = this.options.columns.findIndex(col => col.key === columnKey);
-    if (columnIndex === -1) return;
+    // Find the actual DOM position of the column (handles pinned columns correctly)
+    const headerCells = this.container.querySelectorAll('th.table-header');
+    let domColumnIndex = -1;
 
-    // ヘッダーセルを更新
-    const headerCell = this.container.querySelector(`th.table-header:nth-child(${columnIndex + 1})`);
+    // Find the column by matching the column key
+    headerCells.forEach((cell, index) => {
+      // Check if this header cell corresponds to the columnKey
+      // We can check the resize handle's data-column attribute
+      const resizeHandle = cell.querySelector('.resize-handle');
+      if (resizeHandle && resizeHandle.dataset.column === columnKey) {
+        domColumnIndex = index;
+      }
+    });
+
+    if (domColumnIndex === -1) return;
+
+    // ヘッダーセルを更新 (use actual DOM position)
+    const headerCell = headerCells[domColumnIndex];
     if (headerCell) {
       headerCell.style.width = `${width}px`;
       headerCell.style.minWidth = `${width}px`;
       headerCell.style.maxWidth = `${width}px`;
     }
 
-    // ボディセルを更新
-    const bodyCells = this.container.querySelectorAll(`tbody td:nth-child(${columnIndex + 1})`);
+    // ボディセルを更新 (use actual DOM position)
+    const bodyCells = this.container.querySelectorAll(`tbody td:nth-child(${domColumnIndex + 1})`);
     bodyCells.forEach(cell => {
       cell.style.width = `${width}px`;
       cell.style.minWidth = `${width}px`;
@@ -1192,12 +1325,7 @@ class ExceLikeTable {
       // Initialize plugin system if available
       if (typeof PluginSystem !== 'undefined') {
         this.pluginSystem = PluginSystem.init(this);
-        
-        // Register column resizer plugin if available and feature is enabled
-        if (typeof ColumnResizerPlugin !== 'undefined') {
-          this.pluginSystem.registerPlugin('column-resizer', ColumnResizerPlugin);
-          this.pluginSystem.enablePlugin('column-resizer');
-        }
+        // Column resizer functionality is now built-in, no plugin needed
       } else {
         console.warn('[ExceLikeTable] PluginSystem not available');
       }
@@ -1304,15 +1432,16 @@ class ExceLikeTable {
     if (this.pluginSystem) {
       this.pluginSystem.emitHook('render:beforeRender', { fullRender: true });
     }
-    
+
     this.applyFilters();
     this.renderMenu();
     this.renderHeader();
+    this.updateTableWidth(); // テーブル幅を列幅の合計に設定
     this.renderBody();
     this.renderPagination();
     // Apply current styling after rendering
     this.applyCurrentStyling();
-    
+
     // Notify plugins after rendering
     if (this.pluginSystem) {
       this.pluginSystem.emitHook('render:afterRender', { fullRender: true });
@@ -1461,6 +1590,26 @@ class ExceLikeTable {
     this.thead.appendChild(headerRow);
   }
 
+  /**
+   * テーブル全体の幅を列幅の合計に設定
+   * table-layout: fixed の場合、明示的にテーブル幅を設定しないと
+   * ブラウザが自動的に列幅を調整してしまう
+   */
+  updateTableWidth() {
+    const orderedColumns = this.getOrderedColumns();
+    let totalWidth = 0;
+    
+    orderedColumns.all.forEach(column => {
+      const width = this.getColumnWidth(column);
+      totalWidth += width;
+    });
+    
+    // テーブル全体の幅を列幅の合計に設定
+    if (this.table) {
+      this.table.style.width = `${totalWidth}px`;
+    }
+  }
+
   createSortControls(column) {
     const sortControls = document.createElement('div');
     sortControls.className = 'sort-controls';
@@ -1522,7 +1671,13 @@ class ExceLikeTable {
         const content = column.render ? column.render(value, record) : value;
         
         if (typeof content === 'string') {
-          td.textContent = content;
+          // If render function is used, always render as HTML
+          // If no render function, respect renderCellHTML option
+          if (column.render || this.options.renderCellHTML) {
+            td.innerHTML = content;
+          } else {
+            td.textContent = content;
+          }
         } else {
           td.innerHTML = content;
         }
@@ -2175,12 +2330,16 @@ class ExceLikeTable {
         isResizing = true;
         currentColumn = columnKey;
         startX = e.clientX;
-        startWidth = this.state.columnWidths[currentColumn];
+
+        // Get actual DOM width instead of state width for accuracy
+        const th = e.target.closest('th');
+        startWidth = th ? th.offsetWidth : this.state.columnWidths[currentColumn];
+
         document.body.style.cursor = 'col-resize';
-        
+
         // Show initial tooltip
         updateTooltip(e.clientX, e.clientY, startWidth);
-        
+
         e.preventDefault();
       }
     });
@@ -4909,11 +5068,22 @@ class ExceLikeTable {
       <p style="margin: 0 0 20px 0; line-height: 1.5; color: #666;">
         ${this.i18n.t('settings.clearStorageMessage')}
       </p>
+      <div style="margin: 0 0 20px 0;">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          <input type="radio" name="clear-scope" value="this" checked style="cursor: pointer;">
+          <span style="color: #333;">${this.i18n.t('settings.clearScopeThis')}</span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 8px;">
+          <input type="radio" name="clear-scope" value="all" style="cursor: pointer;">
+          <span style="color: #333;">${this.i18n.t('settings.clearScopeAll')}</span>
+        </label>
+      </div>
       <div style="display: flex; gap: 12px; justify-content: flex-end;">
         <button class="modal-cancel-btn" style="
           padding: 8px 16px;
           border: 1px solid #ddd;
           background: white;
+          color: #333;
           border-radius: 4px;
           cursor: pointer;
         ">${this.i18n.t('settings.clearStorageCancel')}</button>
@@ -4942,7 +5112,8 @@ class ExceLikeTable {
     cancelBtn.addEventListener('click', closeModal);
     
     confirmBtn.addEventListener('click', async () => {
-      await this.clearLocalStorageData();
+      const scope = modalContent.querySelector('input[name="clear-scope"]:checked').value;
+      await this.clearLocalStorageData(scope);
       closeModal();
     });
 
@@ -4967,19 +5138,20 @@ class ExceLikeTable {
    * Show conditional formatting management screen
    */
   showConditionalFormatting() {
-    // プレースホルダー実装 - 後で条件付き書式プラグインで置き換え
-    
-    // 条件付き書式プラグインが読み込まれているかチェック
-    if (typeof window.ConditionalFormatting === 'undefined') {
-      alert(this.i18n.t('settings.pluginNotLoaded'));
-      return;
-    }
-    
-    // プラグインが初期化されていない場合は初期化
+    // 条件付き書式機能（built-in feature - bundled in dist files）
+
+    // 初期化されていない場合は初期化
     if (!this.conditionalFormatting) {
-      this.conditionalFormatting = new window.ConditionalFormatting(this);
+      // ConditionalFormattingクラスはビルドプロセスでバンドルされているため、直接利用可能
+      if (typeof window.ConditionalFormatting !== 'undefined') {
+        this.conditionalFormatting = new window.ConditionalFormatting(this);
+      } else {
+        console.error('ConditionalFormatting class not found. Please rebuild the project.');
+        alert('Conditional formatting feature is not available. Please rebuild or use the bundled dist files.');
+        return;
+      }
     }
-    
+
     // 管理画面を表示
     this.conditionalFormatting.showManagementScreen();
   }
@@ -5006,27 +5178,39 @@ class ExceLikeTable {
 
   /**
    * Clear LocalStorage data and reset to defaults
+   * @param {string} scope - 'this' for current table only, 'all' for all tables
    */
-  async clearLocalStorageData() {
+  async clearLocalStorageData(scope = 'all') {
     // Prevent recursive calls
     if (this._clearingLocalStorage) {
       return;
     }
-    
+
     this._clearingLocalStorage = true;
-    
+
     try {
       // Clear this table's settings
       if (this.settingsManager) {
         await this.clearSettings();
       }
 
-      // Clear all ExceLikeTable related LocalStorage data
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('excelike_') || key.startsWith('table-plugin-')) {
-          localStorage.removeItem(key);
-        }
-      });
+      if (scope === 'all') {
+        // Clear all ExceLikeTable related LocalStorage data
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('excelike_') || key.startsWith('excelike-') || key.startsWith('table-plugin-')) {
+            localStorage.removeItem(key);
+          }
+        });
+      } else {
+        // Clear only this table's LocalStorage data
+        const tableId = this.tableId;
+        Object.keys(localStorage).forEach(key => {
+          // Match keys that contain this table's ID
+          if (key.includes(tableId)) {
+            localStorage.removeItem(key);
+          }
+        });
+      }
 
       // Close any open filters
       this.closeFilter();

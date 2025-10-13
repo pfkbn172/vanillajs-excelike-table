@@ -186,25 +186,29 @@
   attachRuleItemEvents(container) {
     container.addEventListener('click', (e) => {
       try {
-        const action = e.target.dataset.action;
-        const ruleId = e.target.dataset.ruleId;
-        
+        // 絵文字がクリックされた場合も対応するため、closest()で親ボタンを取得
+        const button = e.target.closest('button[data-action]');
+        if (!button) return;
+
+        const action = button.dataset.action;
+        const ruleId = button.dataset.ruleId;
+
         if (!action || !ruleId) return;
-        
+
         switch (action) {
           case 'edit':
             const rule = this.cf.manager.getRule(ruleId);
             if (rule) this.showRuleDialog(rule);
             break;
-            
+
           case 'delete':
             this.confirmDeleteRule(ruleId);
             break;
-            
+
           case 'up':
             this.changePriority(ruleId, -1);
             break;
-            
+
           case 'down':
             this.changePriority(ruleId, 1);
             break;
@@ -318,7 +322,10 @@
         <label class="cf-form-label">${this.i18n.t('cf.operator')}:</label>
         <select class="cf-form-select" id="cf-rule-operator" required>
           <option value="${OPERATORS.EQUALS}" ${defaults.operator === OPERATORS.EQUALS ? 'selected' : ''}>${this.i18n.t('cf.op.equals')}</option>
+          <option value="${OPERATORS.NOT_EQUALS}" ${defaults.operator === OPERATORS.NOT_EQUALS ? 'selected' : ''}>${this.i18n.t('cf.op.notEquals')}</option>
+          <option value="${OPERATORS.GREATER}" ${defaults.operator === OPERATORS.GREATER ? 'selected' : ''}>${this.i18n.t('cf.op.greater')}</option>
           <option value="${OPERATORS.GREATER_EQUAL}" ${defaults.operator === OPERATORS.GREATER_EQUAL ? 'selected' : ''}>${this.i18n.t('cf.op.greaterEqual')}</option>
+          <option value="${OPERATORS.LESS}" ${defaults.operator === OPERATORS.LESS ? 'selected' : ''}>${this.i18n.t('cf.op.less')}</option>
           <option value="${OPERATORS.LESS_EQUAL}" ${defaults.operator === OPERATORS.LESS_EQUAL ? 'selected' : ''}>${this.i18n.t('cf.op.lessEqual')}</option>
           <option value="${OPERATORS.CONTAINS}" ${defaults.operator === OPERATORS.CONTAINS ? 'selected' : ''}>${this.i18n.t('cf.op.contains')}</option>
           <option value="${OPERATORS.NOT_CONTAINS}" ${defaults.operator === OPERATORS.NOT_CONTAINS ? 'selected' : ''}>${this.i18n.t('cf.op.notContains')}</option>
@@ -576,14 +583,25 @@
    * フォームデータを取得
    */
   getFormData() {
-    return {
+    const dataTypeElement = document.getElementById('cf-rule-datatype');
+
+    // デバッグログ
+    if (window.__CF_DEBUG__) {
+      console.log('[CF getFormData] Element check:', {
+        dataTypeElement: dataTypeElement,
+        dataTypeValue: dataTypeElement?.value,
+        dataTypeExists: !!dataTypeElement
+      });
+    }
+
+    const formData = {
       name: document.getElementById('cf-rule-name').value.trim(),
       applyTo: document.getElementById('cf-rule-applyto').value,
       condition: {
         column: document.getElementById('cf-rule-column').value,
         operator: document.getElementById('cf-rule-operator').value,
         value: document.getElementById('cf-rule-value').value.trim(),
-        dataType: document.getElementById('cf-rule-datatype').value
+        dataType: dataTypeElement?.value || 'text'  // デフォルト値を設定
       },
       format: {
         backgroundColor: document.getElementById('cf-bg-color-text').value.trim(),
@@ -593,6 +611,16 @@
         textDecoration: document.getElementById('cf-text-decoration').checked
       }
     };
+
+    // デバッグログ
+    if (window.__CF_DEBUG__) {
+      console.log('[CF getFormData] Result:', {
+        dataType: formData.condition.dataType,
+        fullCondition: formData.condition
+      });
+    }
+
+    return formData;
   }
   
   /**
@@ -645,19 +673,23 @@
   }
   
   /**
-   * 削除確認ダイアログ
+   * ルールを削除（確認ダイアログなし、即座に適用）
    */
   confirmDeleteRule(ruleId) {
     try {
       const rule = this.cf.manager.getRule(ruleId);
       if (!rule) return;
-      
-      const confirmMessage = this.i18n.t('cf.confirmDelete', {name: rule.name});
-      if (confirm(confirmMessage)) {
-        this.cf.manager.removeRule(ruleId);
-        this.updateRulesList();
-        this.showToast(this.i18n.t('cf.ruleDeleted'));
-      }
+
+      // confirm()を使わずに即座に削除
+      this.cf.manager.removeRule(ruleId);
+
+      // ルール一覧を更新
+      this.updateRulesList();
+
+      // 削除後に即座にルールを再適用
+      this.cf.applyRules();
+
+      this.showToast(this.i18n.t('cf.ruleDeleted'));
     } catch (error) {
       this.errorHandler.handle('confirmDeleteRule', error);
     }

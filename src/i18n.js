@@ -139,9 +139,17 @@ const I18nModule = {
       'settings.clearStorageMessage': 'This will delete all ExceLikeTable LocalStorage data and reset settings to default. Continue?',
       'settings.clearStorageCancel': 'Cancel',
       'settings.clearStorageConfirm': 'Delete',
+      'settings.clearScopeThis': 'Clear this table only',
+      'settings.clearScopeAll': 'Clear all tables',
       'settings.cleared': 'Settings cleared. Page will reload automatically.',
       'settings.clearError': 'Error occurred while clearing settings',
       'settings.pluginNotLoaded': 'Conditional formatting plugin is not loaded.\nPlease load the plugin file.',
+      'settings.clearThisTable': 'Clear This Table Settings',
+      'settings.clearAllTables': 'Clear All Tables Settings',
+      'settings.clearThisTableMessage': '⚠️ Warning: This will delete all settings for this table\n\nThe following settings will be lost:\n• Column widths and pinning\n• Filter and sort states\n• Conditional formatting rules\n• Font size and cell padding\n• Language preference\n\nThis action cannot be undone. Continue?',
+      'settings.clearAllTablesMessage': '⚠️ WARNING: This will delete settings for ALL tables\n\nThe following settings will be lost from ALL tables:\n• Column widths and pinning\n• Filter and sort states\n• Conditional formatting rules\n• Font size and cell padding\n• Language preferences\n\nThis action cannot be undone and affects all tables in this application. Continue?',
+      'settings.clearSuccess': 'Settings cleared successfully',
+      'settings.clearCancelled': 'Operation cancelled',
 
       // Export
       'export.csv': 'Export to CSV',
@@ -200,7 +208,10 @@ const I18nModule = {
       
       // Operators
       'cf.op.equals': 'Equals (=)',
+      'cf.op.notEquals': 'Not equals (≠)',
+      'cf.op.greater': 'Greater than (>)',
       'cf.op.greaterEqual': 'Greater than or equal (≥)',
+      'cf.op.less': 'Less than (<)',
       'cf.op.lessEqual': 'Less than or equal (≤)',
       'cf.op.contains': 'Contains',
       'cf.op.notContains': 'Does not contain',
@@ -346,9 +357,17 @@ const I18nModule = {
       'settings.clearStorageMessage': 'ExceLikeTable関連のLocalStorage情報を削除し、設定をデフォルトに戻します。よろしいですか？',
       'settings.clearStorageCancel': 'キャンセル',
       'settings.clearStorageConfirm': '削除する',
+      'settings.clearScopeThis': 'このテーブルのみクリア',
+      'settings.clearScopeAll': '全てのテーブルをクリア',
       'settings.cleared': '設定をクリアしました。ページが自動で再読み込みされます。',
       'settings.clearError': '設定クリア中にエラーが発生しました',
       'settings.pluginNotLoaded': '条件付き書式プラグインが読み込まれていません。\nプラグインファイルを読み込んでください。',
+      'settings.clearThisTable': 'このテーブルの設定をクリア',
+      'settings.clearAllTables': '全テーブルの設定をクリア',
+      'settings.clearThisTableMessage': '⚠️ 警告: このテーブルの全設定を削除します\n\n以下の設定が失われます：\n• 列幅とピン留め\n• フィルタ・ソート状態\n• 条件付き書式ルール\n• 文字サイズとセルパディング\n• 言語設定\n\nこの操作は取り消せません。続行しますか？',
+      'settings.clearAllTablesMessage': '⚠️ 警告: 全テーブルの設定を削除します\n\n以下の設定が全テーブルから失われます：\n• 列幅とピン留め\n• フィルタ・ソート状態\n• 条件付き書式ルール\n• 文字サイズとセルパディング\n• 言語設定\n\nこの操作は取り消せず、このアプリケーション内の全テーブルに影響します。続行しますか？',
+      'settings.clearSuccess': '設定をクリアしました',
+      'settings.clearCancelled': '操作をキャンセルしました',
 
       // Export
       'export.csv': 'CSVにエクスポート',
@@ -400,7 +419,10 @@ const I18nModule = {
       
       // Operators
       'cf.op.equals': '等しい (=)',
+      'cf.op.notEquals': '等しくない (≠)',
+      'cf.op.greater': 'より大きい (>)',
       'cf.op.greaterEqual': '以上 (≥)',
+      'cf.op.less': 'より小さい (<)',
       'cf.op.lessEqual': '以下 (≤)',
       'cf.op.contains': '含む',
       'cf.op.notContains': '含まない',
@@ -522,9 +544,17 @@ const I18nModule = {
       'settings.clearStorageMessage': 'Esto eliminará todos los datos de LocalStorage de ExceLikeTable y restablecerá la configuración a los valores predeterminados. ¿Continuar?',
       'settings.clearStorageCancel': 'Cancelar',
       'settings.clearStorageConfirm': 'Eliminar',
+      'settings.clearScopeThis': 'Borrar solo esta tabla',
+      'settings.clearScopeAll': 'Borrar todas las tablas',
       'settings.cleared': 'Configuración borrada. La página se recargará automáticamente.',
       'settings.clearError': 'Error al borrar la configuración',
       'settings.pluginNotLoaded': 'El plugin de formato condicional no está cargado.\nPor favor, cargue el archivo del plugin.',
+      'settings.clearThisTable': 'Borrar configuración de esta tabla',
+      'settings.clearAllTables': 'Borrar configuración de todas las tablas',
+      'settings.clearThisTableMessage': '⚠️ Advertencia: Esto eliminará toda la configuración de esta tabla\n\nSe perderán las siguientes configuraciones:\n• Anchos y fijación de columnas\n• Estados de filtro y ordenación\n• Reglas de formato condicional\n• Tamaño de fuente y relleno de celda\n• Preferencia de idioma\n\nEsta acción no se puede deshacer. ¿Continuar?',
+      'settings.clearAllTablesMessage': '⚠️ ADVERTENCIA: Esto eliminará la configuración de TODAS las tablas\n\nSe perderán de TODAS las tablas las siguientes configuraciones:\n• Anchos y fijación de columnas\n• Estados de filtro y ordenación\n• Reglas de formato condicional\n• Tamaño de fuente y relleno de celda\n• Preferencias de idioma\n\nEsta acción no se puede deshacer y afecta a todas las tablas de esta aplicación. ¿Continuar?',
+      'settings.clearSuccess': 'Configuración borrada correctamente',
+      'settings.clearCancelled': 'Operación cancelada',
 
       // Export
       'export.csv': 'Exportar a CSV',
@@ -583,7 +613,10 @@ const I18nModule = {
       
       // Operators
       'cf.op.equals': 'Igual a (=)',
+      'cf.op.notEquals': 'No igual a (≠)',
+      'cf.op.greater': 'Mayor que (>)',
       'cf.op.greaterEqual': 'Mayor o igual que (≥)',
+      'cf.op.less': 'Menor que (<)',
       'cf.op.lessEqual': 'Menor o igual que (≤)',
       'cf.op.contains': 'Contiene',
       'cf.op.notContains': 'No contiene',
@@ -698,9 +731,17 @@ const I18nModule = {
       'settings.clearStorageMessage': 'Cela supprimera toutes les données LocalStorage d\'ExceLikeTable et réinitialisera les paramètres par défaut. Continuer?',
       'settings.clearStorageCancel': 'Annuler',
       'settings.clearStorageConfirm': 'Supprimer',
+      'settings.clearScopeThis': 'Effacer cette table uniquement',
+      'settings.clearScopeAll': 'Effacer toutes les tables',
       'settings.cleared': 'Paramètres effacés. La page va se recharger automatiquement.',
       'settings.clearError': 'Erreur lors de la suppression des paramètres',
       'settings.pluginNotLoaded': 'Le plugin de formatage conditionnel n\'est pas chargé.\nVeuillez charger le fichier du plugin.',
+      'settings.clearThisTable': 'Effacer les paramètres de cette table',
+      'settings.clearAllTables': 'Effacer les paramètres de toutes les tables',
+      'settings.clearThisTableMessage': '⚠️ Avertissement: Cela supprimera tous les paramètres de cette table\n\nLes paramètres suivants seront perdus:\n• Largeurs et épinglage des colonnes\n• États de filtre et de tri\n• Règles de formatage conditionnel\n• Taille de police et relleno de cellules\n• Préférence de langue\n\nCette action ne peut pas être annulée. Continuer?',
+      'settings.clearAllTablesMessage': '⚠️ AVERTISSEMENT: Cela supprimera les paramètres de TOUTES les tables\n\nLes paramètres suivants seront perdus de TOUTES les tables:\n• Largeurs et épinglage des colonnes\n• États de filtre et de tri\n• Règles de formatage conditionnel\n• Taille de police et remplissage des cellules\n• Préférences de langue\n\nCette action ne peut pas être annulée et affecte toutes les tables de cette application. Continuer?',
+      'settings.clearSuccess': 'Paramètres effacés avec succès',
+      'settings.clearCancelled': 'Opération annulée',
 
       // Export
       'export.csv': 'Exporter en CSV',
@@ -759,7 +800,10 @@ const I18nModule = {
       
       // Operators
       'cf.op.equals': 'Égal à (=)',
+      'cf.op.notEquals': 'Non égal à (≠)',
+      'cf.op.greater': 'Supérieur à (>)',
       'cf.op.greaterEqual': 'Supérieur ou égal à (≥)',
+      'cf.op.less': 'Inférieur à (<)',
       'cf.op.lessEqual': 'Inférieur ou égal à (≤)',
       'cf.op.contains': 'Contient',
       'cf.op.notContains': 'Ne contient pas',
@@ -874,9 +918,17 @@ const I18nModule = {
       'settings.clearStorageMessage': 'Dadurch werden alle ExceLikeTable LocalStorage-Daten gelöscht und die Einstellungen auf die Standardwerte zurückgesetzt. Fortfahren?',
       'settings.clearStorageCancel': 'Abbrechen',
       'settings.clearStorageConfirm': 'Löschen',
+      'settings.clearScopeThis': 'Nur diese Tabelle löschen',
+      'settings.clearScopeAll': 'Alle Tabellen löschen',
       'settings.cleared': 'Einstellungen gelöscht. Die Seite wird automatisch neu geladen.',
       'settings.clearError': 'Fehler beim Löschen der Einstellungen',
       'settings.pluginNotLoaded': 'Das Plugin für bedingte Formatierung ist nicht geladen.\nBitte laden Sie die Plugin-Datei.',
+      'settings.clearThisTable': 'Einstellungen dieser Tabelle löschen',
+      'settings.clearAllTables': 'Einstellungen aller Tabellen löschen',
+      'settings.clearThisTableMessage': '⚠️ Warnung: Dadurch werden alle Einstellungen dieser Tabelle gelöscht\n\nDie folgenden Einstellungen gehen verloren:\n• Spaltenbreiten und Anheftung\n• Filter- und Sortierstatus\n• Regeln für bedingte Formatierung\n• Schriftgröße und Zellenabstand\n• Spracheinstellung\n\nDiese Aktion kann nicht rückgängig gemacht werden. Fortfahren?',
+      'settings.clearAllTablesMessage': '⚠️ WARNUNG: Dadurch werden die Einstellungen ALLER Tabellen gelöscht\n\nDie folgenden Einstellungen gehen von ALLEN Tabellen verloren:\n• Spaltenbreiten und Anheftung\n• Filter- und Sortierstatus\n• Regeln für bedingte Formatierung\n• Schriftgröße und Zellenabstand\n• Spracheinstellungen\n\nDiese Aktion kann nicht rückgängig gemacht werden und betrifft alle Tabellen in dieser Anwendung. Fortfahren?',
+      'settings.clearSuccess': 'Einstellungen erfolgreich gelöscht',
+      'settings.clearCancelled': 'Vorgang abgebrochen',
 
       // Export
       'export.csv': 'Als CSV exportieren',
@@ -935,7 +987,10 @@ const I18nModule = {
       
       // Operators
       'cf.op.equals': 'Gleich (=)',
+      'cf.op.notEquals': 'Ungleich (≠)',
+      'cf.op.greater': 'Größer als (>)',
       'cf.op.greaterEqual': 'Größer oder gleich (≥)',
+      'cf.op.less': 'Kleiner als (<)',
       'cf.op.lessEqual': 'Kleiner oder gleich (≤)',
       'cf.op.contains': 'Enthält',
       'cf.op.notContains': 'Enthält nicht',

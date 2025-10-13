@@ -3,7 +3,6 @@
  * Tests for Web Content Accessibility Guidelines compliance
  */
 
-import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 
 describe('Accessibility - WCAG Compliance', () => {
   let container;

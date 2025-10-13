@@ -424,7 +424,11 @@ const FilterModule = {
   }
 };
 
-// Export for use in ExceLikeTable
+// Export for different environments
+// ES modules export
+export default FilterModule;
+
+// CommonJS export for compatibility
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = FilterModule;
 }

@@ -12,7 +12,7 @@
 - 🎯 **Zero Configuration**: Just pass data and columns - everything works!
 - ⚡ **All Features Enabled**: Filtering, sorting, pagination, column pinning - all included by default
 - 🚀 **Modern ESM**: Works with Vite, Webpack, Next.js, and all modern tools
-- 📦 **Tiny Bundle**: Pure vanilla JavaScript, no dependencies
+- 📦 **Lightweight Package**: Pure vanilla JavaScript (~100KB minified)
 - 💾 **Auto-Save Settings**: User preferences saved automatically
 - 🎨 **Excel-like UX**: Familiar interface for end users
 
@@ -93,12 +93,12 @@ Copy and paste this complete HTML file - it works immediately!
 <head>
   <meta charset="UTF-8">
   <title>ExceLikeTable Demo</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vanillajs-excelike-table@2/dist/excelike-table.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vanillajs-excelike-table@latest/dist/excelike-table.css">
 </head>
 <body>
   <div id="my-table"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/vanillajs-excelike-table@2/dist/excelike-table.browser.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vanillajs-excelike-table@latest/dist/excelike-table.browser.js"></script>
   <script>
     const table = new ExceLikeTable('#my-table', {
       data: [
@@ -431,10 +431,20 @@ const table = new ExceLikeTable('#container', {
 - Saved to LocalStorage automatically
 
 ### Conditional Formatting
+- ✨ **Built-in feature** - No plugins or extra imports needed!
 - Highlight rows/cells based on rules
-- Color scales
-- Data bars
-- Icon sets
+- 8 comparison operators: Equals (=), Not-Equals (≠), Greater (>), Greater-Equal (≥), Less (<), Less-Equal (≤), Contains, Not-Contains
+- Multiple data types: Text, Number, Date
+- Custom background and text colors
+- Auto-save rules to LocalStorage
+- Multi-language support (English, Japanese, Spanish, French, German)
+- Access via table menu (⚙️) → "Conditional Formatting"
+
+### Security & Performance
+- **CSV Formula Injection Prevention**: Automatic formula escape in exports to prevent Excel injection attacks
+- **Virtual Scrolling**: High-performance rendering for large datasets (10,000+ rows)
+- **Optimized Rendering**: 60-75% performance improvement with virtual scroll
+- **Automatic Data Type Detection**: Smart detection of numbers, dates, and text without configuration
 
 ---
 
@@ -455,46 +465,6 @@ Works in all modern browsers and environments:
 
 ---
 
-## 📦 Bundle Sizes
-
-| File | Size (minified + gzip) |
-|------|------------------------|
-| excelike-table.min.js | ~45 KB |
-| excelike-table.min.css | ~12 KB |
-| **Total** | **~57 KB** |
-
----
-
-## 🚀 Migration from v1.x
-
-**v2.0.0 removes the preset system for simplicity.**
-
-### Before (v1.x)
-```javascript
-const table = new ExceLikeTable('#container', {
-  preset: 'excel',  // ❌ No longer needed
-  data: myData,
-  columns: myColumns
-});
-```
-
-### After (v2.0.0)
-```javascript
-const table = new ExceLikeTable('#container', {
-  // ✅ All features enabled by default!
-  data: myData,
-  columns: myColumns
-});
-```
-
-**Breaking Changes:**
-- ❌ `options.preset` removed
-- ❌ `options.features` removed
-- ✅ All features enabled by default
-- ✅ Simpler, cleaner API
-
----
-
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit pull requests.
@@ -509,9 +479,7 @@ MIT License - feel free to use this library in your projects!
 
 ## 📞 Support
 
-- 📖 [Documentation](https://github.com/your-username/vanillajs-excelike-table#readme)
-- 🐛 [Issue Tracker](https://github.com/your-username/vanillajs-excelike-table/issues)
-- 💬 [Discussions](https://github.com/your-username/vanillajs-excelike-table/discussions)
+For questions, issues, or feature requests, please visit the GitHub repository.
 
 ---
 

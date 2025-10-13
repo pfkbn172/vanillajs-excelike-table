@@ -3,7 +3,6 @@
  * Tests for i18n (internationalization) functionality
  */
 
-import { describe, test, expect, beforeEach } from '@jest/globals';
 
 describe('I18n - Language Switching', () => {
   let I18nModule;

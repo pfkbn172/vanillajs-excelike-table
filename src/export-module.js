@@ -654,6 +654,10 @@ const ExportModule = {
 };
 
 // Export for different environments
+// ES modules export
+export default ExportModule;
+
+// CommonJS export for compatibility
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = ExportModule;
 }
