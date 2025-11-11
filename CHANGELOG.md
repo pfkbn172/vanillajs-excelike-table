@@ -22,6 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Changed from non-existent `.filter-mode-toggle button:has-text("Range")` to `button[data-mode="range"]`
   - Impact: Test 162 "should handle filter changes while scrolling" now passes on all platforms
 
+**Tooltip HTML rendering bug**
+
+- **FIXED: Tooltip displays HTML tags literally** - Cell tooltips now show plain text instead of raw HTML tags when using `renderCellHTML` option or custom render functions (src/ExceLikeTable.js:5310-5312)
+  - Root cause: `addTooltipToCell` method used the HTML content string parameter instead of extracting rendered text from the cell element
+  - Solution: Extract actual displayed text using `element.textContent || element.innerText`
+  - Before: Tooltip showed `"<strong>Premium</strong> Laptop"` (HTML tags visible)
+  - After: Tooltip shows `"Premium Laptop"` (plain text only)
+  - Impact: Tooltips now correctly display readable text for cells with HTML formatting
+
 ### ✅ Testing
 
 - **VERIFIED: Tablet tests** - All 7 concurrent-operations tests now pass on tablet (previously 4/7, 3 timeouts)

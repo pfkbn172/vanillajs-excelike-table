@@ -1,6 +1,6 @@
 {
   "name": "vanillajs-excelike-table",
-  "version": "2.2.5",
+  "version": "2.2.6",
   "description": "Simple and powerful JavaScript table with all features enabled by default - no configuration needed!",
   "type": "module",
   "main": "./dist/excelike-table.cjs",

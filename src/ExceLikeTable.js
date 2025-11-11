@@ -5307,9 +5307,10 @@ class ExceLikeTable {
   addTooltipToCell(element, content) {
     if (!element || !content) return;
 
-    // Convert content to string if it's not already
-    const text = typeof content === 'string' ? content : String(content);
-    
+    // Extract the actual rendered text from the cell element, not the HTML content
+    // This ensures tooltips show "Premium Laptop" instead of "<strong>Premium</strong> Laptop"
+    const text = element.textContent || element.innerText || '';
+
     let tooltip = null;
 
     const showTooltip = (e) => {
