@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2025-11-11
+
+### ✨ Features
+
+**Theme System**
+
+- **NEW: Customizable table themes** - Added comprehensive theme system with 8 preset themes accessible from settings menu
+  - Themes: Classic, Modern, Professional, Ocean, Dark, Subtle, Vibrant, Nature
+  - Customizable: header background, cell background, hover colors, border colors/width
+  - Persistent: Theme preferences saved to LocalStorage
+  - CSS Variables: Dynamic theming using CSS custom properties
+  - Files: src/theme-system.js (ThemeManager class), src/ExceLikeTable.js (integration), examples/demo-theme-system.html
+
 ### 🐛 Bug Fixes
 
 **Filter dropdown viewport overflow on tablet devices**

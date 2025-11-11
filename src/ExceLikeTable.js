@@ -12,6 +12,7 @@
 import DOMUtils from './dom-utils.js';
 import PerformanceUtils from './performance-utils.js';
 import I18nModule from './i18n.js';
+import { ThemeManager } from './theme-system.js';
 
 // Configuration constants
 const TABLE_CONFIG = {
@@ -803,6 +804,9 @@ class ExceLikeTable {
       messages: options.i18nMessages || {}
     });
 
+    // Initialize theme manager
+    this.themeManager = new ThemeManager(this.tableId);
+
     // Internal state
     // Deep copy initial data to prevent external mutations
     const initialData = this._deepCopyData(this.options.data || []);
@@ -1441,6 +1445,8 @@ class ExceLikeTable {
     this.renderPagination();
     // Apply current styling after rendering
     this.applyCurrentStyling();
+    // Apply saved theme
+    this.applyTheme(this.themeManager.getCurrentPresetName(), true);
 
     // Notify plugins after rendering
     if (this.pluginSystem) {
@@ -1516,6 +1522,24 @@ class ExceLikeTable {
       </div>
     `);
     }
+
+    // Theme selection submenu
+    const currentTheme = this.themeManager.getCurrentPresetName();
+    const themePresets = this.themeManager.getPresets();
+
+    menuItems.push(`
+      <div class="table-menu-item table-menu-item-submenu" data-action="theme">
+        <i class="bi bi-palette"></i> テーマ
+        <span class="submenu-arrow">▶</span>
+        <div class="table-submenu-dropdown">
+          ${themePresets.map(theme => `
+            <div class="table-menu-item ${currentTheme === theme.id ? 'table-menu-item-current' : ''}" data-action="theme" data-theme="${theme.id}">
+              ${theme.name} ${currentTheme === theme.id ? '✓' : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `);
 
     // LocalStorage clear option (always available since plugins may store data)
     menuItems.push(`<div class="table-menu-item" data-action="clear-localstorage"><i class="bi bi-trash3-fill"></i> ${this.i18n.t('menu.clearStorage')}</div>`);
@@ -2253,6 +2277,17 @@ class ExceLikeTable {
       if (e.target.matches('[data-action="language"][data-locale]')) {
         const locale = e.target.dataset.locale;
         this.setLanguage(locale);
+        // Close menu
+        const dropdown = e.target.closest('.table-menu-dropdown');
+        dropdown.style.display = 'none';
+      }
+    });
+
+    // Theme change
+    this.tableContainer.addEventListener('click', (e) => {
+      if (e.target.matches('[data-action="theme"][data-theme]')) {
+        const theme = e.target.dataset.theme;
+        this.applyTheme(theme);
         // Close menu
         const dropdown = e.target.closest('.table-menu-dropdown');
         dropdown.style.display = 'none';
@@ -5116,6 +5151,37 @@ class ExceLikeTable {
     if (success) {
       this.renderMenu(); // Re-render menu to update current selection
       this.renderPagination(); // Re-render pagination to update text
+      this.autoSaveSettings();
+    }
+  }
+
+  applyTheme(themeName, skipMenuRender = false) {
+    console.log('[Theme] Applying theme:', themeName);
+
+    // Apply preset theme
+    this.themeManager.applyPreset(themeName);
+
+    // Get CSS variables from theme
+    const cssVars = this.themeManager.getCSSVariables();
+    console.log('[Theme] CSS Variables:', cssVars);
+
+    // Apply CSS variables to table wrapper (this.container is the wrapper itself)
+    if (this.container) {
+      Object.keys(cssVars).forEach(key => {
+        this.container.style.setProperty(key, cssVars[key]);
+      });
+      console.log('[Theme] Applied to container:', this.container.className);
+    } else {
+      console.error('[Theme] Container not found!');
+    }
+
+    // Re-render menu to update current selection (skip during initialization)
+    if (!skipMenuRender) {
+      this.renderMenu();
+    }
+
+    // Auto-save settings (theme is already saved in ThemeManager)
+    if (!skipMenuRender) {
       this.autoSaveSettings();
     }
   }

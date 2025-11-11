@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Theme System Demo - ExceLikeTable</title>
+    <link rel="stylesheet" href="../dist/excelike-table.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .demo-controls {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+        .theme-selector {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .theme-btn {
+            padding: 8px 16px;
+            border: 2px solid #d9d9d9;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .theme-btn:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+        .theme-btn.active {
+            background: #1890ff;
+            color: white;
+            border-color: #1890ff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Theme System Demo</h1>
+
+    <div class="demo-controls">
+        <h2>Select a Theme:</h2>
+        <div class="theme-selector">
+            <button class="theme-btn active" data-theme="classic">Classic</button>
+            <button class="theme-btn" data-theme="modern">Modern</button>
+            <button class="theme-btn" data-theme="professional">Professional</button>
+            <button class="theme-btn" data-theme="ocean">Ocean</button>
+            <button class="theme-btn" data-theme="dark">Dark</button>
+            <button class="theme-btn" data-theme="subtle">Subtle</button>
+            <button class="theme-btn" data-theme="vibrant">Vibrant</button>
+            <button class="theme-btn" data-theme="nature">Nature</button>
+        </div>
+    </div>
+
+    <div id="table-container"></div>
+
+    <script src="../dist/excelike-table.browser.js"></script>
+    <script type="module">
+        import { ThemeManager } from '../src/theme-system.js';
+
+        // Sample data
+        const data = [
+            { id: 1, name: 'Alice Johnson', department: 'Engineering', salary: 95000, startDate: '2020-01-15' },
+            { id: 2, name: 'Bob Smith', department: 'Marketing', salary: 72000, startDate: '2019-03-22' },
+            { id: 3, name: 'Carol Williams', department: 'Engineering', salary: 105000, startDate: '2018-07-10' },
+            { id: 4, name: 'David Brown', department: 'Sales', salary: 68000, startDate: '2021-05-03' },
+            { id: 5, name: 'Eve Davis', department: 'HR', salary: 58000, startDate: '2020-11-12' },
+            { id: 6, name: 'Frank Miller', department: 'Engineering', salary: 115000, startDate: '2017-02-28' },
+            { id: 7, name: 'Grace Wilson', department: 'Marketing', salary: 78000, startDate: '2019-09-15' },
+            { id: 8, name: 'Henry Moore', department: 'Sales', salary: 71000, startDate: '2020-04-20' }
+        ];
+
+        // Create table
+        const table = new ExceLikeTable('#table-container', {
+            data: data,
+            columns: [
+                { key: 'id', title: 'ID', dataIndex: 'id', width: 60 },
+                { key: 'name', title: 'Employee Name', dataIndex: 'name', width: 150 },
+                { key: 'department', title: 'Department', dataIndex: 'department', width: 120 },
+                { key: 'salary', title: 'Salary', dataIndex: 'salary', width: 100 },
+                { key: 'startDate', title: 'Start Date', dataIndex: 'startDate', width: 120 }
+            ],
+            pagination: {
+                pageSize: 5
+            }
+        });
+
+        // Initialize theme manager with table ID
+        const themeManager = table.themeManager;
+
+        // Function to apply theme to table
+        function applyTheme(themeName) {
+            // Apply preset theme
+            themeManager.applyPreset(themeName);
+
+            // Get CSS variables
+            const cssVars = themeManager.getCSSVariables();
+
+            // Apply CSS variables to table container (table.container is the wrapper itself)
+            if (table.container) {
+                Object.keys(cssVars).forEach(key => {
+                    table.container.style.setProperty(key, cssVars[key]);
+                });
+            }
+
+            // Update active button
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.theme === themeName) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        // Attach theme button handlers
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                applyTheme(btn.dataset.theme);
+            });
+        });
+
+        // Apply saved theme on load
+        const currentPreset = themeManager.getCurrentPresetName();
+        if (currentPreset !== 'classic') {
+            applyTheme(currentPreset);
+        }
+
+        // Make table globally accessible for debugging
+        window.table = table;
+        window.themeManager = themeManager;
+    </script>
+</body>
+</html>

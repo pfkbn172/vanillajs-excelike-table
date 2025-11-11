@@ -51,6 +51,17 @@
   --backface-hidden: hidden;
   --will-change-scroll: scroll-position;
   --will-change-transform: transform;
+
+  /* Theme variables (can be overridden dynamically) */
+  --theme-header-bg: #fafafa;
+  --theme-cell-bg: #ffffff;
+  --theme-hover-bg: #f5f5f5;
+  --theme-border-color: #d9d9d9;
+  --theme-border-width: 1px;
+  --theme-border-horizontal: 1px solid #d9d9d9;
+  --theme-border-vertical: 1px solid #d9d9d9;
+  --theme-header-text-color: rgba(0, 0, 0, 0.85);
+  --theme-cell-text-color: rgba(0, 0, 0, 0.85);
 }
 
 .excelike-table-wrapper {
@@ -121,7 +132,7 @@
 }
 
 .table.bordered {
-  border: 1px solid #d9d9d9;
+  border: var(--theme-border-width, 1px) solid var(--theme-border-color, #d9d9d9);
 }
 
 .table.small {
@@ -133,8 +144,8 @@
 }
 
 .table-header {
-  background-color: #fafafa;
-  border-bottom: 1px solid #d9d9d9;
+  background-color: var(--theme-header-bg, #fafafa);
+  border-bottom: var(--theme-border-horizontal, 1px solid #d9d9d9);
   padding: 0;
   position: sticky;
   position: -webkit-sticky;
@@ -161,7 +172,7 @@
   /* Ensures shadow display even for non-fixed columns */
   isolation: isolate;
   /* Background color required for shadow visibility */
-  background-color: #fafafa;
+  background-color: var(--theme-header-bg, #fafafa);
 }
 
 /* Ensure thead is also sticky */
@@ -170,7 +181,7 @@
   position: -webkit-sticky;
   top: 0;
   z-index: 100;
-  background-color: #fafafa;
+  background-color: var(--theme-header-bg, #fafafa);
 }
 
 /* Fix for Safari */
@@ -187,7 +198,7 @@
 }
 
 .table.bordered .table-header {
-  border-right: 1px solid #d9d9d9;
+  border-right: var(--theme-border-vertical, 1px solid #d9d9d9);
 }
 
 .table.bordered .table-header:last-child {
@@ -205,7 +216,7 @@
 
 .header-title {
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--theme-header-text-color, rgba(0, 0, 0, 0.85));
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1258,19 +1269,18 @@
 
 .table-cell {
   padding: 8px 12px;
-  color: rgba(0, 0, 0, 0.85);
+  background-color: var(--theme-cell-bg, #ffffff);
+  color: var(--theme-cell-text-color, rgba(0, 0, 0, 0.85));
   word-wrap: break-word;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   position: relative;
-  /* データセル全体に軽い背景色を設定 */
-  background-color: #fff;
 }
 
 .header-title {
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--theme-header-text-color, rgba(0, 0, 0, 0.85));
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1325,8 +1335,8 @@
 }
 
 .table.bordered .table-cell {
-  border-right: 1px solid #d9d9d9;
-  border-bottom: 1px solid #d9d9d9;
+  border-right: var(--theme-border-vertical, 1px solid #d9d9d9);
+  border-bottom: var(--theme-border-horizontal, 1px solid #d9d9d9);
 }
 
 .table.bordered .table-cell:last-child {
@@ -1338,7 +1348,7 @@
 }
 
 .table tbody tr:hover {
-  background-color: #f5f5f5;
+  background-color: var(--theme-hover-bg, #f5f5f5);
 }
 
 /* Pagination */

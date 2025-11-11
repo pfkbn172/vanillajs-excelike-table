@@ -568,11 +568,278 @@ const ThemeSystem = {
   }
 };
 
+/**
+ * Simpler Theme Manager for basic table theming
+ * Handles theme presets, custom themes, and LocalStorage persistence
+ */
+class ThemeManager {
+  constructor(tableId) {
+    this.tableId = tableId;
+    this.storageKey = `excelike-table-theme-${tableId}`;
+
+    // Default theme presets with modern, attractive designs
+    this.presets = {
+      // Current default theme
+      classic: {
+        name: 'Classic',
+        description: 'Original clean design',
+        headerBg: '#fafafa',
+        cellBg: '#ffffff',
+        hoverBg: '#f5f5f5',
+        borderColor: '#d9d9d9',
+        borderWidth: 1,
+        borderHorizontal: true,
+        borderVertical: true,
+        headerTextColor: 'rgba(0, 0, 0, 0.85)',
+        cellTextColor: 'rgba(0, 0, 0, 0.85)'
+      },
+
+      // Modern minimal design
+      modern: {
+        name: 'Modern',
+        description: 'Sleek minimal design',
+        headerBg: '#ffffff',
+        cellBg: '#ffffff',
+        hoverBg: '#f0f7ff',
+        borderColor: '#e8e8e8',
+        borderWidth: 1,
+        borderHorizontal: true,
+        borderVertical: false,  // No vertical borders for cleaner look
+        headerTextColor: 'rgba(0, 0, 0, 0.88)',
+        cellTextColor: 'rgba(0, 0, 0, 0.75)'
+      },
+
+      // Bold professional theme
+      professional: {
+        name: 'Professional',
+        description: 'Bold and structured',
+        headerBg: '#2c3e50',
+        cellBg: '#ffffff',
+        hoverBg: '#ecf0f1',
+        borderColor: '#bdc3c7',
+        borderWidth: 1,
+        borderHorizontal: true,
+        borderVertical: true,
+        headerTextColor: '#ffffff',
+        cellTextColor: 'rgba(0, 0, 0, 0.85)'
+      },
+
+      // Vibrant blue theme
+      ocean: {
+        name: 'Ocean',
+        description: 'Cool blue tones',
+        headerBg: '#1890ff',
+        cellBg: '#ffffff',
+        hoverBg: '#e6f7ff',
+        borderColor: '#91d5ff',
+        borderWidth: 1,
+        borderHorizontal: true,
+        borderVertical: true,
+        headerTextColor: '#ffffff',
+        cellTextColor: 'rgba(0, 0, 0, 0.85)'
+      },
+
+      // Dark theme
+      dark: {
+        name: 'Dark',
+        description: 'Easy on the eyes',
+        headerBg: '#1f1f1f',
+        cellBg: '#2d2d2d',
+        hoverBg: '#3a3a3a',
+        borderColor: '#404040',
+        borderWidth: 1,
+        borderHorizontal: true,
+        borderVertical: true,
+        headerTextColor: '#e0e0e0',
+        cellTextColor: '#d0d0d0'
+      },
+
+      // Minimalist design with subtle colors
+      subtle: {
+        name: 'Subtle',
+        description: 'Soft and minimal',
+        headerBg: '#e0f7fa',
+        cellBg: '#ffffff',
+        hoverBg: '#f1f3f5',
+        borderColor: '#dee2e6',
+        borderWidth: 1,
+        borderHorizontal: true,
+        borderVertical: false,
+        headerTextColor: 'rgba(0, 0, 0, 0.75)',
+        cellTextColor: 'rgba(0, 0, 0, 0.70)'
+      },
+
+      // Colorful accent theme
+      vibrant: {
+        name: 'Vibrant',
+        description: 'Energetic and colorful',
+        headerBg: '#ff6600',
+        cellBg: '#fffef0',
+        hoverBg: '#fff9e6',
+        borderColor: '#ffd699',
+        borderWidth: 2,
+        borderHorizontal: true,
+        borderVertical: true,
+        headerTextColor: '#ffffff',
+        cellTextColor: 'rgba(0, 0, 0, 0.85)'
+      },
+
+      // Green nature theme
+      nature: {
+        name: 'Nature',
+        description: 'Fresh green tones',
+        headerBg: '#52c41a',
+        cellBg: '#ffffff',
+        hoverBg: '#f6ffed',
+        borderColor: '#b7eb8f',
+        borderWidth: 1,
+        borderHorizontal: true,
+        borderVertical: true,
+        headerTextColor: '#ffffff',
+        cellTextColor: 'rgba(0, 0, 0, 0.85)'
+      }
+    };
+
+    // Load saved theme or use default
+    this.currentTheme = this.loadTheme() || { preset: 'classic', custom: null };
+  }
+
+  /**
+   * Get the active theme configuration
+   */
+  getActiveTheme() {
+    if (this.currentTheme.custom) {
+      return this.currentTheme.custom;
+    }
+    return this.presets[this.currentTheme.preset] || this.presets.classic;
+  }
+
+  /**
+   * Apply a preset theme
+   */
+  applyPreset(presetName) {
+    if (!this.presets[presetName]) {
+      console.error(`Theme preset "${presetName}" not found`);
+      return false;
+    }
+
+    this.currentTheme = {
+      preset: presetName,
+      custom: null
+    };
+
+    this.saveTheme();
+    return true;
+  }
+
+  /**
+   * Apply a custom theme
+   */
+  applyCustomTheme(customTheme) {
+    // Validate and merge with defaults
+    const theme = {
+      ...this.presets.classic,
+      ...customTheme
+    };
+
+    this.currentTheme = {
+      preset: 'custom',
+      custom: theme
+    };
+
+    this.saveTheme();
+    return theme;
+  }
+
+  /**
+   * Get CSS variable object for applying to DOM
+   */
+  getCSSVariables() {
+    const theme = this.getActiveTheme();
+
+    return {
+      '--theme-header-bg': theme.headerBg,
+      '--theme-cell-bg': theme.cellBg,
+      '--theme-hover-bg': theme.hoverBg,
+      '--theme-border-color': theme.borderColor,
+      '--theme-border-width': `${theme.borderWidth}px`,
+      '--theme-border-horizontal': theme.borderHorizontal ? `${theme.borderWidth}px solid ${theme.borderColor}` : 'none',
+      '--theme-border-vertical': theme.borderVertical ? `${theme.borderWidth}px solid ${theme.borderColor}` : 'none',
+      '--theme-header-text-color': theme.headerTextColor,
+      '--theme-cell-text-color': theme.cellTextColor
+    };
+  }
+
+  /**
+   * Save theme to LocalStorage
+   */
+  saveTheme() {
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(this.currentTheme));
+      return true;
+    } catch (error) {
+      console.error('Failed to save theme to LocalStorage:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Load theme from LocalStorage
+   */
+  loadTheme() {
+    try {
+      const saved = localStorage.getItem(this.storageKey);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (error) {
+      console.error('Failed to load theme from LocalStorage:', error);
+    }
+    return null;
+  }
+
+  /**
+   * Reset to default theme
+   */
+  reset() {
+    this.currentTheme = {
+      preset: 'classic',
+      custom: null
+    };
+    this.saveTheme();
+  }
+
+  /**
+   * Get all available presets
+   */
+  getPresets() {
+    return Object.keys(this.presets).map(key => ({
+      id: key,
+      ...this.presets[key]
+    }));
+  }
+
+  /**
+   * Check if a custom theme is active
+   */
+  isCustomTheme() {
+    return this.currentTheme.preset === 'custom';
+  }
+
+  /**
+   * Get current preset name
+   */
+  getCurrentPresetName() {
+    return this.currentTheme.preset;
+  }
+}
+
 // Export for different environments
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = ThemeSystem;
+  module.exports = { ThemeSystem, ThemeManager };
 }
 
 if (typeof window !== 'undefined') {
   window.ThemeSystem = ThemeSystem;
+  window.ThemeManager = ThemeManager;
 }
