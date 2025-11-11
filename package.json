@@ -1,6 +1,6 @@
 {
   "name": "vanillajs-excelike-table",
-  "version": "2.2.3",
+  "version": "2.2.5",
   "description": "Simple and powerful JavaScript table with all features enabled by default - no configuration needed!",
   "type": "module",
   "main": "./dist/excelike-table.cjs",
@@ -75,7 +75,7 @@
     "@babel/plugin-proposal-class-properties": "^7.18.0",
     "@babel/plugin-proposal-object-rest-spread": "^7.20.0",
     "@babel/preset-env": "^7.22.0",
-    "@playwright/test": "^1.56.0",
+    "@playwright/test": "^1.56.1",
     "babel-jest": "^29.5.0",
     "jest": "^29.5.0",
     "jest-environment-jsdom": "^29.5.0",

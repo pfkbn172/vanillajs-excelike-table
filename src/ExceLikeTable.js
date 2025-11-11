@@ -1864,19 +1864,26 @@ class ExceLikeTable {
             // Date hierarchy filter logic
             filtered = filtered.filter(record => {
               const value = record[column.dataIndex];
-              
+
               // Handle empty values - check if empty value is in the filter list
               if (!value) {
                 return filters.some(f => !f || f === 'null' || f === 'undefined' || f === '');
               }
-              
+
               const date = new Date(value);
               const year = date.getFullYear().toString();
-              const month = date.toLocaleString('default', { month: 'long' });
-              
+              const monthIndex = date.getMonth(); // 0-11
+              const monthNames = this.i18n.getMessage('filter.monthNames', this.i18n.currentLocale) ||
+                                ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+              const month = monthNames[monthIndex];
+
               return filters.some(filterValue => {
+                // Check if year is selected
                 if (filterValue === year) return true;
+                // Check if month is selected (year-month format)
                 if (filterValue === `${year}-${month}`) return true;
+                // Check if individual date is selected (exact match)
+                if (filterValue === value) return true;
                 return false;
               });
             });
@@ -2485,10 +2492,23 @@ class ExceLikeTable {
     }
 
     this.closeFilter();
-    this.state.openFilter = columnKey;
-    
-    const column = this.options.columns.find(col => col.key === columnKey);
-    this.showFilterDropdown(column, button);
+
+    // Wait for the old dropdown to be fully removed before creating new one
+    // This prevents the closed dropdown from intercepting click events
+    const waitForDropdownRemoval = () => {
+      const existingDropdown = document.querySelector('.filter-dropdown-wrapper');
+      if (existingDropdown) {
+        // If dropdown still exists, check again in next frame
+        requestAnimationFrame(waitForDropdownRemoval);
+      } else {
+        // Dropdown is gone, safe to create new one
+        this.state.openFilter = columnKey;
+        const column = this.options.columns.find(col => col.key === columnKey);
+        this.showFilterDropdown(column, button);
+      }
+    };
+
+    requestAnimationFrame(waitForDropdownRemoval);
   }
 
   showFilterDropdown(column, button) {
@@ -2521,6 +2541,21 @@ class ExceLikeTable {
     // Filters will only be applied when user clicks OK button
     const currentMode = this.state.filterModes?.[column.key];
 
+    // Initialize filterModes if not set to ensure UI and applyFilters() use same default
+    if (!this.state.filterModes) {
+      this.state.filterModes = {};
+    }
+    if (this.state.filterModes[column.key] === undefined) {
+      // Set default mode based on column type
+      if (column.filterType === 'date-hierarchy') {
+        this.state.filterModes[column.key] = 'values'; // Date filters default to values (hierarchical selection)
+      } else if (this.isNumericColumn(column)) {
+        this.state.filterModes[column.key] = 'range'; // Numeric filters default to range
+      } else {
+        this.state.filterModes[column.key] = 'values'; // Text filters use values mode
+      }
+    }
+
     const currentFilters = this.state.filters[column.key] || [];
 
     let dropdownContent = '';
@@ -2534,82 +2569,223 @@ class ExceLikeTable {
       dropdownContent = this.createTextFilter(uniqueValues, currentFilters, column);
     }
 
-    dropdown.innerHTML = `
-      <div class="filter-dropdown">
-        <div class="filter-dropdown-header">
-          <div class="filter-dropdown-title">${column.title}</div>
-        </div>
-        ${dropdownContent}
-        <div class="filter-dropdown-footer">
-          <button class="filter-btn-clear-column">
-            🔄 ${this.i18n.t('filter.clearColumn')}
-          </button>
-          <div class="filter-footer-actions">
-            <button class="filter-btn-cancel">${this.i18n.t('filter.cancel')}</button>
-            <button class="filter-btn-confirm">${this.i18n.t('filter.ok')}</button>
-          </div>
+    // Detect mobile viewport for layout optimization
+    const isMobile = window.innerWidth <= 480;
+
+    // Footer HTML template
+    const footerHTML = `
+      <div class="filter-dropdown-footer">
+        <button class="filter-btn-clear-column">
+          🔄 ${this.i18n.t('filter.clearColumn')}
+        </button>
+        <div class="filter-footer-actions">
+          <button class="filter-btn-cancel">${this.i18n.t('filter.cancel')}</button>
+          <button class="filter-btn-confirm">${this.i18n.t('filter.ok')}</button>
         </div>
       </div>
     `;
+
+    // On mobile, place footer inside content area (scrollable)
+    // On desktop/tablet, place footer outside content area (fixed at bottom)
+    if (isMobile) {
+      dropdown.innerHTML = `
+        <div class="filter-dropdown filter-dropdown-mobile">
+          <div class="filter-dropdown-header">
+            <div class="filter-dropdown-title">${column.title}</div>
+          </div>
+          ${dropdownContent}
+        </div>
+      `;
+
+      // Inject footer at the end of the main scrollable area
+      // For filters with mode tabs (date/numeric), inject after .filter-mode-content
+      // For simple text filters, inject after .filter-dropdown-content
+      const modeContent = dropdown.querySelector('.filter-mode-content');
+      const contentArea = dropdown.querySelector('.filter-dropdown-content');
+
+      if (modeContent) {
+        // Date or numeric filter with tabs - inject after mode content
+        modeContent.insertAdjacentHTML('afterend', `<div class="filter-dropdown-mobile-footer-wrapper">${footerHTML}</div>`);
+      } else if (contentArea) {
+        // Simple text filter - inject after content area
+        contentArea.insertAdjacentHTML('afterend', `<div class="filter-dropdown-mobile-footer-wrapper">${footerHTML}</div>`);
+      }
+    } else {
+      // Desktop/tablet layout: footer fixed at bottom
+      dropdown.innerHTML = `
+        <div class="filter-dropdown">
+          <div class="filter-dropdown-header">
+            <div class="filter-dropdown-title">${column.title}</div>
+          </div>
+          ${dropdownContent}
+          ${footerHTML}
+        </div>
+      `;
+    }
     
 
     // Position dropdown
     document.body.appendChild(dropdown);
-    
+
     // Get column header element to position next to the entire column
     const columnHeader = button.closest('.table-header');
     const headerRect = columnHeader ? columnHeader.getBoundingClientRect() : button.getBoundingClientRect();
-    const dropdownRect = dropdown.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    
-    // Set maximum height to use available viewport height with margins
+
+    // Check if pagination controls exist and get their position
+    const paginationElement = document.querySelector('.enhanced-table-pagination');
+    const paginationTop = paginationElement ? paginationElement.getBoundingClientRect().top : viewportHeight;
+
+    // On mobile/narrow screens, use larger gap to prevent dropdown from overlapping header row
+    // isMobile already declared at line 2573
+    const verticalGap = isMobile ? 10 : 5;
+    const desiredTop = headerRect.bottom + verticalGap;
+
+    // Calculate maxHeight based on actual position where dropdown will be shown
     const topMargin = 20;
     const bottomMargin = 20;
-    const maxHeight = viewportHeight - topMargin - bottomMargin;
-    dropdown.style.maxHeight = `${maxHeight}px`;
-    
-    // Force dropdown content area to use available height
-    const contentArea = dropdown.querySelector('.filter-dropdown-content, .date-filter-content');
-    if (contentArea) {
-      // Calculate height for content area (total - header - footer)
-      const headerHeight = dropdown.querySelector('.filter-dropdown-header')?.offsetHeight || 0;
-      const searchHeight = dropdown.querySelector('.filter-dropdown-search')?.offsetHeight || 0;
-      const rangeHeight = dropdown.querySelector('.filter-dropdown-range')?.offsetHeight || 0;
-      const footerHeight = dropdown.querySelector('.filter-dropdown-footer')?.offsetHeight || 0;
-      const contentMaxHeight = maxHeight - headerHeight - searchHeight - rangeHeight - footerHeight - 40; // 40px for padding/margins
-      contentArea.style.maxHeight = `${Math.max(200, contentMaxHeight)}px`;
+    const paginationGap = 10; // Gap between dropdown and pagination
+
+    // Calculate available height from the actual desired position to pagination/bottom
+    // This is the space we have available from where the dropdown starts
+    const availableFromDesiredTop = Math.min(
+      paginationTop - desiredTop - paginationGap,
+      viewportHeight - desiredTop - bottomMargin
+    );
+
+    // Calculate maxHeight based on device type
+    let maxHeight;
+    if (isMobile) {
+      // On mobile, use 90% of viewport height to ensure enough space
+      // Footer is in normal flow at bottom, content scrolls if needed
+      maxHeight = viewportHeight * 0.90;
+    } else {
+      // On desktop/tablet, use available space with reasonable limits
+      const minRequiredSpace = 110;
+      maxHeight = Math.max(minRequiredSpace, Math.min(availableFromDesiredTop, 500));
     }
-    
-    // Re-measure dropdown after height adjustments
-    const updatedDropdownRect = dropdown.getBoundingClientRect();
-    
-    // Calculate horizontal position - prefer right side of column
-    let left = headerRect.right + 5; // 5px gap from column
-    
-    // Check if dropdown fits on the right side
-    if (left + updatedDropdownRect.width > viewportWidth) {
-      // Not enough space on right, try left side
-      left = headerRect.left - updatedDropdownRect.width - 5; // 5px gap from column
-      
-      // If still doesn't fit on left, align to viewport edges
-      if (left < 5) {
-        left = 5; // Minimum left margin
+
+    // ✅ Apply maxHeight to the flex container (.filter-dropdown), not the wrapper
+    // BUT: Skip this for mobile layout where entire dropdown scrolls
+    const filterDropdown = dropdown.querySelector('.filter-dropdown');
+    if (filterDropdown && !filterDropdown.classList.contains('filter-dropdown-mobile')) {
+      filterDropdown.style.maxHeight = `${maxHeight}px`;
+    } else if (filterDropdown && filterDropdown.classList.contains('filter-dropdown-mobile')) {
+      // For mobile, set EXPLICIT HEIGHT (not just maxHeight) for flexbox to work
+      // Flexbox with flex: 1 needs parent to have a defined height
+      filterDropdown.style.height = `${maxHeight}px`;
+      filterDropdown.style.maxHeight = `${maxHeight}px`;
+    }
+
+    // ✅ Let flexbox handle content area sizing automatically
+    // No need to manually calculate contentArea maxHeight
+    // The CSS already has:
+    // - .filter-dropdown { display: flex; flex-direction: column; }
+    // - .filter-dropdown-content { flex: 1; overflow-y: auto; min-height: 0; }
+    // This ensures header/footer are always visible and content scrolls
+
+    // Force layout recalculation by reading offsetHeight
+    if (filterDropdown) {
+      void filterDropdown.offsetHeight;
+
+      // CRITICAL: Also force recalculation for filter content and mode content
+      // This is especially important for mobile where flexbox layout may not
+      // calculate correctly on first render
+      const contentArea = filterDropdown.querySelector('.filter-dropdown-content');
+      const modeContent = filterDropdown.querySelector('.filter-mode-content');
+      if (contentArea) void contentArea.offsetHeight;
+      if (modeContent) void modeContent.offsetHeight;
+    }
+
+    // Measure actual dropdown size after height constraints are applied
+    // Use filterDropdown (the flex container) for accurate sizing
+    let dropdownRect = filterDropdown ? filterDropdown.getBoundingClientRect() : dropdown.getBoundingClientRect();
+
+    // CRITICAL FIX: The measured height might be larger than maxHeight if content overflows
+    // For positioning calculations, use the EFFECTIVE height (limited by maxHeight)
+    const effectiveHeight = Math.min(dropdownRect.height, maxHeight);
+
+    // Create a modified rect object with the effective height for positioning
+    dropdownRect = {
+      ...dropdownRect,
+      height: effectiveHeight
+    };
+
+    // Calculate horizontal position - align with column left edge to avoid covering adjacent filter buttons
+    let left = headerRect.left;
+
+    // CRITICAL: For horizontal positioning, use wrapper's width (since position is applied to wrapper)
+    // The dropdownRect might measure the inner .filter-dropdown, but position applies to outer wrapper
+    const wrapperWidth = dropdown.getBoundingClientRect().width;
+
+    // Ensure dropdown stays within viewport horizontally
+    if (left + wrapperWidth > viewportWidth - 5) {
+      // If dropdown extends beyond viewport, align to right edge
+      left = viewportWidth - wrapperWidth - 5;
+    }
+    if (left < 5) {
+      left = 5; // Minimum left margin
+    }
+
+    // On mobile, use modal-style centered positioning for better UX
+    if (isMobile) {
+      // Center the dropdown on mobile devices
+      const modalTop = (viewportHeight - effectiveHeight) / 2;
+      const modalLeft = (viewportWidth - dropdownRect.width) / 2;
+
+      dropdown.style.left = `${Math.max(5, modalLeft)}px`;
+      dropdown.style.top = `${Math.max(topMargin, modalTop)}px`;
+
+      // Add modal styling to dropdown wrapper
+      dropdown.style.zIndex = '10001';
+
+      // Add a backdrop overlay for mobile modal
+      if (!document.querySelector('.filter-dropdown-backdrop')) {
+        const backdrop = document.createElement('div');
+        backdrop.className = 'filter-dropdown-backdrop';
+        backdrop.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.3);
+          z-index: 10000;
+        `;
+        backdrop.addEventListener('click', () => this.closeFilter());
+        document.body.appendChild(backdrop);
+        dropdown._backdrop = backdrop;
       }
+    } else {
+      // Desktop/tablet positioning
+      let top = desiredTop;
+
+      // Ensure dropdown doesn't overlap with pagination controls
+      const maxAllowedBottom = paginationTop - paginationGap;
+
+      // Ensure dropdown stays within viewport vertically
+      if (top < topMargin) {
+        top = topMargin;
+      } else if (top + dropdownRect.height > maxAllowedBottom) {
+        // Try to position above the header if it doesn't fit below
+        const topAboveHeader = headerRect.top - dropdownRect.height - verticalGap;
+        if (topAboveHeader >= topMargin) {
+          // Fits above header
+          top = topAboveHeader;
+        } else {
+          // Doesn't fit above either, position at max allowed position
+          top = Math.max(topMargin, maxAllowedBottom - dropdownRect.height);
+          // If still doesn't fit, show at top margin
+          if (top < topMargin) {
+            top = topMargin;
+          }
+        }
+      }
+
+      dropdown.style.left = `${left}px`;
+      dropdown.style.top = `${top}px`;
     }
-    
-    // Calculate vertical position - center to column header with viewport constraints
-    let top = headerRect.top + (headerRect.height - updatedDropdownRect.height) / 2;
-    
-    // Ensure dropdown stays within viewport with margins
-    if (top < topMargin) {
-      top = topMargin;
-    } else if (top + updatedDropdownRect.height > viewportHeight - bottomMargin) {
-      top = viewportHeight - updatedDropdownRect.height - bottomMargin;
-    }
-    
-    dropdown.style.left = `${left}px`;
-    dropdown.style.top = `${top}px`;
 
     // ✅ FIX Bug#7: Explicitly set date input values from state after DOM insertion
     // For date inputs, HTML attributes don't automatically sync to DOM properties when hidden/inactive
@@ -2631,8 +2807,9 @@ class ExceLikeTable {
     
     // Add click outside detection
     const clickOutsideHandler = (e) => {
-      // Check if the click is outside the dropdown and not on the filter button
-      if (!dropdown.contains(e.target) && !e.target.closest('.filter-btn')) {
+      // Close dropdown if clicking outside it
+      // Allow clicks on filter buttons to propagate and trigger toggleFilter()
+      if (!dropdown.contains(e.target)) {
         this.closeFilter();
         document.removeEventListener('click', clickOutsideHandler);
       }
@@ -2642,9 +2819,21 @@ class ExceLikeTable {
     setTimeout(() => {
       document.addEventListener('click', clickOutsideHandler);
     }, 0);
-    
+
     // Store the handler so we can remove it when closing the filter
     dropdown._clickOutsideHandler = clickOutsideHandler;
+
+    // Add Escape key handler to close dropdown
+    const escapeKeyHandler = (e) => {
+      if (e.key === 'Escape') {
+        this.closeFilter();
+        document.removeEventListener('keydown', escapeKeyHandler);
+      }
+    };
+    document.addEventListener('keydown', escapeKeyHandler);
+
+    // Store the Escape key handler so we can remove it when closing the filter
+    dropdown._escapeKeyHandler = escapeKeyHandler;
   }
 
   createTextFilter(uniqueValues, currentFilters, column) {
@@ -2675,7 +2864,7 @@ class ExceLikeTable {
             <span class="filter-option-text">${this.i18n.t('filter.all')} <span class="filter-option-count">(${this.countTotalDataItems(column)})</span></span>
           </label>
         </div>
-        <div class="filter-options-list">
+        <div class="filter-options-list" data-test="filter-checkbox-list">
           ${sortedValues.map(value => `
             <div class="filter-option">
               <label class="filter-option-label">
@@ -2836,7 +3025,7 @@ class ExceLikeTable {
     const currentFilters = this.state.filters[column.key] || [];
 
     // Determine current filter mode
-    const currentMode = this.state.filterModes?.[column.key] || 'values';
+    const currentMode = this.state.filterModes?.[column.key] || 'range';
 
     // Sort values - empty/null values at top, then ascending numeric order
     const sortedValues = [...uniqueValues].sort((a, b) => {
@@ -2880,12 +3069,12 @@ class ExceLikeTable {
             <div class="range-filter">
               <div class="range-inputs">
                 <div class="range-input-group">
-                  <label class="range-label">Min</label>
-                  <input type="number" class="range-input range-min" value="${TableUtils.formatNumberValue(currentRange.min, decimalPlaces)}" min="${min}" max="${max}" data-min="${min}" data-max="${max}" data-decimal-places="${decimalPlaces}">
+                  <label class="range-label">${this.i18n.t('filter.min')}</label>
+                  <input type="number" class="range-input range-min" value="${TableUtils.formatNumberValue(currentRange.min, decimalPlaces)}" min="${min}" max="${max}" data-min="${min}" data-max="${max}" data-decimal-places="${decimalPlaces}" data-test="filter-min-input" placeholder="${this.i18n.t('filter.min')}">
                 </div>
                 <div class="range-input-group">
-                  <label class="range-label">Max</label>
-                  <input type="number" class="range-input range-max" value="${TableUtils.formatNumberValue(currentRange.max, decimalPlaces)}" min="${min}" max="${max}" data-min="${min}" data-max="${max}" data-decimal-places="${decimalPlaces}">
+                  <label class="range-label">${this.i18n.t('filter.max')}</label>
+                  <input type="number" class="range-input range-max" value="${TableUtils.formatNumberValue(currentRange.max, decimalPlaces)}" min="${min}" max="${max}" data-min="${min}" data-max="${max}" data-decimal-places="${decimalPlaces}" data-test="filter-max-input" placeholder="${this.i18n.t('filter.max')}">
                 </div>
               </div>
               <div class="number-range-slider-container">
@@ -2920,7 +3109,7 @@ class ExceLikeTable {
                 <span class="filter-option-text">${this.i18n.t('filter.all')} <span class="filter-option-count">(${this.countTotalDataItems(column)})</span></span>
               </label>
             </div>
-            <div class="filter-options-list">
+            <div class="filter-options-list" data-test="filter-checkbox-list">
               ${sortedValues.map(value => {
                 const isEmptyValue = value === null || value === undefined || value === '' || (typeof value === 'string' && value.toLowerCase() === 'null');
                 let isChecked = false;
@@ -2981,7 +3170,7 @@ class ExceLikeTable {
       ? currentDateRange.endDate
       : maxDate;
 
-    // Get current filter mode for date column (default to 'values' for dates)
+    // Get current filter mode for date column (default to 'values' for hierarchical selection)
     const currentMode = this.state.filterModes[column.key] || 'values';
 
     return `
@@ -3044,7 +3233,7 @@ class ExceLikeTable {
             <span class="filter-option-text">${this.i18n.t('filter.all')} <span class="filter-option-count">(${this.countTotalDataItems(column)})</span></span>
           </label>
         </div>
-        <div class="date-filter-content">
+        <div class="date-filter-content" data-test="filter-checkbox-list">
           ${hasEmptyValues ? `
             <div class="filter-option">
               <label class="filter-option-label">
@@ -3077,7 +3266,7 @@ class ExceLikeTable {
                         <div class="date-filter-item date-filter-day">
                           <label class="date-filter-label">
                             <input type="checkbox" class="date-filter-checkbox" data-value="${dateValue}" ${isAllSelected || currentFilters.includes(dateValue) ? 'checked' : ''}>
-                            <span class="date-filter-text">${new Date(dateValue).getDate()}${this.i18n.t('filter.dayUnit')} <span class="filter-option-count">(${this.countDataItems(column, dateValue)})</span></span>
+                            <span class="date-filter-text">${new Date(dateValue).getDate()} <span class="filter-option-count">(${this.countDataItems(column, dateValue)})</span></span>
                           </label>
                         </div>
                       `).join('')}
@@ -3172,6 +3361,12 @@ class ExceLikeTable {
             delete this.state.rangeFilters[column.key];
             delete this.state.dateRangeFilters[column.key];
           }
+
+          // ✅ Adjust dropdown position after mode switch (height may have changed)
+          // Use setTimeout to allow DOM to update first
+          setTimeout(() => {
+            this.adjustDropdownPosition(dropdown);
+          }, 0);
 
           // ⚠️ REMOVED: Do NOT apply filters here - wait for user to click OK
           // User is just switching tabs to preview different modes
@@ -3347,15 +3542,16 @@ class ExceLikeTable {
             const min = parseFloat(minInput.value);
             const max = parseFloat(maxInput.value);
 
-            // ✅ Store range filter (preview state - NOT applied yet)
+            // ✅ Store range filter
             this.state.rangeFilters[column.key] = { min, max };
 
             // ✅ Clear conflicting value-based filter
             delete this.state.filters[column.key];
 
-            // ⚠️ REMOVED: Real-time application
-            // Filters will be applied only when user clicks OK button
-            // This allows users to preview and adjust before confirming
+            // ✅ Apply filter in real-time (same as checkbox mode)
+            this.applyFilters();
+            this.renderBody();
+            this.renderPagination();
           }
         } else {
           // Values mode: Use checkboxes
@@ -3392,7 +3588,7 @@ class ExceLikeTable {
           const maxInput = dropdown.querySelector('.date-range-max');
 
           if (minInput && maxInput) {
-            // ✅ Store date range filter (preview state - NOT applied yet)
+            // ✅ Store date range filter
             this.state.dateRangeFilters[column.key] = {
               startDate: minInput.value,
               endDate: maxInput.value
@@ -3401,8 +3597,10 @@ class ExceLikeTable {
             // ✅ Clear conflicting value-based filter
             delete this.state.filters[column.key];
 
-            // ⚠️ REMOVED: Real-time application
-            // Filters will be applied only when user clicks OK button
+            // ✅ Apply filter in real-time (same as checkbox mode)
+            this.applyFilters();
+            this.renderBody();
+            this.renderPagination();
           }
         } else {
           // Values mode: Use checkboxes
@@ -3467,14 +3665,16 @@ class ExceLikeTable {
     if (clearBtn) {
       clearBtn.addEventListener('click', () => {
         // Clear all filter types for this column
-        this.state.filters[column.key] = [];
+        delete this.state.filters[column.key];
         delete this.state.rangeFilters[column.key];
         delete this.state.dateRangeFilters[column.key];
         if (this.state.rangeIncludeBlanks) delete this.state.rangeIncludeBlanks[column.key];
         if (this.state.dateRangeIncludeBlanks) delete this.state.dateRangeIncludeBlanks[column.key];
         if (this.state.filterModes) delete this.state.filterModes[column.key];
-        
-        this.render();
+
+        this.applyFilters();
+        this.renderBody();
+        this.renderPagination();
         this.closeFilter();
         this.autoSaveSettings();
       });
@@ -3482,9 +3682,54 @@ class ExceLikeTable {
 
     // OK button - Apply filters when user confirms
     dropdown.querySelector('.filter-btn-confirm').addEventListener('click', () => {
+      // ✅ Collect checkbox values before applying filters
+      // For date hierarchy and text filters in values mode, we need to collect checked values
+      const currentMode = this.state.filterModes[column.key] || 'values';
+
+      if (currentMode === 'values') {
+        // Collect checked checkbox values
+        // For date filters, only collect checkboxes at the current expand level
+        let checkboxes;
+        if (column.filterType === 'date-hierarchy') {
+          // Determine current expand level from active button
+          const activeExpandBtn = dropdown.querySelector('.expand-control-btn.active');
+          const expandLevel = activeExpandBtn ? activeExpandBtn.dataset.level : 'year';
+
+          // Collect checkboxes based on expand level
+          if (expandLevel === 'year') {
+            // Only collect year-level checkboxes (in .date-filter-group-header)
+            checkboxes = Array.from(dropdown.querySelectorAll('.date-filter-group-header .date-filter-checkbox:checked'));
+          } else if (expandLevel === 'month') {
+            // Only collect month-level checkboxes (in .date-filter-month-header)
+            checkboxes = Array.from(dropdown.querySelectorAll('.date-filter-month-header .date-filter-checkbox:checked'));
+          } else {
+            // day level: Collect only day-level checkboxes (in .date-filter-day)
+            checkboxes = Array.from(dropdown.querySelectorAll('.date-filter-day .date-filter-checkbox:checked'));
+          }
+        } else {
+          // For non-date filters, collect all checked checkboxes
+          checkboxes = Array.from(dropdown.querySelectorAll('.filter-checkbox:checked'));
+        }
+
+        const selectedValues = checkboxes
+          .map(cb => cb.dataset.value)
+          .filter(val => val !== '__all__');
+
+        // Save to state
+        if (selectedValues.length > 0) {
+          this.state.filters[column.key] = selectedValues;
+        } else {
+          delete this.state.filters[column.key];
+        }
+
+        // Clear conflicting filters
+        delete this.state.rangeFilters[column.key];
+        delete this.state.dateRangeFilters[column.key];
+      }
+
       // ✅ NOW we apply the filters that were prepared in state
       // This is the ONLY place where filters are actually applied to the table
-      
+
       this.applyFilters();
       this.renderBody();
       this.renderPagination();
@@ -3963,6 +4208,57 @@ class ExceLikeTable {
     this.updateDateParentCheckboxes(dropdown);
   }
 
+  /**
+   * Adjust dropdown position to ensure it stays within viewport
+   * Called when dropdown content changes (e.g., mode switching)
+   * @param {HTMLElement} dropdown - The dropdown wrapper element
+   */
+  adjustDropdownPosition(dropdown) {
+    if (!dropdown) return;
+
+    const filterDropdown = dropdown.querySelector('.filter-dropdown');
+    if (!filterDropdown) return;
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const topMargin = 20;
+    const bottomMargin = 20;
+    const maxHeight = viewportHeight - topMargin - bottomMargin;
+
+    // Update maxHeight in case viewport size changed
+    filterDropdown.style.maxHeight = `${maxHeight}px`;
+
+    // Force layout recalculation
+    void filterDropdown.offsetHeight;
+
+    // Measure actual dropdown size
+    const dropdownRect = filterDropdown.getBoundingClientRect();
+
+    // Get current position
+    let left = parseFloat(dropdown.style.left) || 0;
+    let top = parseFloat(dropdown.style.top) || 0;
+
+    // Adjust vertical position if dropdown extends beyond viewport
+    if (top + dropdownRect.height > viewportHeight - bottomMargin) {
+      top = viewportHeight - dropdownRect.height - bottomMargin;
+    }
+    if (top < topMargin) {
+      top = topMargin;
+    }
+
+    // Adjust horizontal position if needed
+    if (left + dropdownRect.width > viewportWidth - 5) {
+      left = viewportWidth - dropdownRect.width - 5;
+    }
+    if (left < 5) {
+      left = 5;
+    }
+
+    // Apply adjusted position
+    dropdown.style.left = `${left}px`;
+    dropdown.style.top = `${top}px`;
+  }
+
   closeFilter() {
     const existingDropdown = document.querySelector('.filter-dropdown-wrapper');
     if (existingDropdown) {
@@ -3970,7 +4266,20 @@ class ExceLikeTable {
       if (existingDropdown._clickOutsideHandler) {
         document.removeEventListener('click', existingDropdown._clickOutsideHandler);
       }
+      // Remove Escape key event listener if it exists
+      if (existingDropdown._escapeKeyHandler) {
+        document.removeEventListener('keydown', existingDropdown._escapeKeyHandler);
+      }
+      // Remove backdrop for mobile modal if it exists
+      if (existingDropdown._backdrop) {
+        existingDropdown._backdrop.remove();
+      }
       existingDropdown.remove();
+    }
+    // Also remove any standalone backdrop that might exist
+    const standaloneBackdrop = document.querySelector('.filter-dropdown-backdrop');
+    if (standaloneBackdrop) {
+      standaloneBackdrop.remove();
     }
     this.state.openFilter = null;
   }
@@ -4516,6 +4825,11 @@ class ExceLikeTable {
         e.preventDefault();
         e.stopPropagation();
         setExpandLevel(btn.dataset.level);
+
+        // ✅ Adjust dropdown position after expand level changes
+        setTimeout(() => {
+          this.adjustDropdownPosition(dropdown);
+        }, 0);
       });
     });
     
@@ -4529,7 +4843,7 @@ class ExceLikeTable {
         e.stopPropagation();
         const group = btn.closest('.date-filter-group');
         const children = group.querySelector('.date-filter-children');
-        
+
         if (children.style.display === 'none' || !children.style.display) {
           children.style.display = 'block';
           btn.textContent = '▼';
@@ -4537,6 +4851,11 @@ class ExceLikeTable {
           children.style.display = 'none';
           btn.textContent = '▶';
         }
+
+        // ✅ Adjust dropdown position after expanding/collapsing
+        setTimeout(() => {
+          this.adjustDropdownPosition(dropdown);
+        }, 0);
       });
     });
 
@@ -4547,7 +4866,7 @@ class ExceLikeTable {
         e.stopPropagation();
         const monthItem = btn.closest('.date-filter-month');
         const days = monthItem.querySelector('.date-filter-days');
-        
+
         if (days.style.display === 'none' || !days.style.display) {
           days.style.display = 'block';
           btn.textContent = '▼';
@@ -4555,6 +4874,11 @@ class ExceLikeTable {
           days.style.display = 'none';
           btn.textContent = '▶';
         }
+
+        // ✅ Adjust dropdown position after expanding/collapsing
+        setTimeout(() => {
+          this.adjustDropdownPosition(dropdown);
+        }, 0);
       });
     });
 
@@ -4604,32 +4928,38 @@ class ExceLikeTable {
 
   isYearSelected(year, monthData, currentFilters) {
     if (currentFilters.length === 0) return true;
-    
+
     // Check if year itself is selected
     if (currentFilters.includes(year)) return true;
-    
+
     // Check if any month in this year is selected
-    if (Object.keys(monthData).some(month => 
+    if (Object.keys(monthData).some(month =>
       currentFilters.includes(`${year}-${month}`)
     )) return true;
-    
-    // Check if any individual dates in this year are selected
-    return currentFilters.some(filter => {
-      if (typeof filter === 'string' && filter.includes('-')) {
-        return filter.startsWith(`${year}-`);
+
+    // Check if any individual date in this year is selected
+    // Need to check all dates in all months
+    for (const month in monthData) {
+      const dates = monthData[month];
+      if (dates.some(dateValue => currentFilters.includes(dateValue))) {
+        return true;
       }
-      return false;
-    });
+    }
+
+    return false;
   }
 
   isMonthSelected(year, month, dates, currentFilters) {
     if (currentFilters.length === 0) return true;
-    
+
     // Check if year is selected (includes all months)
     if (currentFilters.includes(year)) return true;
-    
+
     // Check if this specific month is selected
-    return currentFilters.includes(`${year}-${month}`);
+    if (currentFilters.includes(`${year}-${month}`)) return true;
+
+    // Check if any individual date in this month is selected
+    return dates.some(dateValue => currentFilters.includes(dateValue));
   }
 
   // Utility methods
@@ -4640,14 +4970,18 @@ class ExceLikeTable {
 
   groupDatesByHierarchy(dates) {
     const groups = {};
-    
+
     dates.forEach(dateStr => {
       if (dateStr) {
         const date = new Date(dateStr);
         const year = date.getFullYear();
         const monthNum = String(date.getMonth() + 1).padStart(2, '0'); // Use numeric month for sorting
-        const month = date.toLocaleString('default', { month: 'long' });
-        
+        const monthIndex = date.getMonth(); // 0-11
+        // Get month names array directly from i18n (not using t() to avoid interpolation)
+        const monthNames = this.i18n.getMessage('filter.monthNames', this.i18n.currentLocale) ||
+                          ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const month = monthNames[monthIndex];
+
         if (!groups[year]) groups[year] = {};
         if (!groups[year][monthNum]) groups[year][monthNum] = { displayName: month, dates: [] };
         groups[year][monthNum].dates.push(dateStr);

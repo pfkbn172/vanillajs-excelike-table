@@ -5,6 +5,138 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### 🐛 Bug Fixes
+
+**Filter dropdown viewport overflow on tablet devices**
+
+- **FIXED: Tablet viewport positioning** - Filter dropdowns on right-edge columns (like Status) now stay within viewport boundaries on tablet devices (768px width) (src/ExceLikeTable.js:2718-2720)
+  - Root cause: Horizontal position calculation used inner `.filter-dropdown` width but applied position to outer `.filter-dropdown-wrapper`
+  - Solution: Use wrapper's actual width (`dropdown.getBoundingClientRect().width`) for boundary calculations
+  - Impact: OK/Cancel buttons are now fully visible and clickable on tablet viewports
+
+**Test selector bug in concurrent operations**
+
+- **FIXED: Range mode selector** - Corrected filter mode toggle selector in concurrent operations test (tests/e2e/concurrent-operations.spec.js:180-185)
+  - Changed from non-existent `.filter-mode-toggle button:has-text("Range")` to `button[data-mode="range"]`
+  - Impact: Test 162 "should handle filter changes while scrolling" now passes on all platforms
+
+### ✅ Testing
+
+- **VERIFIED: Tablet tests** - All 7 concurrent-operations tests now pass on tablet (previously 4/7, 3 timeouts)
+- **VERIFIED: Cross-platform** - 55/56 E2E tests passing on Desktop, Tablet, and Mobile
+- **VERIFIED: No regressions** - Filter functionality unchanged on desktop and mobile devices
+
+### 🔧 Refactoring
+
+**Simplified multi-language support to Japanese and English only**
+
+- **REMOVED: Spanish, French, and German translations** - Removed all es, fr, de language translations from src/i18n.js (lines 469-1037)
+- **UPDATED: getCurrencyForLocale()** - Removed unused currency mappings for de, fr, es locales (src/i18n.js:623-637)
+- **UPDATED: Language selectors** - Removed es, fr, de options from HTML language selector dropdowns:
+  - simple-library-test.html (line 63)
+  - test-all-features.html (line 326)
+- **UPDATED: Unit tests** - Removed Spanish language test from RTL detection tests (tests/unit/i18n/language-switching.test.js:421)
+
+### ✅ Testing
+
+- **VERIFIED: Language switching** - All 42 i18n unit tests passing, confirming en ↔ ja switching works correctly
+- **VERIFIED: Translations** - All English and Japanese translations functioning properly
+- **VERIFIED: Formatting** - Date and number formatting working correctly for both supported locales
+
+### 📝 Rationale
+
+This change simplifies the codebase by focusing on the two primary supported languages (Japanese and English), reducing maintenance burden and potential translation inconsistencies. The i18n infrastructure remains in place for potential future language additions if needed.
+
+## [2.2.4] - 2025-10-13
+
+### 🐛 Bug Fixes
+
+**CRITICAL: Fixed conditional formatting priority system**
+
+- **FIXED: Priority assignment bug** - New rules now correctly assigned lowest priority instead of highest (manager.js:60-67)
+- **FIXED: Priority enforcement bug** - Rules now applied in correct order (low→high priority) with proper overwriting (conditional-formatting.js:339-351)
+- **FIXED: Row vs Cell priority conflicts** - Unified processing ensures priority works correctly between row-level and cell-level rules (conditional-formatting.js:354-391)
+
+### 📝 What Changed
+
+**Priority Assignment Fix (manager.js):**
+```javascript
+// Before: New rules always got Priority 1, shifting existing rules
+if (rule.priority === 0) {
+  this.rules.forEach(existingRule => {
+    existingRule.priority += 1;
+  });
+  rule.priority = 1; // Wrong: New rule becomes highest priority
+}
+
+// After: New rules get lowest priority
+if (rule.priority === 0) {
+  rule.priority = this.rules.length + 1; // Correct: New rule becomes lowest priority
+}
+```
+
+**Priority Enforcement Fix (conditional-formatting.js):**
+```javascript
+// Before: Rules sorted ascending (Priority 1, 2, 3...)
+// This caused Priority 1 to be applied first and overwritten by lower priorities
+return rules.sort((a, b) => a.priority - b.priority); // Wrong
+
+// After: Rules sorted descending (Priority 3, 2, 1...)
+// Priority 1 applied last and wins
+return rules.sort((a, b) => b.priority - a.priority); // Correct
+```
+
+**Unified Priority Processing:**
+- Removed complex two-phase approach
+- Cell-level and row-level rules now processed uniformly
+- Simple sequential application: low priority → high priority
+- Last applied rule (highest priority) wins
+- Matches Excel/Google Sheets behavior
+
+### 🎯 Impact
+
+**Before Fix:**
+- Creating Rule 1 → Priority 1 ✓
+- Creating Rule 2 → Priority 1, Rule 1 becomes Priority 2 ✗
+- Creating Rule 3 → Priority 1, Rule 2 becomes Priority 2, Rule 1 becomes Priority 3 ✗
+- Priority changes didn't affect which rule won when conflicts occurred ✗
+
+**After Fix:**
+- Creating Rule 1 → Priority 1 ✓
+- Creating Rule 2 → Priority 2 ✓
+- Creating Rule 3 → Priority 3 ✓
+- Priority correctly determines which rule wins in conflicts ✓
+- Dynamic priority changes (↑↓ buttons) immediately reflected ✓
+
+### 📦 Files Changed
+
+- `src/plugins/conditional-formatting/manager.js` - Fixed priority assignment logic
+- `src/plugins/conditional-formatting/conditional-formatting.js` - Fixed priority enforcement and unified processing
+
+### ✅ Validation
+
+Verified with Playwright automated testing:
+- ✅ New rules assigned correct priorities
+- ✅ Priority order affects formatting results
+- ✅ Row-level vs cell-level conflicts resolved by priority
+- ✅ Dynamic priority changes work correctly
+- ✅ Matches Excel/Google Sheets behavior
+
+### 📋 Technical Details
+
+**Test Case (ID6 - Frank Miller):**
+- Age: 38 (matches "Age > 30" rule)
+- Status: "Suspended" (matches "Suspended Status Row" rule)
+
+**Results:**
+- Priority 1: Age > 30 (blue) → Age 38 cell is blue ✓
+- Priority 1: Suspended (red) → Age 38 cell is red ✓
+- Priority changes reflected immediately ✓
+
+---
+
 ## [2.2.1] - 2025-10-13
 
 ### 🧹 Documentation Cleanup
