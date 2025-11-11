@@ -834,11 +834,15 @@ class ThemeManager {
   }
 }
 
-// Export for different environments
+// ES6 module export
+export { ThemeSystem, ThemeManager };
+
+// CommonJS export for Node.js
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { ThemeSystem, ThemeManager };
 }
 
+// Browser global export
 if (typeof window !== 'undefined') {
   window.ThemeSystem = ThemeSystem;
   window.ThemeManager = ThemeManager;

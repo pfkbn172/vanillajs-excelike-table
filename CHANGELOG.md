@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.2] - 2025-11-11
+
+### 🐛 Bug Fixes
+
+**Module Export**
+
+- **FIXED: ES6 module export for ThemeManager** - Added ES6 `export` statement to theme-system.js to fix CI/CD test failures (src/theme-system.js:838)
+  - Root cause: theme-system.js only had CommonJS exports, causing "does not provide an export named 'ThemeManager'" error in ES6 imports
+  - Impact: All unit tests now pass, CI/CD pipeline should succeed
+
 ## [2.3.1] - 2025-11-11
 
 ### 🐛 Bug Fixes
