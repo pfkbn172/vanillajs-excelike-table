@@ -338,69 +338,60 @@
    */
   _getValidSortedRules() {
     const rules = this.manager.getAllRules(true);
-    
+
     // 無効なルールの検出
-    const invalidRules = rules.filter(rule => 
+    const invalidRules = rules.filter(rule =>
       rule.condition.column.startsWith('column_'));
     if (invalidRules.length > 0) {
       return null; // 無効なルールが検出された
     }
-    
-    // 優先度の高い順でソート（数値が小さいほど高優先度、後で適用されて勝つ）
-    return rules.sort((a, b) => a.priority - b.priority);
+
+    // 優先度の低い順→高い順でソート（Priority 3→2→1）
+    // 最後に適用される Priority 1（最高優先度）が最終的に勝つ
+    return rules.sort((a, b) => b.priority - a.priority);
   }
   
   /**
-   * ルールをセルに適用（優先度競合解決版）
+   * ルールをセルに適用（統一的な優先度処理）
+   * セルレベルルールも行レベルルールも区別せず、全て各セルに対する条件判定として処理
+   * 優先度の低いルールから順に適用し、高い優先度のルールで上書きすることで優先度を実現
    */
   _applyRulesToCells(rules, cells) {
     let totalApplications = 0;
-    
-    // セル単位の最終的な書式を決定するマップ
-    const cellFormatMap = new Map();
-    
-    // Phase 1: 全ルールを評価してセルごとの最高優先度ルールを特定
-    cells.forEach(cellInfo => {
-      const cellKey = this._getCellKey(cellInfo.element);
-      const applicableRules = [];
-      
-      rules.forEach(rule => {
-        // 直接マッチング（セル対象）
+
+    // rulesは既に優先度低→高順（Priority 3→2→1）にソート済み
+    // 後から適用されるPriority 1（最高優先度）が最終的に勝つ
+    rules.forEach(rule => {
+      cells.forEach(cellInfo => {
+        let shouldApply = false;
+
+        // セルレベルルール
         if (rule.applyTo === 'cell' && cellInfo.column === rule.condition.column) {
-          // ルールのdataTypeに応じてセル値を抽出
           const cellValue = this.extractCellValue(cellInfo.element, rule.condition.dataType);
           if (this._evaluateRuleWithCache(cellValue, rule)) {
-            applicableRules.push({ rule, type: 'cell', targetCell: cellInfo });
+            shouldApply = true;
           }
         }
-        // 行レベルマッチング（他の列の値を評価して行全体に適用）
+        // 行レベルルール
         else if (rule.applyTo === 'row') {
           const rowCells = this._getRowCells(cellInfo.element);
           const triggerCell = rowCells.find(cell => cell.column === rule.condition.column);
           if (triggerCell) {
-            // ルールのdataTypeに応じてセル値を抽出
             const cellValue = this.extractCellValue(triggerCell.element, rule.condition.dataType);
             if (this._evaluateRuleWithCache(cellValue, rule)) {
-              applicableRules.push({ rule, type: 'row', targetCell: cellInfo });
+              shouldApply = true;
             }
           }
         }
+
+        // ルールを適用（後から適用されるルールが前のルールを上書き）
+        if (shouldApply) {
+          this.applier.applyToCell(cellInfo.element, rule);
+          totalApplications++;
+        }
       });
-      
-      // 最高優先度のルールを選択（priority値が小さいほど高優先度）
-      if (applicableRules.length > 0) {
-        const bestRule = applicableRules.sort((a, b) => a.rule.priority - b.rule.priority)[0];
-        cellFormatMap.set(cellKey, bestRule);
-      }
     });
-    
-    // Phase 2: 決定されたルールを適用
-    cellFormatMap.forEach((ruleData, cellKey) => {
-      const { rule, targetCell } = ruleData;
-      this.applier.applyToCell(targetCell.element, rule);
-      totalApplications++;
-    });
-    
+
     return totalApplications;
   }
   

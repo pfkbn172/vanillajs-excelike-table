@@ -361,6 +361,119 @@
   /* max-height will be set dynamically based on viewport */
 }
 
+/* Responsive adjustments for narrow viewports */
+@media (max-width: 480px) {
+  /* Mobile-specific layout: flexbox with fixed header/footer, scrollable content */
+  .filter-dropdown-mobile {
+    min-width: 0;
+    max-width: calc(100vw - 40px);
+    width: calc(100vw - 40px);
+    /* NO overflow on the container - let content area handle scrolling */
+    overflow: hidden !important;
+    /* Use flexbox to position footer at bottom */
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .filter-dropdown-mobile .filter-dropdown-header {
+    /* Keep header at top */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #fafafa;
+    flex-shrink: 0; /* Don't shrink header */
+  }
+
+  .filter-dropdown-mobile .filter-dropdown-content {
+    /* On mobile, content area is the scrollable region */
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    /* Flex grow to take available space, critical for proper sizing */
+    flex: 1 1 0 !important;
+    min-height: 0 !important; /* Critical: allow flexbox shrinking */
+  }
+
+  /* Mode content should NOT scroll independently - let parent handle it */
+  .filter-dropdown-mobile .filter-mode-content {
+    overflow-y: visible !important;
+    overflow-x: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+
+  .filter-dropdown-mobile .filter-dropdown-mobile-footer-wrapper {
+    /* Footer wrapper for mobile - in normal flow at bottom */
+    position: relative;
+    background: white;
+    padding: 8px 12px;
+    border-top: 1px solid #ddd;
+    margin-top: auto; /* Push to bottom */
+    flex-shrink: 0; /* Don't shrink footer */
+  }
+
+  /* Make footer buttons more compact on mobile */
+  .filter-dropdown-mobile .filter-dropdown-footer button {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+
+  .filter-dropdown-mobile .filter-dropdown-footer {
+    /* Footer in normal flow on mobile */
+    margin: 0;
+    border-top: none;
+    position: static;
+  }
+
+  .filter-dropdown-mobile .filter-dropdown-footer button,
+  .filter-dropdown-mobile .filter-dropdown-footer .filter-footer-actions {
+    /* But footer buttons and containers are clickable */
+    pointer-events: auto !important;
+  }
+
+  /* Critical fix: Allow clicks to pass through mode tabs container */
+  .filter-dropdown-mobile .filter-mode-tabs {
+    /* Tabs container doesn't intercept clicks */
+    pointer-events: none !important;
+  }
+
+  .filter-dropdown-mobile .filter-mode-tabs .filter-mode-tab {
+    /* But individual tab buttons are clickable */
+    pointer-events: auto !important;
+  }
+
+  /* Also fix the wrapper if it exists */
+  .filter-dropdown-mobile .filter-dropdown-mobile-footer-wrapper {
+    /* Wrapper also shouldn't block clicks */
+    pointer-events: none !important;
+  }
+
+  /* Standard mobile layout (non-mobile-optimized, fallback) */
+  .filter-dropdown:not(.filter-dropdown-mobile) {
+    min-width: 0;
+    max-width: calc(100vw - 40px);
+    width: calc(100vw - 40px);
+  }
+
+  .filter-dropdown:not(.filter-dropdown-mobile) .filter-dropdown-content {
+    overflow-y: scroll !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .filter-dropdown:not(.filter-dropdown-mobile) .filter-dropdown-footer {
+    flex-shrink: 0;
+    position: relative;
+  }
+}
+
+/* Extra narrow viewports (mobile phones) */
+@media (max-width: 400px) {
+  .filter-dropdown {
+    min-width: 0;
+    max-width: min(280px, calc(100vw - 40px));
+    width: min(280px, calc(100vw - 40px));
+  }
+}
+
 .filter-dropdown-header {
   padding: 8px 12px;
   border-bottom: 1px solid #f0f0f0;

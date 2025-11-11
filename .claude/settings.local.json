@@ -53,7 +53,12 @@
       "mcp__serena__list_memories",
       "Bash(git add:*)",
       "mcp__playwright__browser_handle_dialog",
-      "mcp__playwright__browser_hover"
+      "mcp__playwright__browser_hover",
+      "Bash(npm:*)",
+      "Bash(timeout:*)",
+      "Bash(sh -c 'NODE_OPTIONS=--experimental-vm-modules timeout 15 npx jest --listTests 2>&1')",
+      "mcp__serena__think_about_collected_information",
+      "Bash(npx playwright test:*)"
     ],
     "deny": []
   }

@@ -418,7 +418,7 @@ describe('I18n - Language Switching', () => {
 
       expect(i18n.isRTL('en')).toBe(false);
       expect(i18n.isRTL('ja')).toBe(false);
-      expect(i18n.isRTL('es')).toBe(false);
+      // Removed: 'es' test - Spanish language support removed
     });
   });
 
