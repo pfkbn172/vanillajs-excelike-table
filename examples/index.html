@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>ExceLikeTable v2.4.0 確認ページ</title>
+  <link rel="stylesheet" href="../dist/excelike-table.css">
+  <style>
+    body { font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif; margin: 0; color: #222; background: #f6f7f9; }
+    header { background: #1f2d3d; color: #fff; padding: 20px 24px; }
+    header h1 { margin: 0 0 6px; font-size: 20px; }
+    header p { margin: 0; color: #c9d3de; font-size: 14px; }
+    main { max-width: 1200px; margin: 0 auto; padding: 8px 16px 48px; }
+    section { background: #fff; border: 1px solid #e3e6ea; border-radius: 8px; padding: 16px 20px 20px; margin-top: 20px; }
+    h2 { font-size: 17px; margin: 0 0 6px; }
+    .check { margin: 0 0 14px; padding: 0 0 0 1.2em; color: #444; font-size: 14px; line-height: 1.7; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    button { font: inherit; font-size: 14px; padding: 6px 12px; border: 1px solid #c8ced6; background: #fff; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #f0f3f6; }
+    .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+    .ok { background: #e6f6ea; color: #1e7b34; }
+    .ng { background: #fdecec; color: #b42318; }
+    pre { background: #f3f4f6; padding: 10px 12px; border-radius: 6px; font-size: 12px; overflow-x: auto; max-height: 180px; }
+    code { background: #f0f1f3; padding: 1px 4px; border-radius: 3px; font-size: 90%; }
+    .note { font-size: 13px; color: #666; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ExceLikeTable v2.4.0 確認ページ</h1>
+    <p>公開前の確認用です。表はすべて <code>dist/excelike-table.browser.js</code>（今回ビルドしたもの）で動いています。</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>1. データを渡すだけ（列の指定なし）</h2>
+      <ul class="check">
+        <li>列の指定を書いていないのに、データのキーごとに列ができている</li>
+        <li>見出しの<strong>文字</strong>をクリックすると並べ替わる（昇順 → 降順 → 解除）</li>
+        <li>漏斗アイコンで絞り込み、下でページ送り、⚙️ でメニュー（アイコンが空の四角になっていない）</li>
+        <li>ブラウザの開発者ツールのコンソールに何も出ていない</li>
+      </ul>
+      <div id="t1"></div>
+      <pre>new ExceLikeTable('#t1', { data: staff });</pre>
+    </section>
+
+    <section>
+      <h2>2. 列の指定・日本語表示・CSV 書き出し</h2>
+      <ul class="check">
+        <li>メニューや絞り込みが日本語（英語が混ざっていない）</li>
+        <li>年収は「¥」付きの3桁区切り、状態は色分けされている</li>
+        <li>⚙️ →「CSVで書き出し」で、絞り込み・並べ替え後の全行が CSV になる。Excel で開いても文字化けせず、マイナスの数値も数値のまま</li>
+        <li>⚙️ →「条件付き書式」でルール（例：年収 &lt; 5000000 なら背景色）を作ると色が付く</li>
+      </ul>
+      <div class="row">
+        <button type="button" id="csv-preview">CSV の中身をここに表示（exportCSV）</button>
+      </div>
+      <div id="t2"></div>
+      <pre id="csv-out" hidden></pre>
+    </section>
+
+    <section>
+      <h2>3. セキュリティ（今回いちばん重要な修正）</h2>
+      <ul class="check">
+        <li>セルにも絞り込みの候補にも、HTML が<strong>文字のまま</strong>表示される</li>
+        <li>「名前」と「メモ」の漏斗を開いても、下の判定が「実行されていません」のまま変わらない</li>
+      </ul>
+      <p>判定：<span id="xss-badge" class="badge ok">スクリプトは実行されていません</span></p>
+      <div id="t3"></div>
+      <p class="note">v2.3.3 では、絞り込みを開いた瞬間にこのデータの <code>onerror</code> が実行されていました。</p>
+    </section>
+
+    <section>
+      <h2>4. 値がない・0・false</h2>
+      <ul class="check">
+        <li>空欄は空欄のまま（「undefined」と出ない）</li>
+        <li>0 と false がきちんと表示される</li>
+      </ul>
+      <div id="t4"></div>
+    </section>
+
+    <section>
+      <h2>5. データの差し替え（setData）</h2>
+      <ul class="check">
+        <li>ボタンでデータを差し替えると、列の指定なしの表は新しいデータの列に切り替わる</li>
+      </ul>
+      <div class="row">
+        <button type="button" data-set="products">商品データにする</button>
+        <button type="button" data-set="orders">注文データにする</button>
+      </div>
+      <div id="t5"></div>
+    </section>
+
+    <section>
+      <h2>6. スマートフォン</h2>
+      <ul class="check">
+        <li>このページをスマートフォンで開き、<strong>横向き</strong>で絞り込みを開いても候補が見え、OK ボタンが押せる</li>
+      </ul>
+      <p class="note">v2.3.3 では、高さの低い画面で候補の欄が潰れていました。</p>
+      <p><a href="demo-theme-system.html">テーマ切り替えのデモ →</a></p>
+    </section>
+  </main>
+
+  <script src="../dist/excelike-table.browser.js"></script>
+  <script>
+    /* global ColumnHelpers -- set by excelike-table.browser.js */
+    const cities = ['東京', '大阪', '名古屋', '福岡', '札幌'];
+    const departments = ['営業', '開発', 'サポート', '経理'];
+    const states = ['在籍', '休職', '退職'];
+    const staff = Array.from({ length: 48 }, (_, i) => ({
+      id: i + 1,
+      name: `社員 ${String(i + 1).padStart(2, '0')}`,
+      department: departments[i % departments.length],
+      city: cities[i % cities.length],
+      salary: 3800000 + ((i * 137000) % 4200000),
+      joined: `20${String(15 + (i % 10)).padStart(2, '0')}-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 27) + 1).padStart(2, '0')}`,
+      state: states[i % 7 === 0 ? 2 : i % 5 === 0 ? 1 : 0],
+      balance: (i % 4 === 0 ? -1 : 1) * (((i * 3700) % 50000) + 1200),
+    }));
+
+    // 1
+    new ExceLikeTable('#t1', { data: staff, tableId: 'preview-1' });
+
+    // 2
+    const t2 = new ExceLikeTable('#t2', {
+      data: staff,
+      tableId: 'preview-2',
+      locale: 'ja',
+      columns: [
+        { key: 'name', title: '氏名', width: 140 },
+        { key: 'department', title: '部署' },
+        { key: 'city', title: '勤務地' },
+        ColumnHelpers.number('salary', '年収', { currency: '¥' }),
+        ColumnHelpers.number('balance', '精算残高'),
+        ColumnHelpers.date('joined', '入社日'),
+        ColumnHelpers.status('state', '状態', { 在籍: '#1e7b34', 休職: '#b26b00', 退職: '#b42318' }),
+      ],
+    });
+    document.getElementById('csv-preview').addEventListener('click', () => {
+      const out = document.getElementById('csv-out');
+      out.textContent = t2.exportCSV({ download: false });
+      out.hidden = false;
+    });
+
+    // 3
+    window.__xss = 0;
+    const payload = '<img src=x onerror="window.__xss=1">';
+    new ExceLikeTable('#t3', {
+      tableId: 'preview-3',
+      locale: 'ja',
+      pagination: false,
+      data: [
+        { id: 1, name: payload, memo: '普通のメモ' },
+        { id: 2, name: '佐藤', memo: '"><img src=x onerror="window.__xss=1">' },
+        { id: 3, name: '<b>太字にならないはず</b>', memo: '=HYPERLINK("http://example.com")' },
+      ],
+      columns: [{ key: 'name', title: '名前' }, { key: 'memo', title: 'メモ' }],
+    });
+    setInterval(() => {
+      const badge = document.getElementById('xss-badge');
+      if (window.__xss) {
+        badge.className = 'badge ng';
+        badge.textContent = 'スクリプトが実行されました（問題あり）';
+      }
+    }, 300);
+
+    // 4
+    new ExceLikeTable('#t4', {
+      tableId: 'preview-4',
+      locale: 'ja',
+      pagination: false,
+      data: [
+        { id: 1, item: 'ペン', qty: 0, active: false, note: null },
+        { id: 2, item: 'ノート', qty: 12, active: true },
+        { id: 3, item: '付箋', qty: 5, active: true, note: '' },
+      ],
+      columns: [{ key: 'item', title: '品名' }, { key: 'qty', title: '数量' }, { key: 'active', title: '販売中' }, { key: 'note', title: '備考' }],
+    });
+
+    // 5
+    const datasets = {
+      products: [
+        { code: 'A-01', product: 'ボールペン', price: 120, stock: 340 },
+        { code: 'A-02', product: 'ノート', price: 180, stock: 0 },
+        { code: 'B-10', product: 'ファイル', price: 250, stock: 75 },
+      ],
+      orders: [
+        { orderNo: 1001, customer: '株式会社サンプル', date: '2026-10-01', total: 48000 },
+        { orderNo: 1002, customer: '見本商事', date: '2026-10-12', total: 12500 },
+      ],
+    };
+    const t5 = new ExceLikeTable('#t5', { data: datasets.products, tableId: 'preview-5', locale: 'ja', persistSettings: false });
+    document.querySelectorAll('[data-set]').forEach((b) => b.addEventListener('click', () => t5.setData(datasets[b.dataset.set])));
+  </script>
+</body>
+</html>

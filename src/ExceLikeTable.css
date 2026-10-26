@@ -2048,3 +2048,8 @@
     transition: none;
   }
 }
+/* Sortable columns: the header title is clickable too */
+.excelike-table .header-content:has(.sort-indicator) .header-title {
+  cursor: pointer;
+  user-select: none;
+}

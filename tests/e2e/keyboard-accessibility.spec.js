@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const TEST_PAGE = '/test-filter-fix.html';
+const TEST_PAGE = '/tests/e2e/fixtures/filter-fix.html';
 
 test.describe('Keyboard Accessibility Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -13,10 +13,9 @@ test.describe('Keyboard Accessibility Tests', () => {
   test('should open filter dropdown with Enter key', async ({ page }) => {
     const filterBtn = page.locator('th:has-text("Name")').locator('.filter-btn');
 
-    // Focus the filter button using Tab
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab'); // Navigate to first filter button
+    // Keyboard users reach the filter button by focus; Enter must open it
+    await filterBtn.focus();
+    await expect(filterBtn).toBeFocused();
 
     // Press Enter to open dropdown
     await page.keyboard.press('Enter');
@@ -64,8 +63,8 @@ test.describe('Keyboard Accessibility Tests', () => {
     await filterBtn.click();
     await page.waitForTimeout(300);
 
-    // Select a filter option by clicking
-    const firstOption = page.locator('.filter-dropdown').locator('input[type="checkbox"]').first();
+    // Untick one value (not "Select All"), so the filter changes and OK stays enabled
+    const firstOption = page.locator('.filter-dropdown input.filter-checkbox:not([data-value="__all__"])').first();
     await firstOption.click();
     await page.waitForTimeout(200);
 

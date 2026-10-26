@@ -14,7 +14,7 @@ import { test, expect } from '@playwright/test';
  * 7. Responsive Design
  */
 
-const TEST_PAGE = '/test-filter-fix.html';
+const TEST_PAGE = '/tests/e2e/fixtures/filter-fix.html';
 
 test.describe('Filter Comprehensive Tests', () => {
 
@@ -70,9 +70,6 @@ test.describe('Filter Comprehensive Tests', () => {
       // Should start in range mode
       const rangeTab = dropdown.locator('button[data-mode="range"]');
       await expect(rangeTab).toHaveClass(/active/);
-
-      // Get initial position
-      const initialBox = await dropdown.boundingBox();
 
       // Switch to values mode
       const valuesTab = dropdown.locator('button[data-mode="values"]');

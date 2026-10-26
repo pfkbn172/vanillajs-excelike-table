@@ -306,5 +306,5 @@ class ConditionalFormattingApplier {
 
 // グローバルに公開
 if (typeof window !== 'undefined') {
-  window.ConditionalFormattingApplier = ConditionalFormattingApplier;
+  globalThis.ConditionalFormattingApplier = ConditionalFormattingApplier;
 }

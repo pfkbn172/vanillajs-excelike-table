@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Filter State Cleanup Test</title>
+  <link rel="stylesheet" href="/dist/excelike-table.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #1890ff;
+      padding-bottom: 10px;
+    }
+    .info {
+      background: #e6f7ff;
+      border-left: 4px solid #1890ff;
+      padding: 15px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Filter State Cleanup Test</h1>
+
+  <div class="info">
+    <strong>🎯 Test Scenario:</strong> Testing date filters with 50 records<br>
+    <strong>Features to test:</strong>
+    <ul style="margin: 10px 0 0 0;">
+      <li>Multiple dates in the same month (e.g., March 2020: 5 different days)</li>
+      <li>Date hierarchy filter: Year → Month → Day</li>
+      <li>Range filter for dates and numbers</li>
+      <li>Real-time filter updates</li>
+      <li>Multi-language month names</li>
+    </ul>
+  </div>
+
+  <div id="table1"></div>
+
+  <script src="/dist/excelike-table.browser.js"></script>
+  <script>
+    // Make table instance globally accessible
+    window.table1 = null;
+
+    const table1Data = [
+      // 通常データ
+      { id: 1, name: 'Alice Johnson', age: 28, city: 'New York', salary: 85000, joinDate: '2020-03-15', status: 'Active' },
+      { id: 2, name: 'Bob Smith', age: 35, city: 'Los Angeles', salary: 92000, joinDate: '2019-07-22', status: 'Active' },
+      // nullパターン
+      { id: 3, name: 'Carol Davis', age: null, city: '', salary: 78000, joinDate: null, status: 'On Leave' },
+      { id: 4, name: 'David Brown', age: 42, city: 'Houston', salary: 105000, joinDate: '2018-05-30', status: 'Active' },
+      { id: 5, name: 'Emma Wilson', age: 26, city: 'Phoenix', salary: 72000, joinDate: '2022-09-12', status: 'Active' },
+      { id: 6, name: 'Frank Miller', age: 39, city: null, salary: null, joinDate: '2019-11-05', status: '' },
+      { id: 7, name: 'Grace Lee', age: 33, city: 'San Antonio', salary: 88000, joinDate: '2020-08-18', status: 'Active' },
+      { id: 8, name: 'Henry Garcia', age: 45, city: 'San Diego', salary: 110000, joinDate: '2017-03-25', status: 'Active' },
+      { id: 9, name: 'Ivy Martinez', age: null, city: 'Dallas', salary: 81000, joinDate: '', status: 'Active' },
+      { id: 10, name: 'Jack Anderson', age: 37, city: 'San Jose', salary: 95000, joinDate: '2019-12-20', status: 'On Leave' },
+      // Same month (March 2020) with different days
+      { id: 11, name: 'Karen White', age: 29, city: 'Seattle', salary: 87000, joinDate: '2020-03-01', status: 'Active' },
+      { id: 12, name: 'Leo Thomas', age: 31, city: 'Portland', salary: 89000, joinDate: '2020-03-05', status: 'Active' },
+      { id: 13, name: 'Maria Rodriguez', age: 27, city: 'Denver', salary: 83000, joinDate: '2020-03-10', status: 'Active' },
+      { id: 14, name: 'Nathan Clark', age: 34, city: 'Austin', salary: 91000, joinDate: '2020-03-22', status: 'Active' },
+      { id: 15, name: 'Olivia Lewis', age: 30, city: 'Chicago', salary: 86000, joinDate: '2020-03-28', status: 'On Leave' },
+      // Same month (July 2019) with different days
+      { id: 16, name: 'Paul Walker', age: 40, city: 'Boston', salary: 98000, joinDate: '2019-07-03', status: 'Active' },
+      { id: 17, name: 'Quinn Hall', age: 36, city: 'Miami', salary: 94000, joinDate: '2019-07-15', status: 'Active' },
+      { id: 18, name: 'Rachel Young', age: 32, city: 'Atlanta', salary: 90000, joinDate: '2019-07-28', status: 'Active' },
+      // Same month (November 2019) with different days
+      { id: 19, name: 'Sam King', age: 38, city: 'Detroit', salary: 96000, joinDate: '2019-11-01', status: 'Active' },
+      { id: 20, name: 'Tina Wright', age: 41, city: 'Philadelphia', salary: 99000, joinDate: '2019-11-15', status: 'On Leave' },
+      { id: 21, name: 'Uma Scott', age: 35, city: 'Phoenix', salary: 93000, joinDate: '2019-11-25', status: 'Active' },
+      // Same month (September 2022) with different days
+      { id: 22, name: 'Victor Green', age: 28, city: 'Las Vegas', salary: 84000, joinDate: '2022-09-05', status: 'Active' },
+      { id: 23, name: 'Wendy Adams', age: 33, city: 'Portland', salary: 88000, joinDate: '2022-09-18', status: 'Active' },
+      { id: 24, name: 'Xavier Baker', age: 29, city: 'Austin', salary: 85000, joinDate: '2022-09-25', status: 'Active' },
+      // More 2020 dates across different months
+      { id: 25, name: 'Yara Nelson', age: 31, city: 'Seattle', salary: 87000, joinDate: '2020-01-12', status: 'Active' },
+      { id: 26, name: 'Zoe Carter', age: 27, city: 'Denver', salary: 82000, joinDate: '2020-02-08', status: 'Active' },
+      { id: 27, name: 'Aaron Mitchell', age: 44, city: 'Chicago', salary: 102000, joinDate: '2020-04-20', status: 'Active' },
+      { id: 28, name: 'Betty Perez', age: 36, city: 'Boston', salary: 95000, joinDate: '2020-05-15', status: 'On Leave' },
+      { id: 29, name: 'Carl Roberts', age: 39, city: 'Miami', salary: 97000, joinDate: '2020-06-10', status: 'Active' },
+      { id: 30, name: 'Diana Turner', age: 32, city: 'Atlanta', salary: 89000, joinDate: '2020-07-05', status: 'Active' },
+      // More 2019 dates
+      { id: 31, name: 'Eric Phillips', age: 43, city: 'Houston', salary: 104000, joinDate: '2019-01-15', status: 'Active' },
+      { id: 32, name: 'Fiona Campbell', age: 37, city: 'San Diego', salary: 94000, joinDate: '2019-02-20', status: 'Active' },
+      { id: 33, name: 'George Parker', age: 40, city: 'Dallas', salary: 98000, joinDate: '2019-03-25', status: 'On Leave' },
+      { id: 34, name: 'Hannah Evans', age: 34, city: 'San Antonio', salary: 91000, joinDate: '2019-04-18', status: 'Active' },
+      { id: 35, name: 'Ian Edwards', age: 38, city: 'Phoenix', salary: 96000, joinDate: '2019-05-22', status: 'Active' },
+      // More 2018 dates
+      { id: 36, name: 'Julia Collins', age: 45, city: 'New York', salary: 108000, joinDate: '2018-01-10', status: 'Active' },
+      { id: 37, name: 'Kevin Stewart', age: 41, city: 'Los Angeles', salary: 100000, joinDate: '2018-03-15', status: 'Active' },
+      { id: 38, name: 'Laura Morris', age: 39, city: 'Chicago', salary: 97000, joinDate: '2018-06-20', status: 'On Leave' },
+      { id: 39, name: 'Mike Rogers', age: 42, city: 'Seattle', salary: 103000, joinDate: '2018-09-12', status: 'Active' },
+      { id: 40, name: 'Nina Reed', age: 38, city: 'Boston', salary: 96000, joinDate: '2018-11-25', status: 'Active' },
+      // More 2017 dates
+      { id: 41, name: 'Oscar Cook', age: 46, city: 'Miami', salary: 112000, joinDate: '2017-01-08', status: 'Active' },
+      { id: 42, name: 'Paula Morgan', age: 44, city: 'Denver', salary: 105000, joinDate: '2017-04-15', status: 'Active' },
+      { id: 43, name: 'Quentin Bell', age: 47, city: 'Portland', salary: 115000, joinDate: '2017-07-20', status: 'On Leave' },
+      { id: 44, name: 'Rita Murphy', age: 43, city: 'Austin', salary: 104000, joinDate: '2017-10-12', status: 'Active' },
+      // More 2022 dates
+      { id: 45, name: 'Steve Bailey', age: 25, city: 'Seattle', salary: 70000, joinDate: '2022-01-15', status: 'Active' },
+      { id: 46, name: 'Tracy Rivera', age: 26, city: 'San Diego', salary: 73000, joinDate: '2022-03-22', status: 'Active' },
+      { id: 47, name: 'Ulysses Cooper', age: 27, city: 'Phoenix', salary: 75000, joinDate: '2022-05-18', status: 'Active' },
+      { id: 48, name: 'Vera Richardson', age: 28, city: 'Dallas', salary: 77000, joinDate: '2022-07-08', status: 'On Leave' },
+      // More null/empty values for testing
+      { id: 49, name: 'Walter Cox', age: null, city: 'Atlanta', salary: 80000, joinDate: null, status: 'Active' },
+      { id: 50, name: '', age: 35, city: '', salary: null, joinDate: '2021-06-10', status: '' },
+
+      // === 特殊パターンテストデータ ===
+
+      // 非常に長いテキスト
+      { id: 51, name: 'This is a very long name that contains more than 100 characters to test how the filter handles very long text strings in the dropdown menu and search functionality', age: 30, city: 'San Francisco', salary: 95000, joinDate: '2021-01-15', status: 'Active' },
+
+      // 特殊文字
+      { id: 52, name: '<script>alert("XSS")<\/script>', age: 32, city: 'City with "quotes"', salary: 87000, joinDate: '2021-02-20', status: 'Active & Special' },
+      { id: 53, name: "O'Brien & Sons", age: 34, city: 'Boston\'s Harbor', salary: 91000, joinDate: '2021-03-25', status: 'On Leave' },
+
+      // 絵文字
+      { id: 54, name: 'John 🚀 Rocket', age: 28, city: 'Los Angeles 🌴', salary: 88000, joinDate: '2021-04-10', status: '✅ Active' },
+      { id: 55, name: '田中 太郎 😊', age: 35, city: '東京 🗼', salary: 92000, joinDate: '2021-05-15', status: '活動中' },
+
+      // 同じ値が多数（全て同じ）
+      { id: 56, name: 'Duplicate Name', age: 25, city: 'Same City', salary: 75000, joinDate: '2021-06-01', status: 'Active' },
+      { id: 57, name: 'Duplicate Name', age: 25, city: 'Same City', salary: 75000, joinDate: '2021-06-01', status: 'Active' },
+      { id: 58, name: 'Duplicate Name', age: 25, city: 'Same City', salary: 75000, joinDate: '2021-06-01', status: 'Active' },
+      { id: 59, name: 'Duplicate Name', age: 25, city: 'Same City', salary: 75000, joinDate: '2021-06-01', status: 'Active' },
+      { id: 60, name: 'Duplicate Name', age: 25, city: 'Same City', salary: 75000, joinDate: '2021-06-01', status: 'Active' },
+
+      // 負の数・小数
+      { id: 61, name: 'Negative Tester', age: -5, city: 'Test City', salary: -1000, joinDate: '2021-07-10', status: 'Active' },
+      { id: 62, name: 'Decimal Tester', age: 25.5, city: 'Test City', salary: 75500.50, joinDate: '2021-08-15', status: 'Active' },
+      { id: 63, name: 'Zero Tester', age: 0, city: 'Test City', salary: 0, joinDate: '2021-09-20', status: 'Active' },
+
+      // 空文字列パターン（nullとは異なる）
+      { id: 64, name: '', age: 30, city: '', salary: 80000, joinDate: '2021-10-25', status: '' },
+      { id: 65, name: '', age: 31, city: '', salary: 81000, joinDate: '2021-11-30', status: '' },
+      { id: 66, name: '', age: 32, city: '', salary: 82000, joinDate: '2021-12-05', status: '' },
+
+      // さらにnullパターン
+      { id: 67, name: null, age: null, city: null, salary: null, joinDate: null, status: null },
+      { id: 68, name: null, age: null, city: null, salary: null, joinDate: null, status: null },
+      { id: 69, name: null, age: null, city: null, salary: null, joinDate: null, status: null },
+
+      // 同じ月に多数の異なる日
+      { id: 70, name: 'Jan Test 1', age: 30, city: 'City A', salary: 70000, joinDate: '2023-01-01', status: 'Active' },
+      { id: 71, name: 'Jan Test 2', age: 31, city: 'City A', salary: 71000, joinDate: '2023-01-05', status: 'Active' },
+      { id: 72, name: 'Jan Test 3', age: 32, city: 'City A', salary: 72000, joinDate: '2023-01-10', status: 'Active' },
+      { id: 73, name: 'Jan Test 4', age: 33, city: 'City A', salary: 73000, joinDate: '2023-01-15', status: 'Active' },
+      { id: 74, name: 'Jan Test 5', age: 34, city: 'City A', salary: 74000, joinDate: '2023-01-20', status: 'Active' },
+      { id: 75, name: 'Jan Test 6', age: 35, city: 'City A', salary: 75000, joinDate: '2023-01-25', status: 'Active' },
+      { id: 76, name: 'Jan Test 7', age: 36, city: 'City A', salary: 76000, joinDate: '2023-01-28', status: 'Active' },
+      { id: 77, name: 'Jan Test 8', age: 37, city: 'City A', salary: 77000, joinDate: '2023-01-30', status: 'Active' },
+
+      // ホワイトスペース
+      { id: 78, name: '   ', age: 40, city: '   ', salary: 80000, joinDate: '2023-02-01', status: '   ' },
+      { id: 79, name: '\t\t', age: 41, city: '\n\n', salary: 81000, joinDate: '2023-02-05', status: '\r\n' }
+    ];
+
+    try {
+      console.log('Creating table...');
+      window.table1 = new ExceLikeTable('#table1', {
+        tableId: 'filter-test-table',
+        data: table1Data,
+        columns: [
+          { key: 'name', title: 'Name', dataIndex: 'name' },
+          { key: 'age', title: 'Age', dataIndex: 'age', filterType: 'number' },
+          { key: 'city', title: 'City', dataIndex: 'city' },
+          { key: 'joinDate', title: 'Join Date', dataIndex: 'joinDate', filterType: 'date-hierarchy' },
+          { key: 'status', title: 'Status', dataIndex: 'status' }
+        ]
+      });
+
+      console.log('✅ Table created successfully!');
+      console.log('Container exists:', !!window.table1.container);
+    } catch (error) {
+      console.error('❌ Error creating table:', error);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+
+    // Simulate the conflicting state that the automatic test script creates
+    // DISABLED FOR E2E TESTS - This interferes with automated tests
+    // Uncomment for manual testing of state cleanup
+    /*
+    setTimeout(() => {
+      console.log('🔧 Simulating conflicting filter state...');
+      console.log('Before:', {
+        filterModes: JSON.parse(JSON.stringify(table1.state.filterModes || {})),
+        filters: JSON.parse(JSON.stringify(table1.state.filters || {})),
+        rangeFilters: JSON.parse(JSON.stringify(table1.state.rangeFilters || {}))
+      });
+
+      // Set up conflicting state: both range mode AND value filter
+      table1.state.filterModes = { age: 'range' };
+      table1.state.rangeFilters = { age: { min: 30, max: 40 } };
+      table1.state.filters = { age: [null] };  // This should be cleaned up when panel opens
+      table1.state.rangeIncludeBlanks = { age: false };
+
+      // Apply the conflicting filters
+      table1.applyFilters();
+      table1.renderBody();
+      table1.renderPagination();
+
+      console.log('After setup:', {
+        filterModes: JSON.parse(JSON.stringify(table1.state.filterModes)),
+        filters: JSON.parse(JSON.stringify(table1.state.filters)),
+        rangeFilters: JSON.parse(JSON.stringify(table1.state.rangeFilters)),
+        filteredCount: table1.state.filteredData.length
+      });
+
+      console.log('✅ Conflicting state created. Now click the Age filter button to test cleanup.');
+    }, 1000);
+    */
+  </script>
+</body>
+</html>

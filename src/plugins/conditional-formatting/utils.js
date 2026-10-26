@@ -1,11 +1,11 @@
 // グローバル名前空間の初期化
-window.CF_UTILS = window.CF_UTILS || {};
+globalThis.CF_UTILS = globalThis.CF_UTILS || {};
 
 (function() {
     'use strict';
 
     // 定数の取得
-    const { DEFAULT_STYLES, LOG_LEVEL, COLOR_UTILS, ERROR_TYPES, VALIDATION, MESSAGES } = window.CF_CONSTANTS || {};
+    const { ERROR_TYPES, VALIDATION } = globalThis.CF_CONSTANTS || {};
 
     /**
      * 統一されたエラーハンドリングシステム
@@ -59,8 +59,8 @@ window.CF_UTILS = window.CF_UTILS || {};
         categorizeError(error) {
             if (error.name === 'ValidationError') return ERROR_TYPES.VALIDATION;
             if (error.name === 'ReferenceError' || error.name === 'TypeError') return ERROR_TYPES.RUNTIME;
-            if (error.message.includes('保存') || error.message.includes('save')) return ERROR_TYPES.SAVE;
-            if (error.message.includes('読み込み') || error.message.includes('load')) return ERROR_TYPES.LOAD;
+            if (/save/i.test(error.message)) return ERROR_TYPES.SAVE;
+            if (/load/i.test(error.message)) return ERROR_TYPES.LOAD;
             return ERROR_TYPES.RUNTIME;
         }
 
@@ -79,9 +79,16 @@ window.CF_UTILS = window.CF_UTILS || {};
      * カスタムバリデーションエラー
      */
     class ValidationError extends Error {
-        constructor(message) {
+        /**
+         * @param {string} message - English message (for developers / logs)
+         * @param {string} [i18nKey] - Translation key shown to end users by the UI
+         * @param {Object} [params] - Interpolation params for the translation
+         */
+        constructor(message, i18nKey = null, params = {}) {
             super(message);
             this.name = 'ValidationError';
+            this.i18nKey = i18nKey;
+            this.params = params;
         }
     }
 
@@ -94,10 +101,10 @@ window.CF_UTILS = window.CF_UTILS || {};
          */
         static validateRuleName(name) {
             if (!name || typeof name !== 'string') {
-                throw new ValidationError('ルール名は必須です');
+                throw new ValidationError('Rule name is required', 'cf.validation.nameRequired');
             }
             if (name.length > VALIDATION.MAX_RULE_NAME_LENGTH) {
-                throw new ValidationError(`ルール名は${VALIDATION.MAX_RULE_NAME_LENGTH}文字以内で入力してください`);
+                throw new ValidationError(`Rule name must be at most ${VALIDATION.MAX_RULE_NAME_LENGTH} characters`, 'cf.validation.nameTooLong', { max: VALIDATION.MAX_RULE_NAME_LENGTH });
             }
             return true;
         }
@@ -107,7 +114,7 @@ window.CF_UTILS = window.CF_UTILS || {};
          */
         static validateColor(color) {
             if (color && !VALIDATION.COLOR_REGEX.test(color)) {
-                throw new ValidationError('有効なカラーコード（#RRGGBB）を入力してください');
+                throw new ValidationError('Color must be a hex code like #RRGGBB', 'cf.validation.invalidColor');
             }
             return true;
         }
@@ -117,7 +124,7 @@ window.CF_UTILS = window.CF_UTILS || {};
          */
         static validateOperator(operator, validOperators) {
             if (!validOperators.includes(operator)) {
-                throw new ValidationError(`無効な演算子です: ${operator}`);
+                throw new ValidationError(`Invalid operator: ${operator}`, 'cf.validation.invalidOperator', { operator });
             }
             return true;
         }
@@ -127,7 +134,7 @@ window.CF_UTILS = window.CF_UTILS || {};
          */
         static validateValueLength(value) {
             if (value && value.length > VALIDATION.MAX_VALUE_LENGTH) {
-                throw new ValidationError(`値は${VALIDATION.MAX_VALUE_LENGTH}文字以内で入力してください`);
+                throw new ValidationError(`Value must be at most ${VALIDATION.MAX_VALUE_LENGTH} characters`, 'cf.validation.valueTooLong', { max: VALIDATION.MAX_VALUE_LENGTH });
             }
             return true;
         }
@@ -549,17 +556,17 @@ window.CF_UTILS = window.CF_UTILS || {};
     }
 
     // グローバルに公開
-    window.CF_UTILS.ErrorHandler = ErrorHandler;
-    window.CF_UTILS.ValidationError = ValidationError;
-    window.CF_UTILS.ValidationUtils = ValidationUtils;
-    window.CF_UTILS.DOMUtils = DOMUtils;
-    window.CF_UTILS.StringUtils = StringUtils;
-    window.CF_UTILS.PerformanceUtils = PerformanceUtils;
-    window.CF_UTILS.InitializationHelper = InitializationHelper;
-    window.CF_UTILS.CellPosition = CellPosition;
-    window.CF_UTILS.RuleEvaluator = RuleEvaluator;
-    window.CF_UTILS.PriorityManager = PriorityManager;
-    window.CF_UTILS.Validator = Validator;
-    window.CF_UTILS.PerformanceMonitor = PerformanceMonitor;
+    globalThis.CF_UTILS.ErrorHandler = ErrorHandler;
+    globalThis.CF_UTILS.ValidationError = ValidationError;
+    globalThis.CF_UTILS.ValidationUtils = ValidationUtils;
+    globalThis.CF_UTILS.DOMUtils = DOMUtils;
+    globalThis.CF_UTILS.StringUtils = StringUtils;
+    globalThis.CF_UTILS.PerformanceUtils = PerformanceUtils;
+    globalThis.CF_UTILS.InitializationHelper = InitializationHelper;
+    globalThis.CF_UTILS.CellPosition = CellPosition;
+    globalThis.CF_UTILS.RuleEvaluator = RuleEvaluator;
+    globalThis.CF_UTILS.PriorityManager = PriorityManager;
+    globalThis.CF_UTILS.Validator = Validator;
+    globalThis.CF_UTILS.PerformanceMonitor = PerformanceMonitor;
 
 })();

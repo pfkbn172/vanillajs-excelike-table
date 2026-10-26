@@ -1,243 +1,49 @@
 # Security Policy
 
-## Supported Versions
+## Supported versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 2.2.0+  | :white_check_mark: |
-| 2.0.4-2.1.x | :x: (Bundle bloat, removed XSS protection) |
-| < 2.0.4 | :x:                |
+| Version | Supported |
+|---|---|
+| 2.4.x | ✅ |
+| < 2.4.0 | ❌ — values from the data were inserted into the filter drop-down as HTML (see below). Please upgrade. |
 
-## Security Philosophy
+## Reporting a vulnerability
 
-**This library does NOT provide built-in XSS protection.** Following industry standards (AG-Grid, TanStack Table, DataTables, Handsontable), security is the responsibility of the application layer.
+Please open a private security advisory on the GitHub repository rather than a public issue.
 
-### Why No Built-in XSS Protection?
+## What the library escapes
 
-1. **Industry Standard**: Major table libraries don't include XSS sanitization
-2. **Bundle Size**: Reduces bundle size by ~45KB (31% reduction)
-3. **Flexibility**: Users can choose their preferred sanitization approach
-4. **Application Responsibility**: Security should be handled at the application level
+| Rendered content | How |
+|---|---|
+| Cell values (no `render`) | Text (`textContent`) |
+| Column titles, filter drop-down titles and value lists, column settings | HTML-escaped |
+| `ColumnHelpers.number / status / actions` output | HTML-escaped |
+| CSV export | RFC 4180 quoting; values starting with `=`, `+`, `-`, `@`, tab or CR are prefixed with `'` so spreadsheets do not run them as formulas (plain numbers such as `-5` are kept) |
 
-## Security Features
+### Fixed in 2.4.0
 
-### CSV Formula Injection Protection
+In 2.3.3 and earlier, the values listed in a column's filter drop-down (and the title shown at its top) were inserted as HTML. Data such as `<img src=x onerror=…>` ran as script when a user opened that filter. `ColumnHelpers.status()` and `ColumnHelpers.number()` also returned data unescaped.
 
-The library automatically escapes dangerous characters in CSV exports to prevent formula injection attacks:
+## What you are responsible for
 
-```javascript
-// Automatically escapes formulas starting with: = + - @ \t \r
-const data = [
-  { name: '=1+1' } // Exported as '=1+1 (safe)
-];
+Two things are inserted as HTML on purpose:
 
-table.exportToCSV(data, columns);
+1. **Strings returned by your own `render` functions.**
+2. **Cell values when you set `renderCellHTML: true`.**
+
+If either can contain input you did not write, escape it or return a DOM node instead of a string:
+
+```js
+// Escape with your own helper or a library such as DOMPurify
+render: (value) => DOMPurify.sanitize(value)
+
+// Or return a node: its text is never parsed as HTML
+render: (value) => Object.assign(document.createElement('strong'), { textContent: value })
+
+// Unsafe if `value` comes from users
+render: (value) => `<strong>${value}</strong>`
 ```
 
-### DoS Protection
+## Data stored in the browser
 
-The library includes validation for table size limits to prevent Denial of Service attacks:
-
-- **Max Rows**: 100,000 rows
-- **Max Columns**: 100 columns
-- **Max Cell Size**: 10,000 characters
-- **Max Total Size**: 50MB
-
-## Security Best Practices for Users
-
-### 1. Sanitize User Input
-
-**You MUST sanitize user input before rendering HTML in the table.**
-
-```javascript
-// Option 1: Use DOMPurify (recommended)
-import DOMPurify from 'dompurify';
-
-const table = new ExceLikeTable('#container', {
-  data: myData,
-  columns: [{
-    key: 'description',
-    title: 'Description',
-    dataIndex: 'description',
-    render: (value) => DOMPurify.sanitize(value)
-  }]
-});
-
-// Option 2: Use textContent (safest)
-columns: [{
-  render: (value) => {
-    const span = document.createElement('span');
-    span.textContent = value; // Automatically escapes HTML
-    return span;
-  }
-}]
-
-// ⚠️ UNSAFE - Never use unsanitized user input
-columns: [{
-  render: (userInput) => `<div>${userInput}</div>` // DANGEROUS!
-}]
-```
-
-### 2. Implement Content Security Policy (CSP)
-
-For enhanced security, implement a Content Security Policy in your application:
-
-```html
-<meta http-equiv="Content-Security-Policy" content="
-  default-src 'self';
-  script-src 'self';
-  style-src 'self' 'unsafe-inline';
-  img-src 'self' data: https:;
-  font-src 'self' data:;
-  connect-src 'self';
-  frame-ancestors 'none';
-  base-uri 'self';
-  form-action 'self';
-">
-```
-
-#### CSP Directives Explained
-
-- `default-src 'self'` - Only allow resources from same origin
-- `script-src 'self'` - Only allow scripts from same origin
-- `style-src 'self' 'unsafe-inline'` - Allow inline styles (required for dynamic styling)
-- `img-src 'self' data: https:` - Allow images from same origin, data URLs, and HTTPS
-- `frame-ancestors 'none'` - Prevent clickjacking attacks
-- `base-uri 'self'` - Restrict base tag to same origin
-- `form-action 'self'` - Only allow form submissions to same origin
-
-### 3. Keep Dependencies Updated
-
-Always use the latest version of the library:
-
-```bash
-npm update vanillajs-excelike-table
-npm audit fix
-```
-
-### 4. Use HTTPS
-
-Always serve your application over HTTPS to prevent man-in-the-middle attacks.
-
-### 5. Regular Security Audits
-
-Run regular security audits:
-
-```bash
-npm audit
-npm audit fix
-```
-
-### 6. Plugin Security
-
-Be cautious when using third-party plugins:
-
-```javascript
-// ✅ Verify plugin source
-import { PluginName } from 'verified-source';
-
-// ⚠️ Review plugin code before use
-table.registerPlugin(untrustedPlugin); // Review first!
-```
-
-## Reporting a Vulnerability
-
-**Please do not report security vulnerabilities through public GitHub issues.**
-
-Instead, please report them via email to: [security@your-project.com]
-
-You should receive a response within 48 hours. If for some reason you do not, please follow up via email to ensure we received your original message.
-
-Please include:
-
-- Type of issue (e.g., XSS, CSV injection, DoS, etc.)
-- Full paths of source file(s) related to the issue
-- Location of the affected source code (tag/branch/commit or direct URL)
-- Any special configuration required to reproduce the issue
-- Step-by-step instructions to reproduce the issue
-- Proof-of-concept or exploit code (if possible)
-- Impact of the issue, including how an attacker might exploit it
-
-## Security Changelog
-
-### Version 2.2.0 (2025-10-13)
-
-**Breaking Changes:**
-- ❌ **Removed built-in XSS protection** - Applications must sanitize user input
-- ❌ **Removed DOMPurify dependency** - Bundle size reduced by 31%
-- ✅ **Kept CSV formula injection protection**
-- ✅ **Kept DoS protection (table size limits)**
-
-**Migration Guide:**
-
-```javascript
-// Before (v2.1.x): Automatic sanitization
-render: (value) => `<span>${value}</span>` // Was automatically sanitized
-
-// After (v2.2.0+): Manual sanitization required
-import DOMPurify from 'dompurify';
-render: (value) => DOMPurify.sanitize(`<span>${value}</span>`)
-```
-
-**Impact:**
-- ⚠️ **Breaking**: Applications must implement their own XSS protection
-- ✅ **Positive**: Bundle size reduced by ~45KB (31% reduction)
-- ✅ **Positive**: Follows industry standards (AG-Grid, TanStack Table, etc.)
-
-### Version 2.0.4 - 2.1.x (2025-10-08)
-
-**Security Features (Removed in v2.2.0):**
-- ~~DOMPurify integration for XSS protection~~
-- ~~Automatic HTML sanitization~~
-- ~~Built-in XSS prevention~~
-
-**Security Features (Still Present):**
-- ✅ CSV formula injection protection
-- ✅ DoS protection (table size limits)
-
-### Version 2.0.3 and Earlier
-
-⚠️ **Known Vulnerabilities:**
-- No CSV formula injection protection
-- No DoS protection
-
-**Recommendation:** Upgrade to version 2.2.0 or later.
-
-## Security Testing
-
-The library includes security tests in the test suite:
-
-```bash
-npm test
-```
-
-Security test coverage:
-- CSV formula injection protection
-- DoS protection (table size limits)
-- Input validation
-
-## Known Limitations
-
-1. **No Built-in XSS Protection**: Applications must implement their own XSS sanitization
-2. **Inline Styles**: CSP requires `'unsafe-inline'` for `style-src` due to dynamic styling
-3. **Plugin System**: Third-party plugins may bypass security measures. Always review plugin code before use
-4. **Custom Render Functions**: You are responsible for sanitizing all HTML content returned from render functions
-
-## Security Resources
-
-- [OWASP XSS Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html)
-- [Content Security Policy Reference](https://content-security-policy.com/)
-- [DOMPurify Documentation](https://github.com/cure53/DOMPurify) - Recommended XSS sanitization library
-- [CSV Injection](https://owasp.org/www-community/attacks/CSV_Injection)
-
-## Responsible Disclosure
-
-We practice responsible disclosure and will:
-
-1. Confirm receipt of your report within 48 hours
-2. Provide an estimated timeline for a fix within 7 days
-3. Notify you when the fix is released
-4. Credit you in the security changelog (if desired)
-5. Coordinate public disclosure timing with you
-
-Thank you for helping keep vanillajs-excelike-table secure!
+With `persistSettings` (default `true`) the table stores UI settings — sort, filters, column widths and visibility, font size, theme, conditional formatting rules — in `localStorage` under keys starting with `excelike`. Filter values are part of that state, so they stay in the browser after the page is closed. Set `persistSettings: false` if filter values are sensitive.

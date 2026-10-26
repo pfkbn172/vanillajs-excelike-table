@@ -4,10 +4,10 @@
  */
 
 // グローバル名前空間に定数を定義
-window.CF_CONSTANTS = window.CF_CONSTANTS || {};
+globalThis.CF_CONSTANTS = globalThis.CF_CONSTANTS || {};
 
 // タイミング関連の定数
-window.CF_CONSTANTS.TIMING = {
+globalThis.CF_CONSTANTS.TIMING = {
   INITIAL_APPLY_DELAY: 100,      // 初期適用の遅延時間（ms）
   REAPPLY_DELAY: 200,            // 再適用の遅延時間（ms）
   MUTATION_DEBOUNCE: 100,        // DOM変更の検知デバウンス（ms）
@@ -18,7 +18,7 @@ window.CF_CONSTANTS.TIMING = {
 };
 
 // カラー関連の定数
-window.CF_CONSTANTS.COLORS = {
+globalThis.CF_CONSTANTS.COLORS = {
   DEFAULT_TEXT_COLOR: '#000000',
   DEFAULT_BACKGROUND_COLOR: '#ffffff',
   PRIMARY_ACCENT: '#1890ff',
@@ -30,7 +30,7 @@ window.CF_CONSTANTS.COLORS = {
 };
 
 // 演算子マッピング
-window.CF_CONSTANTS.OPERATORS = {
+globalThis.CF_CONSTANTS.OPERATORS = {
   EQUALS: 'equals',
   NOT_EQUALS: 'not-equals',
   GREATER: 'greater',
@@ -42,32 +42,32 @@ window.CF_CONSTANTS.OPERATORS = {
 };
 
 // 演算子表示マップ
-window.CF_CONSTANTS.OPERATOR_SYMBOLS = {
-  [window.CF_CONSTANTS.OPERATORS.EQUALS]: '=',
-  [window.CF_CONSTANTS.OPERATORS.NOT_EQUALS]: '≠',
-  [window.CF_CONSTANTS.OPERATORS.GREATER]: '>',
-  [window.CF_CONSTANTS.OPERATORS.GREATER_EQUAL]: '≥',
-  [window.CF_CONSTANTS.OPERATORS.LESS]: '<',
-  [window.CF_CONSTANTS.OPERATORS.LESS_EQUAL]: '≤',
-  [window.CF_CONSTANTS.OPERATORS.CONTAINS]: 'contains',
-  [window.CF_CONSTANTS.OPERATORS.NOT_CONTAINS]: '!contains'
+globalThis.CF_CONSTANTS.OPERATOR_SYMBOLS = {
+  [globalThis.CF_CONSTANTS.OPERATORS.EQUALS]: '=',
+  [globalThis.CF_CONSTANTS.OPERATORS.NOT_EQUALS]: '≠',
+  [globalThis.CF_CONSTANTS.OPERATORS.GREATER]: '>',
+  [globalThis.CF_CONSTANTS.OPERATORS.GREATER_EQUAL]: '≥',
+  [globalThis.CF_CONSTANTS.OPERATORS.LESS]: '<',
+  [globalThis.CF_CONSTANTS.OPERATORS.LESS_EQUAL]: '≤',
+  [globalThis.CF_CONSTANTS.OPERATORS.CONTAINS]: 'contains',
+  [globalThis.CF_CONSTANTS.OPERATORS.NOT_CONTAINS]: '!contains'
 };
 
 // データ型
-window.CF_CONSTANTS.DATA_TYPES = {
+globalThis.CF_CONSTANTS.DATA_TYPES = {
   TEXT: 'text',
   NUMBER: 'number',
   DATE: 'date'
 };
 
 // 適用対象
-window.CF_CONSTANTS.APPLY_TO = {
+globalThis.CF_CONSTANTS.APPLY_TO = {
   CELL: 'cell',
   ROW: 'row'
 };
 
 // UI要素のサイズとスタイル
-window.CF_CONSTANTS.UI = {
+globalThis.CF_CONSTANTS.UI = {
   COLOR_INPUT_WIDTH: '60px',
   COLOR_INPUT_HEIGHT: '40px',
   MODAL_Z_INDEX: 10000,
@@ -78,7 +78,7 @@ window.CF_CONSTANTS.UI = {
 };
 
 // バリデーション関連
-window.CF_CONSTANTS.VALIDATION = {
+globalThis.CF_CONSTANTS.VALIDATION = {
   MAX_RULE_NAME_LENGTH: 100,
   MAX_VALUE_LENGTH: 1000,
   MAX_RULES_COUNT: 100,
@@ -86,20 +86,20 @@ window.CF_CONSTANTS.VALIDATION = {
 };
 
 // メッセージ
-window.CF_CONSTANTS.MESSAGES = {
-  RULE_CREATED: 'ルールを作成しました',
-  RULE_UPDATED: 'ルールを更新しました',
-  RULE_DELETED: 'ルールを削除しました',
-  RULES_APPLIED: 'ルールを適用しました',
-  PRIORITY_UPDATED: '優先度を更新し、ルールを再適用しました',
-  ERROR_SAVE: 'ルールの保存に失敗しました',
-  ERROR_LOAD: 'ルールの読み込みに失敗しました',
-  ERROR_APPLY: 'ルールの適用に失敗しました',
-  CONFIRM_DELETE: 'ルール"{0}"を削除してもよろしいですか？'
+globalThis.CF_CONSTANTS.MESSAGES = {
+  RULE_CREATED: 'Rule created',
+  RULE_UPDATED: 'Rule updated',
+  RULE_DELETED: 'Rule deleted',
+  RULES_APPLIED: 'Rules applied',
+  PRIORITY_UPDATED: 'Priority updated and rules re-applied',
+  ERROR_SAVE: 'Failed to save rules',
+  ERROR_LOAD: 'Failed to load rules',
+  ERROR_APPLY: 'Failed to apply rules',
+  CONFIRM_DELETE: 'Delete rule "{0}"?'
 };
 
 // CSS クラス名
-window.CF_CONSTANTS.CSS_CLASSES = {
+globalThis.CF_CONSTANTS.CSS_CLASSES = {
   FORMATTED: 'cf-formatted',
   ROW_FORMATTED: 'cf-row-formatted',
   MODAL_OVERLAY: 'modal-overlay',
@@ -112,12 +112,12 @@ window.CF_CONSTANTS.CSS_CLASSES = {
 };
 
 // デフォルト設定
-window.CF_CONSTANTS.DEFAULT_OPTIONS = {
+globalThis.CF_CONSTANTS.DEFAULT_OPTIONS = {
   enabled: true,
   autoApply: true,
-  maxRules: window.CF_CONSTANTS.VALIDATION.MAX_RULES_COUNT,
+  maxRules: globalThis.CF_CONSTANTS.VALIDATION.MAX_RULES_COUNT,
   performance: {
-    debounceDelay: window.CF_CONSTANTS.TIMING.MUTATION_DEBOUNCE,
+    debounceDelay: globalThis.CF_CONSTANTS.TIMING.MUTATION_DEBOUNCE,
     cacheTimeout: 5000  // セルキャッシュのタイムアウト（ms）
   },
   ui: {
@@ -128,10 +128,10 @@ window.CF_CONSTANTS.DEFAULT_OPTIONS = {
 };
 
 // すべての定数を一つにまとめてエクスポート（互換性のため）
-window.CF_CONSTANTS.ALL = window.CF_CONSTANTS;
+globalThis.CF_CONSTANTS.ALL = globalThis.CF_CONSTANTS;
 
 // エラータイプ
-window.CF_CONSTANTS.ERROR_TYPES = {
+globalThis.CF_CONSTANTS.ERROR_TYPES = {
   VALIDATION: 'VALIDATION_ERROR',
   RUNTIME: 'RUNTIME_ERROR',
   INITIALIZATION: 'INITIALIZATION_ERROR',

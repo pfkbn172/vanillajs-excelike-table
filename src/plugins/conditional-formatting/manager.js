@@ -7,12 +7,12 @@
   'use strict';
   
   // 定数を取得
-  const CF_CONSTANTS = window.CF_CONSTANTS || {};
-  const { ERROR_TYPES, VALIDATION, MESSAGES, DEFAULT_OPTIONS } = CF_CONSTANTS;
+  const CF_CONSTANTS = globalThis.CF_CONSTANTS || {};
+  const { DEFAULT_OPTIONS } = CF_CONSTANTS;
   
   // ユーティリティを取得
-  const CF_UTILS = window.CF_UTILS || {};
-  const { ErrorHandler, ValidationError, ValidationUtils, InitializationHelper, StringUtils } = CF_UTILS;
+  const CF_UTILS = globalThis.CF_UTILS || {};
+  const { ErrorHandler, ValidationError, InitializationHelper } = CF_UTILS;
   
   class ConditionalFormattingManager {
   constructor(options = {}) {
@@ -44,17 +44,17 @@
       // バリデーション
       const validation = rule.validate();
       if (!validation.isValid) {
-        throw new ValidationError(`ルール検証エラー: ${validation.errors.join(', ')}`);
+        throw new ValidationError(`Invalid rule: ${validation.errors.join(', ')}`, 'cf.validation.ruleInvalid', { errors: validation.errors.join(', ') });
       }
       
       // 最大ルール数チェック
       if (this.rules.length >= this.options.maxRules) {
-        throw new ValidationError(`ルール数が上限（${this.options.maxRules}）に達しています`);
+        throw new ValidationError(`Rule limit reached (${this.options.maxRules})`, 'cf.validation.tooManyRules', { max: this.options.maxRules });
       }
       
       // 重複チェック
       if (this.rules.some(r => r.id === rule.id)) {
-        throw new ValidationError(`ルールID ${rule.id} は既に存在します`);
+        throw new ValidationError(`Rule ID ${rule.id} already exists`);
       }
       
       // 優先度が未設定の場合は最低優先度を割り当て
@@ -83,7 +83,7 @@
     try {
       const ruleIndex = this.rules.findIndex(r => r.id === ruleId);
       if (ruleIndex === -1) {
-        throw new ValidationError(`ルールID ${ruleId} が見つかりません`);
+        throw new ValidationError(`Rule ID ${ruleId} not found`);
       }
       
       const rule = this.rules[ruleIndex];
@@ -95,7 +95,7 @@
         // 更新後のバリデーション
         const validation = rule.validate();
         if (!validation.isValid) {
-          throw new ValidationError(`更新後のルール検証エラー: ${validation.errors.join(', ')}`);
+          throw new ValidationError(`Invalid rule after update: ${validation.errors.join(', ')}`, 'cf.validation.ruleInvalid', { errors: validation.errors.join(', ') });
         }
         
         this.save();
@@ -119,11 +119,10 @@
    */
   removeRule(ruleId) {
     try {
-      const initialLength = this.rules.length;
       const removedRule = this.rules.find(r => r.id === ruleId);
       
       if (!removedRule) {
-        throw new ValidationError(`ルールID ${ruleId} が見つかりません`);
+        throw new ValidationError(`Rule ID ${ruleId} not found`);
       }
       
       this.rules = this.rules.filter(r => r.id !== ruleId);
@@ -169,7 +168,7 @@
       const currentIndex = sortedRules.findIndex(r => r.id === ruleId);
       
       if (currentIndex === -1) {
-        throw new ValidationError(`ルールID ${ruleId} が見つかりません`);
+        throw new ValidationError(`Rule ID ${ruleId} not found`);
       }
       
       const newIndex = currentIndex + direction;
@@ -252,7 +251,7 @@
     try {
       const rule = this.getRule(ruleId);
       if (!rule) {
-        throw new ValidationError(`ルールID ${ruleId} が見つかりません`);
+        throw new ValidationError(`Rule ID ${ruleId} not found`);
       }
       
       const previousState = rule.enabled;
@@ -294,7 +293,7 @@
 
       // データサイズチェック（LocalStorageの制限対策）
       if (serialized.length > 5 * 1024 * 1024) { // 5MB制限
-        throw new Error('保存データが大きすぎます');
+        throw new Error('Saved rules are too large to store');
       }
 
       // Test localStorage write capability before actual save
@@ -363,7 +362,7 @@
 
       // ルールを復元
       this.rules = parsed.rules.map(ruleData =>
-        ConditionalFormattingRule.fromJSON(ruleData)
+        globalThis.ConditionalFormattingRule.fromJSON(ruleData)
       );
 
       // 優先度の整合性チェック
@@ -469,7 +468,7 @@
 
   // グローバルに公開
   if (typeof window !== 'undefined') {
-    window.ConditionalFormattingManager = ConditionalFormattingManager;
+    globalThis.ConditionalFormattingManager = ConditionalFormattingManager;
   }
   
 })();

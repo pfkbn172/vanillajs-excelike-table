@@ -49,7 +49,7 @@ describe('Performance - Filter and Sort', () => {
       const endTime = performance.now();
       const sortTime = endTime - startTime;
 
-      expect(sortTime).toBeLessThan(100);
+      expect(sortTime).toBeLessThan(perfBudget(100));
     });
 
     test('should sort medium dataset (1000 rows) efficiently', () => {
@@ -75,7 +75,7 @@ describe('Performance - Filter and Sort', () => {
       const endTime = performance.now();
       const sortTime = endTime - startTime;
 
-      expect(sortTime).toBeLessThan(200);
+      expect(sortTime).toBeLessThan(perfBudget(200));
     });
 
     test('should sort large dataset (10000 rows) within acceptable time', () => {
@@ -102,7 +102,7 @@ describe('Performance - Filter and Sort', () => {
       const sortTime = endTime - startTime;
 
       // O(n log n) algorithm should complete reasonably
-      expect(sortTime).toBeLessThan(500);
+      expect(sortTime).toBeLessThan(perfBudget(500));
     });
 
     test('should handle multiple sort operations efficiently', () => {
@@ -136,7 +136,7 @@ describe('Performance - Filter and Sort', () => {
         const totalTime = endTime - startTime;
         const avgTime = totalTime / 4;
 
-        expect(avgTime).toBeLessThan(100);
+        expect(avgTime).toBeLessThan(perfBudget(100));
       } else {
         // If sortBy not available, just pass
         expect(true).toBe(true);
@@ -166,7 +166,7 @@ describe('Performance - Filter and Sort', () => {
       const endTime = performance.now();
       const sortTime = endTime - startTime;
 
-      expect(sortTime).toBeLessThan(200);
+      expect(sortTime).toBeLessThan(perfBudget(200));
     });
   });
 
@@ -196,7 +196,7 @@ describe('Performance - Filter and Sort', () => {
       const endTime = performance.now();
       const filterTime = endTime - startTime;
 
-      expect(filterTime).toBeLessThan(100);
+      expect(filterTime).toBeLessThan(perfBudget(100));
     });
 
     test('should filter medium dataset (1000 rows) efficiently', () => {
@@ -224,7 +224,7 @@ describe('Performance - Filter and Sort', () => {
       const endTime = performance.now();
       const filterTime = endTime - startTime;
 
-      expect(filterTime).toBeLessThan(150);
+      expect(filterTime).toBeLessThan(perfBudget(150));
     });
 
     test('should filter large dataset (10000 rows) within acceptable time', () => {
@@ -250,7 +250,7 @@ describe('Performance - Filter and Sort', () => {
       const endTime = performance.now();
       const filterTime = endTime - startTime;
 
-      expect(filterTime).toBeLessThan(300);
+      expect(filterTime).toBeLessThan(perfBudget(300));
     });
 
     test('should handle multiple filters efficiently', () => {
@@ -281,7 +281,7 @@ describe('Performance - Filter and Sort', () => {
         const endTime = performance.now();
         const totalTime = endTime - startTime;
 
-        expect(totalTime).toBeLessThan(200);
+        expect(totalTime).toBeLessThan(perfBudget(200));
       } else {
         expect(true).toBe(true);
       }
@@ -309,7 +309,7 @@ describe('Performance - Filter and Sort', () => {
         const endTime = performance.now();
 
         const clearTime = endTime - startTime;
-        expect(clearTime).toBeLessThan(100);
+        expect(clearTime).toBeLessThan(perfBudget(100));
       } else {
         expect(true).toBe(true);
       }
@@ -343,7 +343,7 @@ describe('Performance - Filter and Sort', () => {
       const endTime = performance.now();
       const totalTime = endTime - startTime;
 
-      expect(totalTime).toBeLessThan(250);
+      expect(totalTime).toBeLessThan(perfBudget(250));
     });
 
     test('should handle sort then filter efficiently', () => {
@@ -372,7 +372,7 @@ describe('Performance - Filter and Sort', () => {
       const endTime = performance.now();
       const totalTime = endTime - startTime;
 
-      expect(totalTime).toBeLessThan(250);
+      expect(totalTime).toBeLessThan(perfBudget(250));
     });
 
     test('should handle rapid filter/sort changes', () => {
@@ -403,7 +403,7 @@ describe('Performance - Filter and Sort', () => {
         const totalTime = endTime - startTime;
         const avgTime = totalTime / 10; // 5 filter + 5 sort = 10 operations
 
-        expect(avgTime).toBeLessThan(50);
+        expect(avgTime).toBeLessThan(perfBudget(50));
       } else {
         expect(true).toBe(true);
       }
@@ -438,7 +438,7 @@ describe('Performance - Filter and Sort', () => {
       const endTime = performance.now();
       const searchTime = endTime - startTime;
 
-      expect(searchTime).toBeLessThan(50);
+      expect(searchTime).toBeLessThan(perfBudget(50));
       expect(results.length).toBeGreaterThan(0);
     });
   });

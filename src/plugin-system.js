@@ -862,11 +862,4 @@ const PluginSystem = {
   }
 };
 
-// Export for different environments
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = PluginSystem;
-}
-
-if (typeof window !== 'undefined') {
-  window.PluginSystem = PluginSystem;
-}
+export default PluginSystem;

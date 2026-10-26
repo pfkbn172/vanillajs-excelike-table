@@ -54,27 +54,27 @@ class ConditionalFormattingRule {
     const errors = [];
     
     if (!this.name.trim()) {
-      errors.push('ルール名は必須です');
+      errors.push('Rule name is required');
     }
     
     if (!this.condition.column.trim()) {
-      errors.push('対象列は必須です');
+      errors.push('Target column is required');
     }
     
     if (!this.condition.value.trim()) {
-      errors.push('比較値は必須です');
+      errors.push('Comparison value is required');
     }
     
     if (!['equals', 'not-equals', 'greater', 'greater-equal', 'less', 'less-equal', 'contains', 'not-contains'].includes(this.condition.operator)) {
-      errors.push('無効な演算子です');
+      errors.push('Invalid operator');
     }
     
     if (!['number', 'text', 'date'].includes(this.condition.dataType)) {
-      errors.push('無効なデータ型です');
+      errors.push('Invalid data type');
     }
     
     if (!['cell', 'row'].includes(this.applyTo)) {
-      errors.push('無効な適用範囲です');
+      errors.push('Invalid apply-to target');
     }
     
     return {
@@ -143,5 +143,5 @@ class ConditionalFormattingRule {
 
 // グローバルに公開
 if (typeof window !== 'undefined') {
-  window.ConditionalFormattingRule = ConditionalFormattingRule;
+  globalThis.ConditionalFormattingRule = ConditionalFormattingRule;
 }

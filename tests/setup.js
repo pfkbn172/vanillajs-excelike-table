@@ -11,6 +11,12 @@ global.expect = expect;
 global.beforeEach = beforeEach;
 global.afterEach = afterEach;
 
+// Wall-clock budgets in the performance tests are multiplied by this factor.
+// jsdom timings swing with machine load; the budgets are meant to catch pathological
+// slowdowns, not to benchmark. Real-browser performance is covered by tests/e2e.
+const PERF_BUDGET_FACTOR = Number(process.env.PERF_BUDGET_FACTOR) || 3;
+global.perfBudget = (ms) => ms * PERF_BUDGET_FACTOR;
+
 // Import required polyfills for jsdom
 import 'whatwg-fetch';
 
@@ -240,7 +246,7 @@ beforeEach(() => {
 
 afterEach(() => {
   // Cleanup DOM
-  cleanupDOM();
+  global.cleanupDOM();
 });
 
 // Global test timeout

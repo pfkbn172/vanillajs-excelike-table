@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Performance - Large Dataset Tests', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/test-filter-fix.html');
+    await page.goto('/tests/e2e/fixtures/filter-fix.html');
     await page.waitForSelector('.excelike-table table thead', { timeout: 10000 });
   });
 

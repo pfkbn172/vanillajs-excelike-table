@@ -7,7 +7,7 @@
   'use strict';
   
   // 定数を取得
-  const CF_CONSTANTS = window.CF_CONSTANTS || {};
+  const CF_CONSTANTS = globalThis.CF_CONSTANTS || {};
   const {
     TIMING,
     COLORS,
@@ -16,20 +16,16 @@
     DATA_TYPES,
     APPLY_TO,
     UI,
-    VALIDATION,
-    MESSAGES,
-    CSS_CLASSES,
-    DEFAULT_OPTIONS
+    CSS_CLASSES
   } = CF_CONSTANTS;
   
   // ユーティリティを取得
-  const CF_UTILS = window.CF_UTILS || {};
+  const CF_UTILS = globalThis.CF_UTILS || {};
   const {
     ErrorHandler,
     ValidationUtils,
     DOMUtils,
     StringUtils,
-    PerformanceUtils,
     ValidationError
   } = CF_UTILS;
   
@@ -196,10 +192,11 @@
         if (!action || !ruleId) return;
 
         switch (action) {
-          case 'edit':
+          case 'edit': {
             const rule = this.cf.manager.getRule(ruleId);
             if (rule) this.showRuleDialog(rule);
             break;
+          }
 
           case 'delete':
             this.confirmDeleteRule(ruleId);
@@ -552,7 +549,7 @@
         this.showToast(this.i18n.t('cf.ruleUpdated'));
       } else {
         // 新規作成
-        const rule = new ConditionalFormattingRule(formData);
+        const rule = new globalThis.ConditionalFormattingRule(formData);
         this.cf.manager.addRule(rule);
         this.showToast(this.i18n.t('cf.ruleCreated'));
       }
@@ -571,7 +568,7 @@
       
     } catch (error) {
       if (error instanceof ValidationError) {
-        this.showToast(error.message, 'error');
+        this.showToast(error.i18nKey ? this.i18n.t(error.i18nKey, error.params) : error.message, 'error');
       } else {
         this.errorHandler.handle('saveRule', error);
         this.showToast(this.i18n.t('cf.errorSave'), 'error');
@@ -798,7 +795,7 @@
 
   // グローバルに公開
   if (typeof window !== 'undefined') {
-    window.ConditionalFormattingUI = ConditionalFormattingUI;
+    globalThis.ConditionalFormattingUI = ConditionalFormattingUI;
   }
   
 })();

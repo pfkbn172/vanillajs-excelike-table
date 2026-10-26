@@ -221,15 +221,4 @@ const PerformanceUtils = {
   }
 };
 
-// ES modules export
 export default PerformanceUtils;
-
-// CommonJS export for compatibility
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = PerformanceUtils;
-}
-
-// Browser global
-if (typeof window !== 'undefined') {
-  window.PerformanceUtils = PerformanceUtils;
-}

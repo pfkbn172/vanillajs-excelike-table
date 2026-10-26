@@ -190,8 +190,6 @@ describe('Accessibility - WCAG Compliance', () => {
       });
 
       // Check that focus styles are not disabled
-      const style = window.getComputedStyle(document.body);
-
       // Focus should not be set to outline: none globally without alternative
       // This is a basic check - real test would simulate focus
       expect(true).toBe(true);
@@ -506,7 +504,6 @@ describe('Accessibility - WCAG Compliance', () => {
       if (tableElement) {
         const style = window.getComputedStyle(tableElement);
         const width = style.width;
-        const maxWidth = style.maxWidth;
 
         // Width should be responsive (%, auto, or reasonable px)
         // Empty string is acceptable (no inline width set)

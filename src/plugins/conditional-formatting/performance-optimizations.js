@@ -7,7 +7,7 @@
   'use strict';
   
   // パフォーマンス最適化ユーティリティをグローバルに追加
-  window.CF_PERFORMANCE = window.CF_PERFORMANCE || {};
+  globalThis.CF_PERFORMANCE = globalThis.CF_PERFORMANCE || {};
   
   /**
    * バッチDOM操作ユーティリティ
@@ -50,8 +50,6 @@
      * キューされた操作を実行
      */
     executeOperations() {
-      const fragment = document.createDocumentFragment();
-      
       this.operations.forEach(({ element, operation, value }) => {
         switch (operation) {
           case 'addClass':
@@ -295,8 +293,8 @@
   }
   
   // グローバルに公開
-  window.CF_PERFORMANCE.BatchDOMOperations = BatchDOMOperations;
-  window.CF_PERFORMANCE.OptimizedCellCache = OptimizedCellCache;
-  window.CF_PERFORMANCE.RuleEvaluationCache = RuleEvaluationCache;
+  globalThis.CF_PERFORMANCE.BatchDOMOperations = BatchDOMOperations;
+  globalThis.CF_PERFORMANCE.OptimizedCellCache = OptimizedCellCache;
+  globalThis.CF_PERFORMANCE.RuleEvaluationCache = RuleEvaluationCache;
   
 })();

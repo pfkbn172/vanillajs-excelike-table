@@ -10,9 +10,10 @@
 
 // Import utility modules
 import DOMUtils from './dom-utils.js';
-import PerformanceUtils from './performance-utils.js';
 import I18nModule from './i18n.js';
 import { ThemeManager } from './theme-system.js';
+import PluginSystem from './plugin-system.js';
+import ExportModule from './export-module.js';
 
 // Configuration constants
 const TABLE_CONFIG = {
@@ -52,6 +53,17 @@ const TABLE_CONFIG = {
 };
 
 // Column definition helpers for easier setup
+/**
+ * Escape a value for use in HTML text or a double-quoted attribute.
+ * Every value that comes from table data must pass through this before it is put into an HTML string.
+ * @param {*} value
+ * @returns {string}
+ */
+function escapeHTML(value) {
+  if (value === null || value === undefined) return '';
+  return String(value).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+
 const ColumnHelpers = {
   /**
    * Create a simple text column
@@ -81,9 +93,9 @@ const ColumnHelpers = {
       filterable: options.filterable !== false,
       render: options.render || ((value) => {
         if (typeof value === 'number') {
-          return options.currency ? `${options.currency}${value.toLocaleString()}` : value.toLocaleString();
+          return escapeHTML(options.currency ? `${options.currency}${value.toLocaleString()}` : value.toLocaleString());
         }
-        return value;
+        return escapeHTML(value);
       }),
       ...options
     };
@@ -121,17 +133,10 @@ const ColumnHelpers = {
       width: options.width || 100,
       sortable: options.sortable !== false,
       filterable: options.filterable !== false,
-      render: (value, record, column, cellElement) => {
-        const color = statusColors[value] || '#000';
-        
-        // Apply styles directly to the cell element if available
-        if (cellElement) {
-          cellElement.style.color = color;
-          cellElement.style.fontWeight = '500';
-        }
-        
-        // Return just the text value
-        return value;
+      render: (value) => {
+        const color = statusColors[value];
+        if (!color) return escapeHTML(value);
+        return `<span class="status-badge" style="color: ${escapeHTML(color)}; font-weight: 500;">${escapeHTML(value)}</span>`;
       },
       ...options
     };
@@ -150,13 +155,46 @@ const ColumnHelpers = {
       filterable: false,
       render: (value, record) => {
         return actions.map(action => 
-          `<button class="action-btn" data-action="${action.key}" data-id="${record.id || record.key}">${action.label}</button>`
+          `<button class="action-btn" data-action="${escapeHTML(action.key)}" data-id="${escapeHTML(record.id ?? record.key)}">${escapeHTML(action.label)}</button>`
         ).join(' ');
       },
       ...options
     };
   }
 };
+
+/**
+ * Fill in column defaults so that `{ key }`, a plain string, or no columns at all just work.
+ * dataIndex and title default to key; columns default to the keys found in the data.
+ * Returns new objects, so the caller's column definitions are never mutated.
+ * @param {Array<Object|string>|undefined} columns
+ * @param {Array<Object>} data
+ * @returns {Array<Object>}
+ */
+function normalizeColumns(columns, data) {
+  const list = columns && columns.length ? columns : inferColumnKeys(data);
+  return list.map((col) => {
+    const column = typeof col === 'string' ? { key: col } : { ...col };
+    const key = column.key ?? column.dataIndex;
+    if (key === undefined || key === null || key === '') {
+      throw new Error(`ExceLikeTable: every column needs a "key" (or "dataIndex"). Got: ${JSON.stringify(col)}`);
+    }
+    return { ...column, key: String(key), dataIndex: column.dataIndex ?? key, title: column.title ?? String(key) };
+  });
+}
+
+/** Keys of the first rows, in first-seen order (rows may not all have the same keys). */
+function inferColumnKeys(data, sampleSize = 100) {
+  const keys = [];
+  (data || []).slice(0, sampleSize).forEach((row) => {
+    if (row && typeof row === 'object') {
+      Object.keys(row).forEach((k) => {
+        if (!keys.includes(k)) keys.push(k);
+      });
+    }
+  });
+  return keys;
+}
 
 // Utility functions
 const TableUtils = {
@@ -258,7 +296,13 @@ class TableStorageAdapter {
    * Default LocalStorage implementation
    */
   constructor() {
-    this.storage = localStorage;
+    // Reading `localStorage` itself throws in sandboxed iframes and with some privacy settings.
+    // Without storage the table still works; settings are just not remembered.
+    try {
+      this.storage = globalThis.localStorage || null;
+    } catch {
+      this.storage = null;
+    }
   }
 
   /**
@@ -269,6 +313,7 @@ class TableStorageAdapter {
    */
   async save(key, settings) {
     try {
+      if (!this.storage) return false;
       this.storage.setItem(key, JSON.stringify(settings));
       return true;
     } catch (error) {
@@ -284,6 +329,7 @@ class TableStorageAdapter {
    */
   async load(key) {
     try {
+      if (!this.storage) return null;
       const data = this.storage.getItem(key);
       return data ? JSON.parse(data) : null;
     } catch (error) {
@@ -299,6 +345,7 @@ class TableStorageAdapter {
    */
   async remove(key) {
     try {
+      if (!this.storage) return false;
       this.storage.removeItem(key);
       return true;
     } catch (error) {
@@ -312,6 +359,7 @@ class TableStorageAdapter {
    * @returns {boolean} Availability status
    */
   isAvailable() {
+    if (!this.storage) return false;
     try {
       const testKey = '__table_storage_test__';
       this.storage.setItem(testKey, 'test');
@@ -642,7 +690,7 @@ const StorageKeyUtils = {
     const hash = this.simpleHash(selector);
 
     // Warning in development
-    if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development') {
+    if (globalThis.process?.env?.NODE_ENV === 'development') {
       console.warn(
         `[ExceLikeTable] tableId not specified. Generated ID from selector: table_${hash}\n` +
         `Recommendation: Set tableId option or add id attribute to container element.`
@@ -755,7 +803,7 @@ class ExceLikeTable {
     this.options = {
       // Data
       data: options.data || [],
-      columns: options.columns || [],
+      columns: normalizeColumns(options.columns, options.data),
       rowKey: options.rowKey || 'id',
 
       // Rendering
@@ -784,6 +832,9 @@ class ExceLikeTable {
       locale: options.locale,
       i18nMessages: options.i18nMessages
     };
+
+    // Columns were generated from the data, so they follow the data on setData()
+    this.autoColumns = !(options.columns && options.columns.length);
 
     // Store tableId as instance property for easy access
     this.tableId = this.options.tableId;
@@ -849,15 +900,15 @@ class ExceLikeTable {
    * Initialize column configurations
    * @private
    */
-  initializeColumns() {
+  initializeColumns(sampleData = this.options.data) {
     this.options.columns.forEach(col => {
       // Set default values for all features (enabled by default)
       if (col.sortable === undefined) col.sortable = true;
       if (col.filterable === undefined) col.filterable = true;
       
       // Auto-detect date columns and set filterType
-      if (col.filterType === undefined && this.options.data && this.options.data.length > 0) {
-        const sampleValues = this.options.data.slice(0, 10).map(row => row[col.dataIndex]);
+      if (col.filterType === undefined && sampleData && sampleData.length > 0) {
+        const sampleValues = sampleData.slice(0, 10).map(row => row[col.dataIndex]);
         const isDateColumn = sampleValues.some(val => val && TableUtils.isDateValue(val));
         if (isDateColumn) {
           col.filterType = 'date-hierarchy';
@@ -871,19 +922,6 @@ class ExceLikeTable {
     });
   }
   
-  /**
-   * Get column width with fallback
-   * @private
-   */
-  getColumnWidth(column) {
-    return this.state.columnWidths[column.key] || column.width || 150;
-  }
-
-  /**
-   * Calculate column positions for pinned columns
-   * @param {Array} columns - Array of column configurations
-   * @returns {Object} Map of column key to left position
-   */
   /**
    * 統一列順序システム - ヘッダーとボディで絶対に同じ順序を保証
    */
@@ -1100,26 +1138,26 @@ class ExceLikeTable {
    * 状態をLocalStorageに保存
    */
   saveState() {
+    const state = {
+      version: '1.1.0',
+      timestamp: Date.now(),
+      columnState: {
+        widths: this.state.columnWidths,
+        pinned: Object.keys(this.state.pinnedColumns).filter(key => this.state.pinnedColumns[key])
+      },
+      filterState: {
+        filters: this.state.filters,
+        rangeFilters: this.state.rangeFilters,
+        dateRangeFilters: this.state.dateRangeFilters,
+        filterModes: this.state.filterModes
+      },
+      sortState: {
+        column: this.state.sortState.column,
+        direction: this.state.sortState.direction
+      }
+    };
+    
     try {
-      const state = {
-        version: '1.1.0',
-        timestamp: Date.now(),
-        columnState: {
-          widths: this.state.columnWidths,
-          pinned: Object.keys(this.state.pinnedColumns).filter(key => this.state.pinnedColumns[key])
-        },
-        filterState: {
-          filters: this.state.filters,
-          rangeFilters: this.state.rangeFilters,
-          dateRangeFilters: this.state.dateRangeFilters,
-          filterModes: this.state.filterModes
-        },
-        sortState: {
-          column: this.state.sortState.column,
-          direction: this.state.sortState.direction
-        }
-      };
-      
       localStorage.setItem(this.storageKey, JSON.stringify(state));
     } catch (error) {
       // QuotaExceededError等のエラーは無視（サイレント失敗）
@@ -1460,18 +1498,19 @@ class ExceLikeTable {
     let menuItems = [];
 
     // Clear filters option (filtering always enabled)
-    menuItems.push(`<div class="table-menu-item" data-action="clear-all-filters"><i class="bi bi-funnel-fill"></i> ${this.i18n.t('menu.clearFilters')}</div>`);
+    menuItems.push(`<div class="table-menu-item" data-action="clear-all-filters">${this.i18n.t('menu.clearFilters')}</div>`);
 
     // Column settings
-    menuItems.push(`<div class="table-menu-item" data-action="column-settings"><i class="bi bi-layout-three-columns"></i> ${this.i18n.t('menu.columnSettings')}</div>`);
+    menuItems.push(`<div class="table-menu-item" data-action="column-settings">${this.i18n.t('menu.columnSettings')}</div>`);
+    menuItems.push(`<div class="table-menu-item" data-action="export-csv">${this.i18n.t('menu.exportCSV')}</div>`);
 
     // Conditional formatting
-    menuItems.push(`<div class="table-menu-item" data-action="conditional-formatting"><i class="bi bi-palette-fill"></i> ${this.i18n.t('menu.conditionalFormat')}</div>`);
+    menuItems.push(`<div class="table-menu-item" data-action="conditional-formatting">${this.i18n.t('menu.conditionalFormat')}</div>`);
 
     // Font size submenu
     menuItems.push(`
       <div class="table-menu-item table-menu-item-submenu" data-action="font-size">
-        <i class="bi bi-fonts"></i> ${this.i18n.t('menu.fontSize')}
+        ${this.i18n.t('menu.fontSize')}
         <span class="submenu-arrow">▶</span>
         <div class="table-submenu-dropdown">
           <div class="table-menu-item ${this.state.fontSize === 'smallest' ? 'table-menu-item-current' : ''}" data-action="font-size" data-size="smallest">${this.i18n.t('fontSize.smallest')} ${this.state.fontSize === 'smallest' ? '✓' : ''}</div>
@@ -1486,7 +1525,7 @@ class ExceLikeTable {
     // Cell padding submenu
     menuItems.push(`
       <div class="table-menu-item table-menu-item-submenu" data-action="cell-padding">
-        <i class="bi bi-border-all"></i> ${this.i18n.t('menu.cellPadding')}
+        ${this.i18n.t('menu.cellPadding')}
         <span class="submenu-arrow">▶</span>
         <div class="table-submenu-dropdown">
           <div class="table-menu-item ${this.state.cellPadding === 'wide' ? 'table-menu-item-current' : ''}" data-action="cell-padding" data-padding="wide">${this.i18n.t('cellPadding.wide')} ${this.state.cellPadding === 'wide' ? '✓' : ''}</div>
@@ -1510,7 +1549,7 @@ class ExceLikeTable {
 
     menuItems.push(`
       <div class="table-menu-item table-menu-item-submenu" data-action="language">
-        <i class="bi bi-globe"></i> ${this.i18n.t('menu.language')}
+        ${this.i18n.t('menu.language')}
         <span class="submenu-arrow">▶</span>
         <div class="table-submenu-dropdown">
           ${availableLocales.map(locale => `
@@ -1529,7 +1568,7 @@ class ExceLikeTable {
 
     menuItems.push(`
       <div class="table-menu-item table-menu-item-submenu" data-action="theme">
-        <i class="bi bi-palette"></i> テーマ
+        ${this.i18n.t('settings.theme')}
         <span class="submenu-arrow">▶</span>
         <div class="table-submenu-dropdown">
           ${themePresets.map(theme => `
@@ -1542,7 +1581,7 @@ class ExceLikeTable {
     `);
 
     // LocalStorage clear option (always available since plugins may store data)
-    menuItems.push(`<div class="table-menu-item" data-action="clear-localstorage"><i class="bi bi-trash3-fill"></i> ${this.i18n.t('menu.clearStorage')}</div>`);
+    menuItems.push(`<div class="table-menu-item" data-action="clear-localstorage">${this.i18n.t('menu.clearStorage')}</div>`);
 
     this.menuContainer.innerHTML = `
       <div class="table-menu-wrapper">
@@ -1598,12 +1637,10 @@ class ExceLikeTable {
       headerContent.appendChild(controls);
       
       // Resize handle (add to headerContent for proper positioning)
-      if (true) {
-        const resizeHandle = document.createElement('div');
-        resizeHandle.className = 'resize-handle';
-        resizeHandle.dataset.column = column.key;
-        headerContent.appendChild(resizeHandle);
-      }
+      const resizeHandle = document.createElement('div');
+      resizeHandle.className = 'resize-handle';
+      resizeHandle.dataset.column = column.key;
+      headerContent.appendChild(resizeHandle);
 
       th.appendChild(headerContent);
 
@@ -1694,16 +1731,15 @@ class ExceLikeTable {
         td.dataset.value = value;
         const content = column.render ? column.render(value, record) : value;
         
-        if (typeof content === 'string') {
-          // If render function is used, always render as HTML
-          // If no render function, respect renderCellHTML option
-          if (column.render || this.options.renderCellHTML) {
-            td.innerHTML = content;
-          } else {
-            td.textContent = content;
-          }
-        } else {
+        if (content === null || content === undefined) {
+          td.textContent = '';
+        } else if (typeof Node !== 'undefined' && content instanceof Node) {
+          td.appendChild(content);
+        } else if (typeof content === 'string' && (column.render || this.options.renderCellHTML)) {
+          // A render function returns HTML; without one, renderCellHTML opts in to HTML
           td.innerHTML = content;
+        } else {
+          td.textContent = String(content);
         }
 
         // Add tooltip for overflowing content
@@ -2123,9 +2159,13 @@ class ExceLikeTable {
   attachEvents() {
     
     // Sort events
+    // Clicking the sort arrows or the header title cycles: none -> ascending -> descending -> none
     this.tableContainer.addEventListener('click', (e) => {
-      if (e.target.closest('.sort-indicator')) {
-        const columnKey = e.target.closest('.sort-indicator').dataset.column;
+      const trigger = e.target.closest('.sort-indicator, .header-title');
+      // Columns with sortable: false have no sort indicator, so their title does nothing
+      const indicator = trigger && (trigger.matches('.sort-indicator') ? trigger : trigger.closest('th')?.querySelector('.sort-indicator'));
+      if (indicator) {
+        const columnKey = indicator.dataset.column;
         const currentDirection = this.state.sortState.column === columnKey ? this.state.sortState.direction : null;
         let newDirection;
         
@@ -2235,6 +2275,15 @@ class ExceLikeTable {
       if (e.target.matches('[data-action="clear-all-filters"]')) {
         this.clearAllFilters();
         // Close menu
+        const dropdown = e.target.closest('.table-menu-dropdown');
+        dropdown.style.display = 'none';
+      }
+    });
+
+    // Export CSV
+    this.tableContainer.addEventListener('click', (e) => {
+      if (e.target.matches('[data-action="export-csv"]')) {
+        this.exportCSV();
         const dropdown = e.target.closest('.table-menu-dropdown');
         dropdown.style.display = 'none';
       }
@@ -2431,7 +2480,7 @@ class ExceLikeTable {
     // Measure data cell content width
     const visibleData = this.getCurrentPageData();
     visibleData.forEach(row => {
-      let cellContent = row[column.dataIndex] || '';
+      let cellContent = row[column.dataIndex] ?? '';
       
       // Apply render function if exists
       if (column.render && typeof column.render === 'function') {
@@ -2572,10 +2621,6 @@ class ExceLikeTable {
       return value;
     }))];
 
-    // Store current mode for UI initialization (DO NOT apply filters yet)
-    // Filters will only be applied when user clicks OK button
-    const currentMode = this.state.filterModes?.[column.key];
-
     // Initialize filterModes if not set to ensure UI and applyFilters() use same default
     if (!this.state.filterModes) {
       this.state.filterModes = {};
@@ -2626,7 +2671,7 @@ class ExceLikeTable {
       dropdown.innerHTML = `
         <div class="filter-dropdown filter-dropdown-mobile">
           <div class="filter-dropdown-header">
-            <div class="filter-dropdown-title">${column.title}</div>
+            <div class="filter-dropdown-title">${escapeHTML(column.title)}</div>
           </div>
           ${dropdownContent}
         </div>
@@ -2650,7 +2695,7 @@ class ExceLikeTable {
       dropdown.innerHTML = `
         <div class="filter-dropdown">
           <div class="filter-dropdown-header">
-            <div class="filter-dropdown-title">${column.title}</div>
+            <div class="filter-dropdown-title">${escapeHTML(column.title)}</div>
           </div>
           ${dropdownContent}
           ${footerHTML}
@@ -2696,8 +2741,11 @@ class ExceLikeTable {
       // Footer is in normal flow at bottom, content scrolls if needed
       maxHeight = viewportHeight * 0.90;
     } else {
-      // On desktop/tablet, use available space with reasonable limits
-      const minRequiredSpace = 110;
+      // On desktop/tablet, use available space with reasonable limits.
+      // Header + search + footer alone are ~150px: below ~300px the option list collapses to
+      // zero height on short screens (e.g. a phone in landscape). The dropdown is moved up
+      // further below when it does not fit under the header.
+      const minRequiredSpace = Math.min(300, viewportHeight - topMargin - bottomMargin);
       maxHeight = Math.max(minRequiredSpace, Math.min(availableFromDesiredTop, 500));
     }
 
@@ -2796,8 +2844,8 @@ class ExceLikeTable {
       // Desktop/tablet positioning
       let top = desiredTop;
 
-      // Ensure dropdown doesn't overlap with pagination controls
-      const maxAllowedBottom = paginationTop - paginationGap;
+      // Ensure dropdown doesn't overlap with pagination controls, nor leave the viewport
+      const maxAllowedBottom = Math.min(paginationTop - paginationGap, viewportHeight - bottomMargin);
 
       // Ensure dropdown stays within viewport vertically
       if (top < topMargin) {
@@ -2809,12 +2857,12 @@ class ExceLikeTable {
           // Fits above header
           top = topAboveHeader;
         } else {
-          // Doesn't fit above either, position at max allowed position
-          top = Math.max(topMargin, maxAllowedBottom - dropdownRect.height);
-          // If still doesn't fit, show at top margin
-          if (top < topMargin) {
-            top = topMargin;
-          }
+          // Fits neither below nor above: keep it inside the viewport. Covering the header or the
+          // pagination is better than putting the list or the OK button off-screen.
+          const viewportBottom = viewportHeight - bottomMargin;
+          const abovePagination = Math.min(maxAllowedBottom, viewportBottom);
+          const bottomLimit = abovePagination - dropdownRect.height >= topMargin ? abovePagination : viewportBottom;
+          top = Math.max(topMargin, bottomLimit - dropdownRect.height);
         }
       }
 
@@ -2903,8 +2951,8 @@ class ExceLikeTable {
           ${sortedValues.map(value => `
             <div class="filter-option">
               <label class="filter-option-label">
-                <input type="checkbox" class="filter-checkbox" data-value="${value}" ${isAllSelected || currentFilters.includes(value) ? 'checked' : ''}>
-                <span class="filter-option-text">${value === null || value === undefined || value === '' ? this.i18n.t('filter.empty') : value} <span class="filter-option-count">(${this.countDataItems(column, value)})</span></span>
+                <input type="checkbox" class="filter-checkbox" data-value="${escapeHTML(value)}" ${isAllSelected || currentFilters.includes(value) ? 'checked' : ''}>
+                <span class="filter-option-text">${value === null || value === undefined || value === '' ? this.i18n.t('filter.empty') : escapeHTML(value)} <span class="filter-option-count">(${this.countDataItems(column, value)})</span></span>
               </label>
             </div>
           `).join('')}
@@ -3080,7 +3128,6 @@ class ExceLikeTable {
 
     // Determine "Select All" checkbox state
     const isAllSelected = currentFilters.length === 0;
-    const isNoneSelected = currentFilters.length === 0 && this.state.filters[column.key] && this.state.filters[column.key].length === 0 && this.hasActiveFilter(column.key);
     const isPartiallySelected = currentFilters.length > 0 && currentFilters.length < sortedValues.length;
 
     let selectAllState = '';
@@ -3163,8 +3210,8 @@ class ExceLikeTable {
                 return `
                 <div class="filter-option">
                   <label class="filter-option-label">
-                    <input type="checkbox" class="filter-checkbox" data-value="${value === null ? 'null' : value}" ${isChecked ? 'checked' : ''}>
-                    <span class="filter-option-text">${isEmptyValue ? this.i18n.t('filter.empty') : value} <span class="filter-option-count">(${this.countDataItems(column, value)}</span></span>
+                    <input type="checkbox" class="filter-checkbox" data-value="${value === null ? 'null' : escapeHTML(value)}" ${isChecked ? 'checked' : ''}>
+                    <span class="filter-option-text">${isEmptyValue ? this.i18n.t('filter.empty') : escapeHTML(value)} <span class="filter-option-count">(${this.countDataItems(column, value)}</span></span>
                   </label>
                 </div>
               `;
@@ -3282,8 +3329,8 @@ class ExceLikeTable {
               <div class="date-filter-group-header">
                 <button class="expand-btn">▼</button>
                 <label class="date-filter-label">
-                  <input type="checkbox" class="date-filter-checkbox" data-value="${year}" ${isAllSelected || this.isYearSelected(year, dateGroups[year], currentFilters) ? 'checked' : ''}>
-                  <span class="date-filter-text">${year} <span class="filter-option-count">(${this.countDataItems(column, year)})</span></span>
+                  <input type="checkbox" class="date-filter-checkbox" data-value="${escapeHTML(year)}" ${isAllSelected || this.isYearSelected(year, dateGroups[year], currentFilters) ? 'checked' : ''}>
+                  <span class="date-filter-text">${escapeHTML(year)} <span class="filter-option-count">(${this.countDataItems(column, year)})</span></span>
                 </label>
               </div>
               <div class="date-filter-children">
@@ -3292,15 +3339,15 @@ class ExceLikeTable {
                     <div class="date-filter-month-header">
                       <button class="expand-btn expand-btn-month">▼</button>
                       <label class="date-filter-label">
-                        <input type="checkbox" class="date-filter-checkbox" data-value="${year}-${month}" ${isAllSelected || this.isMonthSelected(year, month, dateGroups[year][month], currentFilters) ? 'checked' : ''}>
-                        <span class="date-filter-text">${month} <span class="filter-option-count">(${this.countDataItemsForMonth(column, year, month)})</span></span>
+                        <input type="checkbox" class="date-filter-checkbox" data-value="${escapeHTML(year)}-${escapeHTML(month)}" ${isAllSelected || this.isMonthSelected(year, month, dateGroups[year][month], currentFilters) ? 'checked' : ''}>
+                        <span class="date-filter-text">${escapeHTML(month)} <span class="filter-option-count">(${this.countDataItemsForMonth(column, year, month)})</span></span>
                       </label>
                     </div>
                     <div class="date-filter-days">
                       ${dateGroups[year][month].map(dateValue => `
                         <div class="date-filter-item date-filter-day">
                           <label class="date-filter-label">
-                            <input type="checkbox" class="date-filter-checkbox" data-value="${dateValue}" ${isAllSelected || currentFilters.includes(dateValue) ? 'checked' : ''}>
+                            <input type="checkbox" class="date-filter-checkbox" data-value="${escapeHTML(dateValue)}" ${isAllSelected || currentFilters.includes(dateValue) ? 'checked' : ''}>
                             <span class="date-filter-text">${new Date(dateValue).getDate()} <span class="filter-option-count">(${this.countDataItems(column, dateValue)})</span></span>
                           </label>
                         </div>
@@ -3840,9 +3887,6 @@ class ExceLikeTable {
         } else {
           // For non-numeric columns, update select all checkbox state
           if (selectAllCheckbox) {
-            const totalCheckboxes = dropdown.querySelectorAll('.filter-checkbox:not([data-value="__all__"]), .date-filter-checkbox');
-            const checkedCheckboxes = dropdown.querySelectorAll('.filter-checkbox:checked:not([data-value="__all__"]), .date-filter-checkbox:checked');
-            
             TableUtils.updateSelectAllState(selectAllCheckbox, allCheckboxes);
           }
         }
@@ -3920,7 +3964,6 @@ class ExceLikeTable {
           dateGroups.forEach(group => {
             const groupText = group.querySelector('.date-filter-text')?.textContent.toLowerCase() || '';
             const monthItems = group.querySelectorAll('.date-filter-month');
-            const dayItems = group.querySelectorAll('.date-filter-day');
             let groupVisible = false;
             
             // Check year
@@ -3958,7 +4001,6 @@ class ExceLikeTable {
     // Date hierarchy expand/collapse (only for date columns)
     if (column.filterType === 'date-hierarchy') {
       this.attachDateHierarchyEvents(dropdown, column, applyRealtimeFilter);
-    } else {
     }
     
     // Set initial "Select All" checkbox state after dropdown is created
@@ -4058,25 +4100,8 @@ class ExceLikeTable {
           const date = new Date(value);
           cb.checked = date >= startDate && date <= endDate;
         }
-        // Handle year values (YYYY format)
-        else if (/^\d{4}$/.test(value)) {
-          const year = parseInt(value);
-          const startYear = startDate.getFullYear();
-          const endYear = endDate.getFullYear();
-          
-          // For year checkboxes, don't set state directly - let hierarchy logic handle it
-          // This prevents conflicts with indeterminate state management
-          // The year state will be calculated by updateDateParentCheckboxes after individual dates are processed
-        }
-        // Handle year-month values (YYYY-MonthName format)
-        else if (/^\d{4}-.+$/.test(value)) {
-          const [year, monthName] = value.split('-');
-          const monthIndex = new Date(Date.parse(monthName + ' 1, 2000')).getMonth();
-          
-          // For month checkboxes, don't set state directly - let hierarchy logic handle it
-          // This prevents conflicts with indeterminate state management
-          // The month state will be calculated by updateDateParentCheckboxes after individual dates are processed
-        }
+        // Year (YYYY) and year-month checkboxes are not set here: updateDateParentCheckboxes()
+        // derives them from the individual dates, which keeps the indeterminate state consistent.
       }
     });
     
@@ -4343,11 +4368,11 @@ class ExceLikeTable {
           ${this.options.columns.map(col => `
             <div class="column-item">
               <label class="column-label">
-                <input type="checkbox" class="column-checkbox" data-column="${col.key}" ${this.state.visibleColumns[col.key] ? 'checked' : ''}>
-                <span class="column-text">${col.title}</span>
+                <input type="checkbox" class="column-checkbox" data-column="${escapeHTML(col.key)}" ${this.state.visibleColumns[col.key] ? 'checked' : ''}>
+                <span class="column-text">${escapeHTML(col.title)}</span>
               </label>
               <label class="pin-label">
-                <input type="checkbox" class="pin-checkbox" data-column="${col.key}" ${this.state.pinnedColumns[col.key] ? 'checked' : ''}>
+                <input type="checkbox" class="pin-checkbox" data-column="${escapeHTML(col.key)}" ${this.state.pinnedColumns[col.key] ? 'checked' : ''}>
                 <span class="pin-icon">📌</span>
               </label>
             </div>
@@ -4440,9 +4465,6 @@ class ExceLikeTable {
 
     if (!slider || !track || !minThumb || !maxThumb || !minInput || !maxInput) return;
     
-    // Flag to prevent infinite loops between slider and checkbox updates
-    let isUpdatingFromSlider = false;
-
     const min = parseFloat(slider.dataset.min);
     const max = parseFloat(slider.dataset.max);
     const range = max - min;
@@ -4786,7 +4808,6 @@ class ExceLikeTable {
     
     // Expand level control buttons
     const expandControlButtons = dropdown.querySelectorAll('.expand-control-btn');
-    const dateFilterContent = dropdown.querySelector('.date-filter-content');
     
     
     const setExpandLevel = (level) => {
@@ -5095,6 +5116,13 @@ class ExceLikeTable {
     // Deep copy input data to prevent external mutations affecting internal state
     this.state.data = this._deepCopyData(data || []);
     this.state.currentPage = 1;
+    if (this.autoColumns) {
+      const keys = inferColumnKeys(this.state.data);
+      if (keys.join('\u0000') !== this.options.columns.map((c) => c.key).join('\u0000')) {
+        this.options.columns = normalizeColumns(keys, this.state.data);
+        this.initializeColumns(this.state.data);
+      }
+    }
     this.render();
 
     // 🔄 Emit hook for data update
@@ -5104,6 +5132,24 @@ class ExceLikeTable {
         type: 'setData'
       });
     }
+  }
+
+  /**
+   * Export the rows that match the current filters, in the current sort order (all pages), as CSV.
+   * Columns follow what is displayed: visible columns, pinned columns first.
+   * @param {Object} [options]
+   * @param {string} [options.filename] - Download file name (default: `<tableId>.csv`)
+   * @param {boolean} [options.download=true] - Start a browser download
+   * @param {boolean} [options.bom=true] - Prefix the download with a UTF-8 BOM so Excel detects the encoding
+   * @returns {string} The CSV text (never includes the BOM)
+   */
+  exportCSV(options = {}) {
+    const { filename = `${this.tableId}.csv`, download = true, bom = true } = options;
+    const csv = ExportModule.toCSV(this.state.filteredData, this.getOrderedColumns().all);
+    if (download) {
+      ExportModule.downloadFile((bom ? '\uFEFF' : '') + csv, filename, 'text/csv');
+    }
+    return csv;
   }
 
   updateData(data) {
@@ -5156,21 +5202,18 @@ class ExceLikeTable {
   }
 
   applyTheme(themeName, skipMenuRender = false) {
-    console.log('[Theme] Applying theme:', themeName);
 
     // Apply preset theme
     this.themeManager.applyPreset(themeName);
 
     // Get CSS variables from theme
     const cssVars = this.themeManager.getCSSVariables();
-    console.log('[Theme] CSS Variables:', cssVars);
 
     // Apply CSS variables to table wrapper (this.container is the wrapper itself)
     if (this.container) {
       Object.keys(cssVars).forEach(key => {
         this.container.style.setProperty(key, cssVars[key]);
       });
-      console.log('[Theme] Applied to container:', this.container.className);
     } else {
       console.error('[Theme] Container not found!');
     }
@@ -5544,8 +5587,8 @@ class ExceLikeTable {
     // 初期化されていない場合は初期化
     if (!this.conditionalFormatting) {
       // ConditionalFormattingクラスはビルドプロセスでバンドルされているため、直接利用可能
-      if (typeof window.ConditionalFormatting !== 'undefined') {
-        this.conditionalFormatting = new window.ConditionalFormatting(this);
+      if (typeof globalThis.ConditionalFormatting !== 'undefined') {
+        this.conditionalFormatting = new globalThis.ConditionalFormatting(this);
       } else {
         console.error('ConditionalFormatting class not found. Please rebuild the project.');
         alert('Conditional formatting feature is not available. Please rebuild or use the bundled dist files.');
@@ -5563,14 +5606,12 @@ class ExceLikeTable {
    */
   initializeConditionalFormatting() {
     // Check if conditional formatting plugin is available
-    if (typeof window.ConditionalFormatting !== 'undefined' && !this.conditionalFormatting) {
+    if (typeof globalThis.ConditionalFormatting !== 'undefined' && !this.conditionalFormatting) {
       try {
-        console.log('Auto-initializing conditional formatting plugin...');
-        this.conditionalFormatting = new window.ConditionalFormatting(this, {
+        this.conditionalFormatting = new globalThis.ConditionalFormatting(this, {
           autoLoad: true,
           autoApply: true
         });
-        console.log('Conditional formatting plugin initialized successfully');
       } catch (error) {
         console.warn('Failed to auto-initialize conditional formatting:', error);
       }
@@ -5772,18 +5813,5 @@ class ExceLikeTable {
   }
 }
 
-// ES modules export
 export default ExceLikeTable;
-export { ColumnHelpers };
-
-// CommonJS export for compatibility
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = ExceLikeTable;
-  module.exports.ColumnHelpers = ColumnHelpers;
-}
-
-// Browser global
-if (typeof window !== 'undefined') {
-  window.ExceLikeTable = ExceLikeTable;
-  window.ColumnHelpers = ColumnHelpers;
-}
+export { ColumnHelpers, TABLE_CONFIG };

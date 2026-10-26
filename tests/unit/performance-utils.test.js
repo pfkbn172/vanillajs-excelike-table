@@ -217,7 +217,7 @@ describe('PerformanceUtils', () => {
         return mockObserver;
       });
 
-      const observer = PerformanceUtils.createLazyLoader(callback);
+      PerformanceUtils.createLazyLoader(callback);
 
       expect(callback).toHaveBeenCalledWith(element);
       expect(mockObserver.unobserve).toHaveBeenCalledWith(element);

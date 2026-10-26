@@ -7,8 +7,7 @@ module.exports = {
   
   // Test patterns
   testMatch: [
-    '<rootDir>/tests/**/*.test.js',
-    '<rootDir>/tests/**/*.spec.js'
+    '<rootDir>/tests/unit/**/*.test.js'
   ],
   
   // Coverage configuration
@@ -23,12 +22,14 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   
+  // Ratchet: set just below the measured coverage (2026-10-26: 20.6/16.0/22.0/21.1 %).
+  // Most behaviour is covered in a real browser by tests/e2e, which Jest does not count.
   coverageThreshold: {
     global: {
-      branches: 10,
-      functions: 10,
-      lines: 10,
-      statements: 10
+      branches: 15,
+      functions: 21,
+      lines: 20,
+      statements: 20
     }
   },
   
@@ -47,8 +48,7 @@ module.exports = {
   testPathIgnorePatterns: [
     '<rootDir>/node_modules/',
     '<rootDir>/dist/',
-    '<rootDir>/examples/',
-    '<rootDir>/tests/e2e/'
+    '<rootDir>/examples/'
   ],
   
   // Verbose output

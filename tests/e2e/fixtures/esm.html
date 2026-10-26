@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ESM import</title>
+  <link rel="stylesheet" href="/dist/excelike-table.css">
+</head>
+<body>
+  <div id="table"></div>
+  <script type="module">
+    import ExceLikeTable, { ColumnHelpers } from '/dist/excelike-table.js';
+    window.table = new ExceLikeTable('#table', {
+      data: [{ id: 1, name: 'Alice', age: 28 }, { id: 2, name: 'Bob', age: 32 }],
+      columns: [ColumnHelpers.text('name', 'Name'), ColumnHelpers.number('age', 'Age')],
+    });
+  </script>
+</body>
+</html>

@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Port of scripts/dev-server.mjs for this run (override with E2E_PORT to run suites side by side).
+const PORT = process.env.E2E_PORT || '4317';
+
 export default defineConfig({
   testDir: './tests/e2e',
   testIgnore: /debug.*\.spec\.js$/,  // Ignore debug test files
@@ -7,9 +10,9 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: 1, // Run tests sequentially for stability
-  reporter: 'html',
+  reporter: process.env.CI ? 'github' : 'list',
   use: {
-    baseURL: 'http://localhost:8080',
+    baseURL: `http://localhost:${PORT}`,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -60,8 +63,9 @@ export default defineConfig({
         viewport: { width: 667, height: 375 }
       },
     },
-    // Other browsers
-    {
+    // Firefox / WebKit need their own browser downloads: opt in with E2E_ALL_BROWSERS=1
+    // (`npx playwright install firefox webkit` first).
+    ...(process.env.E2E_ALL_BROWSERS ? [{
       name: 'firefox-desktop',
       use: {
         ...devices['Desktop Firefox'],
@@ -74,13 +78,15 @@ export default defineConfig({
         ...devices['Desktop Safari'],
         viewport: { width: 1920, height: 1080 }
       },
-    },
+    }] : []),
   ],
 
   webServer: {
-    command: 'npx http-server -p 8080 -c-1',
-    url: 'http://localhost:8080',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
+    command: 'node scripts/dev-server.mjs',
+    url: `http://localhost:${PORT}/dist/excelike-table.js`,
+    env: { PORT },
+    // Never reuse whatever happens to be listening: it may be an unrelated server.
+    reuseExistingServer: false,
+    timeout: 30 * 1000,
   },
 });

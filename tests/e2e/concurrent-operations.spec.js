@@ -1,6 +1,11 @@
 import { test, expect } from '@playwright/test';
 
-const TEST_PAGE = '/test-filter-fix.html';
+const TEST_PAGE = '/tests/e2e/fixtures/filter-fix.html';
+
+/** Ages shown in the visible rows (Age is the 2nd column of the fixture table). */
+const visibleAges = (page) =>
+  page.$$eval('#table1 tbody tr', (rows) => rows.map((r) => Number(r.querySelectorAll('td')[1].textContent)));
+const isAscending = (list) => list.every((v, i) => i === 0 || list[i - 1] <= v);
 
 test.describe('Concurrent Operations Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -31,10 +36,7 @@ test.describe('Concurrent Operations Tests', () => {
     // Verify rows are still filtered AND sorted
     const rowCountAfterSort = await page.locator('.excelike-table tbody tr').count();
     expect(rowCountAfterSort).toBe(rowCountAfterFilter);
-
-    // Check that sorting worked (first cell should be different)
-    const firstAgeValue = await page.locator('.excelike-table tbody tr').first().locator('td').nth(1).textContent();
-    expect(firstAgeValue).toBeTruthy();
+    expect(isAscending(await visibleAges(page))).toBe(true);
   });
 
   test('should handle sorting while filtering', async ({ page }) => {
@@ -43,7 +45,7 @@ test.describe('Concurrent Operations Tests', () => {
     await ageHeader.click();
     await page.waitForTimeout(500);
 
-    const firstRowBeforeFilter = await page.locator('.excelike-table tbody tr').first().textContent();
+    expect(isAscending(await visibleAges(page))).toBe(true);
 
     // Apply filter while sort is active
     const filterBtn = page.locator('th:has-text("City")').locator('.filter-btn');
@@ -55,12 +57,10 @@ test.describe('Concurrent Operations Tests', () => {
     await page.locator('.filter-dropdown').locator('button:has-text("OK")').click();
     await page.waitForTimeout(500);
 
-    // Verify sort is maintained after filter
-    const firstRowAfterFilter = await page.locator('.excelike-table tbody tr').first().textContent();
-
-    // Rows should be both filtered AND sorted
+    // Rows should be both filtered AND still sorted
     const rowCount = await page.locator('.excelike-table tbody tr').count();
     expect(rowCount).toBeLessThan(79); // Some filtering occurred
+    expect(isAscending(await visibleAges(page))).toBe(true);
   });
 
   test('should handle pagination changes during filter operation', async ({ page }) => {

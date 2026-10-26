@@ -1,0 +1,14 @@
+{
+  // Type-checks the published definitions through tests/types/usage.ts (npm run test:types).
+  // The library itself is JavaScript; this file exists so `tsc --noEmit` at the root is meaningful.
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2020", "DOM"],
+    "skipLibCheck": false
+  },
+  "files": ["tests/types/usage.ts"]
+}

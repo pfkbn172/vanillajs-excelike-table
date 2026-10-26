@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-10-26
+
+### Security
+
+- **Filter drop-down no longer renders data as HTML.** Values in a column's filter list, the drop-down title and the column settings dialog were inserted as HTML, so data like `<img src=x onerror=…>` ran when a user opened the filter. All of them are now escaped. Upgrade if your table shows data entered by users.
+- `ColumnHelpers.status()`, `number()` and `actions()` escape the data they render.
+
+### Added
+
+- `columns` is optional: one column per key in the data (also when data arrives later via `setData()`).
+- A column can be a plain string (`'name'`), and `title` / `dataIndex` default to `key`.
+- `table.exportCSV(options)` and an **Export CSV** item in the ⚙️ menu: filtered and sorted rows from all pages; numbers and dates exported as data; UTF-8 BOM for Excel; formula injection neutralised.
+- Clicking a header title sorts (ascending → descending → off), as the README always said.
+- `render` may return a DOM node.
+- TypeScript: `ExportCSVOptions`, `Locale`, `ThemeName`, generic row type, and the previously missing `TABLE_CONFIG` declaration.
+
+### Fixed
+
+- Importing the package in Node (Next.js, Nuxt, Astro…) threw `window is not defined`.
+- The table failed to start when `localStorage` is blocked (sandboxed iframes, privacy settings).
+- Missing values were shown as `undefined`; a DOM node returned from `render` was shown as `[object HTMLElement]`.
+- `ColumnHelpers.status()` colours were never applied.
+- CSV: negative numbers such as `-5` were turned into text (`'-5`).
+- Saving settings after the storage quota was hit always failed (the retry referenced an out-of-scope variable).
+- The English menu showed the Japanese word for "Theme"; conditional-formatting validation messages were Japanese only.
+- On short screens (e.g. a phone in landscape) the filter's option list collapsed to zero height, and the drop-down could be placed below the bottom of the screen with its OK button unreachable.
+- Debug messages were printed to the console on every table.
+- The menu used Bootstrap Icons classes, which showed empty boxes unless that icon font was loaded.
+
+### Changed
+
+- The package ships only what the current build produces. 2.3.3 also contained ~20 stale files from old builds (`excelike-table-ultimate.js`, test pages, …); the files documented in the README keep their names.
+- The browser build only defines `ExceLikeTable`, `ColumnHelpers` and `TABLE_CONFIG` as globals (internal modules such as `DOMUtils` or `ExportModule` no longer leak onto `window`).
+- Removed modules that were bundled but never connected to the table: virtual scrolling, accessibility module, Web Worker support, row selection plugin, and the non-CSV exporters (Excel/JSON/XML/HTML). They were unreachable from the table API.
+- Built with esbuild from real ES modules (previously concatenated with regular expressions, which is how a missing dependency went unnoticed).
+- `package.json`: correct repository URL; `types` listed first in `exports`; `unpkg` / `jsdelivr` point to the browser build.
+
+### Tests
+
+- Removed 307 unit tests that re-implemented logic inside the test instead of calling the library.
+- Restored the end-to-end tests (their fixture page had been deleted) and added tests for every fix above, the README examples, Node import and the TypeScript definitions.
+- `npm publish` now runs lint, unit, Node, type and browser tests first. CI no longer ignores browser test failures.
+
+
 ## [2.3.3] - 2025-11-11
 
 ### 🐛 Bug Fixes

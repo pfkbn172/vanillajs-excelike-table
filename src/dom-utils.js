@@ -153,15 +153,4 @@ const DOMUtils = {
   }
 };
 
-// ES modules export
 export default DOMUtils;
-
-// CommonJS export for compatibility
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = DOMUtils;
-}
-
-// Browser global
-if (typeof window !== 'undefined') {
-  window.DOMUtils = DOMUtils;
-}

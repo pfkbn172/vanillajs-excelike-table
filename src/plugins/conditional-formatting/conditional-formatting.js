@@ -7,21 +7,19 @@
    */
 
   // CF_CONSTANTSとCF_UTILSから必要な要素を取得
-  const CF_CONSTANTS = window.CF_CONSTANTS || {};
-  const CF_UTILS = window.CF_UTILS || {};
+  const CF_CONSTANTS = globalThis.CF_CONSTANTS || {};
+  const CF_UTILS = globalThis.CF_UTILS || {};
 
   const {
     TIMING,
     DEFAULT_OPTIONS,
     CSS_CLASSES,
-    MESSAGES,
-    ERROR_TYPES
+    MESSAGES
   } = CF_CONSTANTS;
 
   const {
     ErrorHandler,
     ValidationUtils,
-    DOMUtils,
     PerformanceUtils,
     InitializationHelper
   } = CF_UTILS;
@@ -47,15 +45,15 @@
     });
 
     // パフォーマンス最適化システム
-    this.batchDOM = new (window.CF_PERFORMANCE.BatchDOMOperations)();
-    this.cellCache = new (window.CF_PERFORMANCE.OptimizedCellCache)(1000);
-    this.evaluationCache = new (window.CF_PERFORMANCE.RuleEvaluationCache)(500);
+    this.batchDOM = new (globalThis.CF_PERFORMANCE.BatchDOMOperations)();
+    this.cellCache = new (globalThis.CF_PERFORMANCE.OptimizedCellCache)(1000);
+    this.evaluationCache = new (globalThis.CF_PERFORMANCE.RuleEvaluationCache)(500);
 
     // コンポーネント
-    this.manager = new ConditionalFormattingManager({ storageKey: this.options.storageKey });
-    this.evaluator = new ConditionalFormattingEvaluator();
-    this.applier = new ConditionalFormattingApplier();
-    this.ui = new ConditionalFormattingUI(this, this.table.i18n);
+    this.manager = new globalThis.ConditionalFormattingManager({ storageKey: this.options.storageKey });
+    this.evaluator = new globalThis.ConditionalFormattingEvaluator();
+    this.applier = new globalThis.ConditionalFormattingApplier();
+    this.ui = new globalThis.ConditionalFormattingUI(this, this.table.i18n);
 
     this.isInitialized = false;
 
@@ -114,11 +112,11 @@
    */
   validateDependencies() {
     const required = {
-      ConditionalFormattingRule: window.ConditionalFormattingRule,
-      ConditionalFormattingManager: window.ConditionalFormattingManager,
-      ConditionalFormattingEvaluator: window.ConditionalFormattingEvaluator,
-      ConditionalFormattingApplier: window.ConditionalFormattingApplier,
-      ConditionalFormattingUI: window.ConditionalFormattingUI,
+      ConditionalFormattingRule: globalThis.ConditionalFormattingRule,
+      ConditionalFormattingManager: globalThis.ConditionalFormattingManager,
+      ConditionalFormattingEvaluator: globalThis.ConditionalFormattingEvaluator,
+      ConditionalFormattingApplier: globalThis.ConditionalFormattingApplier,
+      ConditionalFormattingUI: globalThis.ConditionalFormattingUI,
       table: this.table
     };
     
@@ -535,7 +533,7 @@
     try {
       ValidationUtils.validateRuleName(config.name);
       
-      const rule = new ConditionalFormattingRule(config);
+      const rule = new globalThis.ConditionalFormattingRule(config);
       const success = this.manager.addRule(rule);
       
       if (success && this.options.autoApply) {
@@ -703,7 +701,7 @@
 
   // グローバルに公開
   if (typeof window !== 'undefined') {
-    window.ConditionalFormatting = ConditionalFormatting;
+    globalThis.ConditionalFormatting = ConditionalFormatting;
   }
 
 })();

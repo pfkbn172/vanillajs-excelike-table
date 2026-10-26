@@ -52,21 +52,22 @@ class ConditionalFormattingEvaluator {
     }
 
     switch (dataType) {
-      case 'number':
+      case 'number': {
         // 数値文字列から通貨記号、カンマ、スペースなどを除去してからパース
-        let numStr = String(value).replace(/[$,¥€£\s]/g, '');
-        const num = parseFloat(numStr);
+        const num = parseFloat(String(value).replace(/[$,¥€£\s]/g, ''));
         return isNaN(num) ? 0 : num;
+      }
 
       case 'text':
         return String(value);
 
-      case 'date':
+      case 'date': {
         if (value instanceof Date) {
           return value;
         }
         const date = new Date(value);
         return isNaN(date.getTime()) ? new Date(0) : date;
+      }
 
       default:
         return String(value);
@@ -107,7 +108,7 @@ class ConditionalFormattingEvaluator {
         return this._compareNotContains(cellValue, ruleValue);
 
       default:
-        throw new Error(`未対応の演算子: ${operator}`);
+        throw new Error(`Unsupported operator: ${operator}`);
     }
   }
   
@@ -205,5 +206,5 @@ class ConditionalFormattingEvaluator {
 
 // グローバルに公開
 if (typeof window !== 'undefined') {
-  window.ConditionalFormattingEvaluator = ConditionalFormattingEvaluator;
+  globalThis.ConditionalFormattingEvaluator = ConditionalFormattingEvaluator;
 }

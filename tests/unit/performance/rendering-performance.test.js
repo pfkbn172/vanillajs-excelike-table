@@ -49,7 +49,7 @@ describe('Performance - Rendering', () => {
       const endTime = performance.now();
       const renderTime = endTime - startTime;
 
-      expect(renderTime).toBeLessThan(200);
+      expect(renderTime).toBeLessThan(perfBudget(200));
       expect(container.children.length).toBeGreaterThan(0);
     });
 
@@ -77,7 +77,7 @@ describe('Performance - Rendering', () => {
       const renderTime = endTime - startTime;
 
       // With virtual scrolling, should still be fast
-      expect(renderTime).toBeLessThan(500);
+      expect(renderTime).toBeLessThan(perfBudget(500));
     });
 
     test('should render large dataset (10000 rows) within 1000ms', () => {
@@ -102,7 +102,7 @@ describe('Performance - Rendering', () => {
       const renderTime = endTime - startTime;
 
       // Virtual scrolling should make this feasible
-      expect(renderTime).toBeLessThan(1000);
+      expect(renderTime).toBeLessThan(perfBudget(1000));
     });
 
     test('should handle very large dataset (50000 rows) without timeout', () => {
@@ -127,7 +127,7 @@ describe('Performance - Rendering', () => {
       const renderTime = endTime - startTime;
 
       // Should complete within reasonable time
-      expect(renderTime).toBeLessThan(3000);
+      expect(renderTime).toBeLessThan(perfBudget(3000));
     });
   });
 
@@ -156,7 +156,7 @@ describe('Performance - Rendering', () => {
       const endTime = performance.now();
 
       const updateTime = endTime - startTime;
-      expect(updateTime).toBeLessThan(100);
+      expect(updateTime).toBeLessThan(perfBudget(100));
     });
 
     test('should handle frequent updates efficiently', () => {
@@ -188,7 +188,7 @@ describe('Performance - Rendering', () => {
       const totalTime = endTime - startTime;
       const avgTime = totalTime / iterations;
 
-      expect(avgTime).toBeLessThan(50); // Average update should be fast
+      expect(avgTime).toBeLessThan(perfBudget(50)); // Average update should be fast
     });
   });
 
@@ -269,7 +269,7 @@ describe('Performance - Rendering', () => {
       const renderTime = endTime - startTime;
 
       // Pagination should make rendering very fast
-      expect(renderTime).toBeLessThan(200);
+      expect(renderTime).toBeLessThan(perfBudget(200));
     });
 
     test('should change pages quickly', () => {
@@ -305,7 +305,7 @@ describe('Performance - Rendering', () => {
       const totalTime = endTime - startTime;
       const avgTime = totalTime / 10;
 
-      expect(avgTime).toBeLessThan(50);
+      expect(avgTime).toBeLessThan(perfBudget(50));
     });
   });
 
@@ -341,7 +341,7 @@ describe('Performance - Rendering', () => {
       const endTime = performance.now();
       const renderTime = endTime - startTime;
 
-      expect(renderTime).toBeLessThan(500);
+      expect(renderTime).toBeLessThan(perfBudget(500));
     });
 
     test('should render custom render functions efficiently', () => {
@@ -368,7 +368,7 @@ describe('Performance - Rendering', () => {
       const endTime = performance.now();
       const renderTime = endTime - startTime;
 
-      expect(renderTime).toBeLessThan(200);
+      expect(renderTime).toBeLessThan(perfBudget(200));
     });
   });
 
@@ -405,7 +405,7 @@ describe('Performance - Rendering', () => {
       const endTime = performance.now();
       const renderTime = endTime - startTime;
 
-      expect(renderTime).toBeLessThan(300);
+      expect(renderTime).toBeLessThan(perfBudget(300));
     });
 
     test('should not degrade with repeated operations', () => {

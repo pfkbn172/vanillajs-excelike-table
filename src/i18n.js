@@ -109,6 +109,7 @@ const I18nModule = {
       // Menu
       'menu.clearFilters': 'Clear All Filters',
       'menu.columnSettings': 'Column Settings',
+      'menu.exportCSV': 'Export CSV',
       'menu.conditionalFormat': 'Conditional Formatting',
       'menu.fontSize': 'Font Size',
       'menu.cellPadding': 'Cell Padding',
@@ -247,6 +248,13 @@ const I18nModule = {
       'cf.priorityUpdated': 'Priority updated',
       'cf.confirmDelete': 'Are you sure you want to delete the rule "{name}"?',
       'cf.errorSave': 'Error saving rule',
+      'cf.validation.nameRequired': 'Rule name is required',
+      'cf.validation.nameTooLong': 'Rule name must be at most {max} characters',
+      'cf.validation.invalidColor': 'Color must be a hex code like #RRGGBB',
+      'cf.validation.invalidOperator': 'Invalid operator: {operator}',
+      'cf.validation.valueTooLong': 'Value must be at most {max} characters',
+      'cf.validation.ruleInvalid': 'Invalid rule: {errors}',
+      'cf.validation.tooManyRules': 'You can create up to {max} rules',
       
       // Rule Description
       'cf.priority': 'Priority: {priority}',
@@ -322,6 +330,7 @@ const I18nModule = {
       // Menu
       'menu.clearFilters': 'フィルタ全解除',
       'menu.columnSettings': '表示列設定',
+      'menu.exportCSV': 'CSVで書き出し',
       'menu.conditionalFormat': '条件付き書式',
       'menu.fontSize': '文字サイズ',
       'menu.cellPadding': 'セル内パディング',
@@ -459,6 +468,13 @@ const I18nModule = {
       'cf.priorityUpdated': '優先度を更新しました',
       'cf.confirmDelete': 'ルール「{name}」を削除してよろしいですか？',
       'cf.errorSave': 'ルールの保存中にエラーが発生しました',
+      'cf.validation.nameRequired': 'ルール名は必須です',
+      'cf.validation.nameTooLong': 'ルール名は{max}文字以内で入力してください',
+      'cf.validation.invalidColor': '有効なカラーコード（#RRGGBB）を入力してください',
+      'cf.validation.invalidOperator': '無効な演算子です: {operator}',
+      'cf.validation.valueTooLong': '値は{max}文字以内で入力してください',
+      'cf.validation.ruleInvalid': 'ルールの内容に誤りがあります: {errors}',
+      'cf.validation.tooManyRules': 'ルールは{max}件まで作成できます',
       
       // Rule Description
       'cf.priority': '優先度: {priority}',
@@ -545,7 +561,7 @@ const I18nModule = {
    */
   interpolate(message, params) {
     return message.replace(/\{(\w+)\}/g, (match, key) => {
-      return params.hasOwnProperty(key) ? params[key] : match;
+      return Object.prototype.hasOwnProperty.call(params, key) ? params[key] : match;
     });
   },
 
@@ -761,14 +777,5 @@ const I18nModule = {
     return exported;
   }
 };
-
-// Export for different environments
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = I18nModule;
-}
-
-if (typeof window !== 'undefined') {
-  window.I18nModule = I18nModule;
-}
 
 export default I18nModule;
