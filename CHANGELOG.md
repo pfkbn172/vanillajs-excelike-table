@@ -42,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The browser build only defines `ExceLikeTable`, `ColumnHelpers` and `TABLE_CONFIG` as globals (internal modules such as `DOMUtils` or `ExportModule` no longer leak onto `window`).
 - Removed modules that were bundled but never connected to the table: virtual scrolling, accessibility module, Web Worker support, row selection plugin, and the non-CSV exporters (Excel/JSON/XML/HTML). They were unreachable from the table API.
 - Built with esbuild from real ES modules (previously concatenated with regular expressions, which is how a missing dependency went unnoticed).
-- `package.json`: correct repository URL; `types` listed first in `exports`; `unpkg` / `jsdelivr` point to the browser build.
+- `package.json`: correct repository URL (the GitHub repository is now public); `types` listed first in `exports`; `unpkg` / `jsdelivr` point to the browser build; author is kiseeeen Inc.; keywords describe the actual features; `engines.node` is `>=18` (the versions tested).
 
 ### Tests
 

@@ -27,25 +27,27 @@
     "./package.json": "./package.json"
   },
   "keywords": [
-    "javascript",
-    "vanillajs",
     "table",
+    "data-table",
+    "datagrid",
+    "data-grid",
+    "spreadsheet",
     "excel",
     "filter",
     "sort",
     "pagination",
-    "column-helpers",
-    "preset",
-    "ui",
-    "vanilla",
-    "no-framework",
-    "user-friendly",
-    "settings-persistence",
+    "csv-export",
+    "conditional-formatting",
     "column-pinning",
-    "responsive",
-    "pure-javascript"
+    "vanilla-js",
+    "no-framework",
+    "typescript",
+    "ssr"
   ],
-  "author": "ExceLikeTable Contributors",
+  "author": {
+    "name": "kiseeeen Inc.",
+    "url": "https://kiseeeen.co.jp/"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -94,6 +96,6 @@
     "not ie 11"
   ],
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=18"
   }
 }

@@ -1,9 +1,15 @@
 name: Release
 
+# Pushing a tag vX.Y.Z creates the GitHub Release with the built files.
+# Publishing to npm is done by hand (`npm publish`, which runs every test first).
+
 on:
   push:
     tags:
       - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
   release:
@@ -23,38 +29,43 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
-        run: npm test
-        env:
-          NODE_OPTIONS: --experimental-vm-modules
+      - name: Check the tag matches package.json
+        run: |
+          test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
+
+      - name: Lint and unit tests
+        run: |
+          npm run lint
+          npm test
 
       - name: Build project
         run: npm run build
 
-      - name: Generate changelog
-        id: changelog
+      - name: Node import and type tests
         run: |
-          echo "## Release Notes" > RELEASE_NOTES.md
-          echo "" >> RELEASE_NOTES.md
-          git log $(git describe --tags --abbrev=0 HEAD^)..HEAD --pretty=format:"- %s (%h)" >> RELEASE_NOTES.md || echo "Initial release" >> RELEASE_NOTES.md
+          npm run test:node
+          npm run test:types
+
+      - name: Release notes from CHANGELOG.md
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v v="$version" '
+            $0 ~ "^## \\[" v "\\]" { found = 1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > RELEASE_NOTES.md
+          test -s RELEASE_NOTES.md
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           body_path: RELEASE_NOTES.md
           files: |
             dist/excelike-table.js
             dist/excelike-table.min.js
+            dist/excelike-table.cjs
+            dist/excelike-table.browser.js
+            dist/excelike-table.bundle.min.js
             dist/excelike-table.css
             dist/excelike-table.min.css
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish to npm (manual trigger only)
-        if: github.event_name == 'workflow_dispatch'
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-          npm publish
-        continue-on-error: true
+            dist/excelike-table.d.ts
